@@ -1,6 +1,6 @@
 # Stage 1 退出报告（草案）
 
-状态：`ready-for-review` —— 实现与本地证据已齐，等待负责人确认后进入 Stage 退出评审，不得据此自动归档 change 或宣告 Stage 退出。
+状态：`ready-for-exit-review` —— 实现与本地证据已齐，等待负责人确认后进入 Stage 退出评审，不得据此自动归档 change 或宣告 Stage 退出。
 日期：2026-11-22
 
 ## 1. Stage 范围
@@ -23,12 +23,12 @@
 | S1-AC-08 connectors/ingestion 最小闭环 | `internal/modules/connectors`/`ingestion` 68 测试 | 通过 |
 | S1-AC-09 pipelines + actions 最小切片 | 43 + 7 测试；Kestra/Temporal adapter 为内存/骨架 | 通过（Stage 1 范围） |
 | S1-AC-10 web OIDC + 五页面 E2E | Playwright：登录、Projects、Ontology、Object Explorer、Datasets、Queries | 通过 |
-| S1-AC-11 Compose 一键闭环 + CI/契约/前端/许可证门禁 | Compose 5 服务；`buf lint`/breaking/generate-check；CI 工作流已更新；`go-licenses` 加入 Makefile/CI；本地 actionlint/shellcheck 通过；GitHub runner 尚未实跑 | 部分通过（仅缺 GitHub runner 实跑） |
+| S1-AC-11 Compose 一键闭环 + CI/契约/前端/许可证门禁 | GitHub Actions run [45014009410](https://github.com/klb3713/OntoAxis/actions/runs/45014009410) 全绿：build-test、proto、docker、frontend、compose-smoke；Compose 5 服务；`buf lint`/breaking/generate-check；`go-licenses` 已接入 Makefile/CI | 通过 |
 | S1-AC-12 发布镜像/路由/回滚 tag/部署单元 | `Dockerfile`、`web/Dockerfile`、`config/edge/routes.yaml`、`deploy/README.md`、确定性镜像构建 | 通过 |
 
 ## 3. 未完成/风险
 
-1. GitHub Actions 尚未在真实 runner 执行；本地已完成构建/测试/lint/actionlint/shellcheck 等价检查。
+1. GitHub Actions 已在真实 runner 执行并通过：run [45014009410](https://github.com/klb3713/OntoAxis/actions/runs/45014009410)，5 个 job 全绿。
 2. 许可证门禁已接入 `make license-check` 与 CI 配置；CI 实跑仍待 GitHub runner 验证。
 3. OIDC 目前使用本地 Keycloak；生产 IdP 的 issuer/JWKS/claims 映射需部署环境复核。
 4. `oa-edge` 目前以 `config/edge/routes.yaml` 路由声明 + Compose 信任模式表达，尚无独立 Envoy Gateway 部署清单；Stage 1 的部署单元边界仍成立，但生产入口需 Stage 2 补齐。
@@ -36,4 +36,4 @@
 
 ## 4. 结论
 
-Stage 1 的实现、change 级任务与本地验收已完成；11 个 change 全部 `openspec` 任务完成，12/12 OpenSpec 校验通过。唯一未闭环的是 GitHub Actions runner 实跑（需要推送/触发 CI）。请在确认上述证据与风险后决定是否进入 Stage 1 退出评审。
+Stage 1 的实现、change 级任务、本地验收与 GitHub Actions 实跑均已完成；11 个 change 全部 `openspec` 任务完成，12/12 OpenSpec 校验通过，CI run 全绿。现进入 **Stage 1 退出评审**，请负责人复核本报告与证据后确认是否批准 Stage 1 退出并归档 changes。
