@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
@@ -18,9 +19,17 @@ var platformMigrations embed.FS
 
 // Open creates a pgxpool with bounded connections and a startup ping.
 func Open(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	return OpenWithTracer(ctx, dsn, nil)
+}
+
+// OpenWithTracer is Open with an optional pgx query tracer.
+func OpenWithTracer(ctx context.Context, dsn string, tracer pgx.QueryTracer) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parse database dsn: %w", err)
+	}
+	if tracer != nil {
+		cfg.ConnConfig.Tracer = tracer
 	}
 	cfg.MaxConns = 20
 	cfg.MinConns = 2

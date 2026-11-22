@@ -177,10 +177,10 @@ openspec status --change <change-name>
 
 ## 10. 当前状态
 
-- 当前 Stage：Stage 1 已退出（exited，2026-11-22）；Stage 2 草案为 draft（`docs/stages/stage-2-ontoaxis-runtime-brief.md`），等待负责人评审
+- 当前 Stage：Stage 1 已退出（exited，2026-11-22）；Stage 2 已批准（`docs/stages/stage-2-ontoaxis-runtime-brief.md`）
 - 当前 change：无 active change；12 个 Stage 1 change 已归档到 `openspec/changes/archive/`
 - 主规格：`openspec/specs/` 下 11 个 capability spec 已由归档 change 写入
-- 未决事项：Stage 2 的范围、AC 与实施授权待负责人评审确认
+- 当前事项：Stage 2 已获批准，按 change map 从 Wave 0 开始实施
 
 ## 11. 技能分工
 

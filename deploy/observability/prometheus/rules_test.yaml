@@ -1,0 +1,41 @@
+rule_files:
+  - /etc/prometheus/rules.yaml
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'up{job="ontoaxis-core"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: OntoAxisCoreDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: ontoaxis-core
+            exp_annotations:
+              summary: "OntoAxis core is down"
+              description: "Prometheus cannot scrape ontoaxis-core for 2 minutes."
+
+  - interval: 1m
+    input_series:
+      - series: 'ontoaxis_http_requests_total{method="GET",route="/api/v1/x",status="200"}'
+        values: '0+100x10'
+      - series: 'ontoaxis_http_requests_total{method="GET",route="/api/v1/x",status="500"}'
+        values: '0+10x10'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: OntoAxisHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "OntoAxis 5xx error rate is above 1%"
+              description: "5xx ratio has exceeded 1% for 5 minutes."
+
+  - interval: 1m
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: OntoAxisHighErrorRate
+        exp_alerts: []

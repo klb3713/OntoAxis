@@ -28,6 +28,10 @@ type Config struct {
 	TrinoURL        string        `koanf:"trino_url"`
 	TrinoUser       string        `koanf:"trino_user"`
 	TrinoTimeout    time.Duration `koanf:"trino_timeout"`
+	Environment     string        `koanf:"environment"`
+	Commit          string        `koanf:"commit"`
+	OTLPEndpoint    string        `koanf:"otel_exporter_otlp_endpoint"`
+	OTELSampleRatio float64       `koanf:"otel_sample_ratio"`
 }
 
 // Defaults returns the non-secret local defaults. DATABASE_URL intentionally has
@@ -42,6 +46,9 @@ func Defaults() Config {
 		OIDCAudience:    "ontoaxis-api",
 		TrinoUser:       "ontoaxis",
 		TrinoTimeout:    30 * time.Second,
+		Environment:     "local",
+		Commit:          "unknown",
+		OTELSampleRatio: 1.0,
 	}
 }
 
@@ -51,18 +58,22 @@ func Load() (Config, error) {
 	k := koanf.New(".")
 	cfg := Defaults()
 	if err := k.Load(confmap.Provider(map[string]any{
-		"http_addr":        cfg.HTTPAddr,
-		"metrics_addr":     cfg.MetricsAddr,
-		"database_url":     cfg.DatabaseURL,
-		"log_level":        cfg.LogLevel,
-		"shutdown_timeout": cfg.ShutdownTimeout.String(),
-		"trust_gateway":    cfg.TrustGateway,
-		"oidc_issuer":      cfg.OIDCIssuer,
-		"oidc_audience":    cfg.OIDCAudience,
-		"oidc_jwks_url":    cfg.OIDCJWKSURL,
-		"trino_url":        cfg.TrinoURL,
-		"trino_user":       cfg.TrinoUser,
-		"trino_timeout":    cfg.TrinoTimeout.String(),
+		"http_addr":                   cfg.HTTPAddr,
+		"metrics_addr":                cfg.MetricsAddr,
+		"database_url":                cfg.DatabaseURL,
+		"log_level":                   cfg.LogLevel,
+		"shutdown_timeout":            cfg.ShutdownTimeout.String(),
+		"trust_gateway":               cfg.TrustGateway,
+		"oidc_issuer":                 cfg.OIDCIssuer,
+		"oidc_audience":               cfg.OIDCAudience,
+		"oidc_jwks_url":               cfg.OIDCJWKSURL,
+		"trino_url":                   cfg.TrinoURL,
+		"trino_user":                  cfg.TrinoUser,
+		"trino_timeout":               cfg.TrinoTimeout.String(),
+		"environment":                 cfg.Environment,
+		"commit":                      cfg.Commit,
+		"otel_exporter_otlp_endpoint": cfg.OTLPEndpoint,
+		"otel_sample_ratio":           cfg.OTELSampleRatio,
 	}, "."), nil); err != nil {
 		return Config{}, fmt.Errorf("load defaults: %w", err)
 	}
@@ -87,6 +98,9 @@ func Load() (Config, error) {
 	}
 	if cfg.TrinoTimeout <= 0 {
 		return Config{}, fmt.Errorf("ONTOAXIS_TRINO_TIMEOUT must be positive")
+	}
+	if cfg.OTELSampleRatio < 0 || cfg.OTELSampleRatio > 1 {
+		return Config{}, fmt.Errorf("ONTOAXIS_OTEL_SAMPLE_RATIO must be between 0 and 1")
 	}
 	return cfg, nil
 }

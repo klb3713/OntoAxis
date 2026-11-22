@@ -63,6 +63,38 @@ cd web && pnpm install --frozen-lockfile && pnpm check && pnpm test && pnpm buil
 
 平台迁移位于 `internal/platform/db/migrations/`，由 goose 在启动时执行。各业务模块迁移放在 `internal/modules/<module>/migrations/`，按模块依赖顺序执行；迁移只向前，不修改已发布文件。
 
+## 本地观测栈
+
+默认 `docker compose up` 只启动 core 与依赖，不启动可观测组件。要启用本地
+Collector、Prometheus、Alertmanager、Jaeger 与 Perses：
+
+```sh
+export ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+docker compose -f deploy/compose/compose.yaml --profile observability up -d --build
+```
+
+| 组件 | 宿主机端口 | 用途 |
+| --- | --- | --- |
+| OTel Collector | 14317/14318 | OTLP gRPC/HTTP |
+| Prometheus | 19091 | 指标与规则评估 |
+| Alertmanager | 19093 | 告警路由 |
+| Jaeger | 16686 | trace 查询 |
+| Perses | 18084 | dashboard |
+
+core 的 `ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT` 为空时 tracing 为 no-op；
+设置后使用 OTLP/HTTP 导出。本地采样率为 `1.0`，非本地环境通过
+`ONTOAXIS_OTEL_SAMPLE_RATIO` 配置。
+
+验证：
+
+```sh
+make observability-rules-test
+scripts/observability-smoke.sh
+```
+
+`scripts/observability-smoke.sh` 会启动 profile、请求 core、确认 Prometheus
+收到 HTTP 指标且 Jaeger 收到 `ontoaxis-core` trace。
+
 ## 清理
 
 ```sh

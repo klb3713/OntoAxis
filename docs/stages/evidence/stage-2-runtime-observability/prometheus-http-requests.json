@@ -1,0 +1,1 @@
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"ontoaxis_http_requests_total","instance":"ontoaxis-core:9090","job":"ontoaxis-core","method":"GET","route":"/healthz","status":"200"},"value":[1795349449.475,"8"]}]}}

@@ -73,6 +73,10 @@ services:
       ONTOAXIS_OIDC_AUDIENCE: "ontoaxis-api"
       ONTOAXIS_OIDC_JWKS_URL: "http://keycloak:8080/realms/ontoaxis/protocol/openid-connect/certs"
       ONTOAXIS_TRINO_URL: "http://trino:8080"
+      ONTOAXIS_ENVIRONMENT: "local"
+      ONTOAXIS_COMMIT: "${ONTOAXIS_COMMIT:-unknown}"
+      ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT: "${ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT:-}"
+      ONTOAXIS_OTEL_SAMPLE_RATIO: "${ONTOAXIS_OTEL_SAMPLE_RATIO:-1.0}"
     ports:
       - "${ONTOAXIS_CORE_HOST_PORT:-18080}:8080"
       - "${ONTOAXIS_METRICS_HOST_PORT:-19090}:9090"
@@ -87,5 +91,60 @@ services:
       timeout: 3s
       retries: 10
 
+  otel-collector:
+    profiles: ["observability"]
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ../observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "${ONTOAXIS_OTEL_GRPC_HOST_PORT:-14317}:4317"
+      - "${ONTOAXIS_OTEL_HTTP_HOST_PORT:-14318}:4318"
+      - "${ONTOAXIS_OTEL_METRICS_HOST_PORT:-19464}:9464"
+      - "${ONTOAXIS_OTEL_INTERNAL_HOST_PORT:-18888}:8888"
+
+  jaeger:
+    profiles: ["observability"]
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "${ONTOAXIS_JAEGER_HOST_PORT:-16686}:16686"
+
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:v3.1.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=24h
+      - --web.enable-lifecycle
+    volumes:
+      - ../observability/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ../observability/prometheus/rules.yaml:/etc/prometheus/rules.yaml:ro
+      - ../observability/prometheus/rules_test.yaml:/etc/prometheus/rules_test.yaml:ro
+      - ontoaxis_prometheus_data:/prometheus
+    ports:
+      - "${ONTOAXIS_PROMETHEUS_HOST_PORT:-19091}:9090"
+    depends_on:
+      - otel-collector
+
+  alertmanager:
+    profiles: ["observability"]
+    image: prom/alertmanager:v0.27.0
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yaml
+    volumes:
+      - ../observability/alertmanager/alertmanager.yaml:/etc/alertmanager/alertmanager.yaml:ro
+    ports:
+      - "${ONTOAXIS_ALERTMANAGER_HOST_PORT:-19093}:9093"
+
+  perses:
+    profiles: ["observability"]
+    image: persesdev/perses:v0.50.0
+    ports:
+      - "${ONTOAXIS_PERSES_HOST_PORT:-18084}:8080"
+
 volumes:
   ontoaxis_postgres_data:
+  ontoaxis_prometheus_data:

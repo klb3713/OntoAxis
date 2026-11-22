@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus"
 
 	ontologyapi "github.com/klb3713/ontoaxis/internal/modules/ontology/api"
 	"github.com/klb3713/ontoaxis/internal/modules/tenancy"
@@ -17,28 +18,44 @@ import (
 	"github.com/klb3713/ontoaxis/internal/platform/httperr"
 	"github.com/klb3713/ontoaxis/internal/platform/httpserver"
 	"github.com/klb3713/ontoaxis/internal/platform/module"
+	"github.com/klb3713/ontoaxis/internal/platform/observability"
 )
 
 // ModuleFactory builds the process modules once the shared pool exists.
 type ModuleFactory func(*pgxpool.Pool) []module.Module
 
 type App struct {
-	cfg    config.Config
-	logger *slog.Logger
-	pool   *pgxpool.Pool
-	server *httpserver.Server
+	cfg       config.Config
+	logger    *slog.Logger
+	pool      *pgxpool.Pool
+	server    *httpserver.Server
+	telemetry *observability.Telemetry
 }
 
 // New constructs the platform, verifies module dependencies, runs migrations in
 // deterministic order, and builds the HTTP server. It never registers business
 // routes itself; modules own their own route registration.
 func New(ctx context.Context, cfg config.Config, logger *slog.Logger, factory ModuleFactory) (*App, error) {
-	pool, err := db.Open(ctx, cfg.DatabaseURL)
+	telemetry, err := observability.SetupTelemetry(ctx, observability.TelemetryConfig{
+		ServiceName:    "ontoaxis-core",
+		ServiceVersion: "0.1.0",
+		Environment:    cfg.Environment,
+		OTLPEndpoint:   cfg.OTLPEndpoint,
+		SampleRatio:    cfg.OTELSampleRatio,
+	}, logger)
 	if err != nil {
+		return nil, err
+	}
+	metrics := observability.NewMetrics(prometheus.NewRegistry())
+	metrics.SetBuildInfo("0.1.0", cfg.Commit)
+	pool, err := db.OpenWithTracer(ctx, cfg.DatabaseURL, db.NewQueryTracer("postgres", telemetry.Tracer(), metrics))
+	if err != nil {
+		_ = telemetry.Shutdown(context.Background())
 		return nil, err
 	}
 	if err := db.MigratePlatform(ctx, cfg.DatabaseURL); err != nil {
 		pool.Close()
+		_ = telemetry.Shutdown(context.Background())
 		return nil, err
 	}
 	var modules []module.Module
@@ -49,17 +66,20 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, factory Mo
 	for _, m := range modules {
 		if err := reg.Register(m); err != nil {
 			pool.Close()
+			_ = telemetry.Shutdown(context.Background())
 			return nil, err
 		}
 	}
 	ordered, err := reg.Ordered()
 	if err != nil {
 		pool.Close()
+		_ = telemetry.Shutdown(context.Background())
 		return nil, err
 	}
 	for _, m := range ordered {
 		if err := m.Migrate(ctx, pool); err != nil {
 			pool.Close()
+			_ = telemetry.Shutdown(context.Background())
 			return nil, fmt.Errorf("migrate module %s: %w", m.Name(), err)
 		}
 	}
@@ -96,12 +116,16 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, factory Mo
 		DB:              pool,
 		Modules:         ordered,
 		Authenticate:    authenticate,
+		Metrics:         metrics,
+		Tracer:          telemetry.Tracer(),
+		Commit:          cfg.Commit,
 	})
-	return &App{cfg: cfg, logger: logger, pool: pool, server: srv}, nil
+	return &App{cfg: cfg, logger: logger, pool: pool, server: srv, telemetry: telemetry}, nil
 }
 
 func (a *App) Run(ctx context.Context) error {
 	defer a.pool.Close()
+	defer func() { _ = a.telemetry.Shutdown(context.Background()) }()
 	a.logger.Info("ontoaxis-core starting", "http_addr", a.cfg.HTTPAddr, "metrics_addr", a.cfg.MetricsAddr)
 	return a.server.Run(ctx)
 }

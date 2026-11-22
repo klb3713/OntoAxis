@@ -1,6 +1,6 @@
 # Stage 2 Change Map — OntoAxis 真实运行时并行拆解
 
-> 状态：draft（随 Stage 2 brief 一起评审；未批准，不得实施）<br>
+> 状态：approved（随 Stage 2 brief 于 2026-11-22 获批）<br>
 > 归属 Stage：[`stage-2-ontoaxis-runtime-brief.md`](stage-2-ontoaxis-runtime-brief.md)<br>
 > 用途：把 Stage 2 的 9 个 change 拆成可独立交付、可并行执行的包<br>
 > 目标设计：[`ARCHITECTURE.md`](../../ARCHITECTURE.md) v1.3

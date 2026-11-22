@@ -20,6 +20,9 @@ func TestLoadDefaultsAndEnvironment(t *testing.T) {
 	if cfg.MetricsAddr != ":9090" || cfg.ShutdownTimeout != 10*time.Second {
 		t.Fatalf("defaults not preserved: %+v", cfg)
 	}
+	if cfg.Environment != "local" || cfg.OTELSampleRatio != 1.0 {
+		t.Fatalf("telemetry defaults not preserved: %+v", cfg)
+	}
 }
 
 func TestLoadRequiresDatabaseURL(t *testing.T) {
@@ -36,5 +39,14 @@ func TestLoadRejectsInvalidShutdownTimeout(t *testing.T) {
 	t.Setenv("ONTOAXIS_SHUTDOWN_TIMEOUT", "not-a-duration")
 	if _, err := Load(); err == nil {
 		t.Fatal("expected invalid duration error")
+	}
+}
+
+func TestLoadRejectsInvalidOTELSampleRatio(t *testing.T) {
+	t.Setenv("ONTOAXIS_CONFIG", "")
+	t.Setenv("ONTOAXIS_DATABASE_URL", "postgres://localhost/db")
+	t.Setenv("ONTOAXIS_OTEL_SAMPLE_RATIO", "2")
+	if _, err := Load(); err == nil {
+		t.Fatal("expected invalid sample ratio error")
 	}
 }

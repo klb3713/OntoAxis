@@ -12,8 +12,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/klb3713/ontoaxis/internal/platform/httperr"
 	"github.com/klb3713/ontoaxis/internal/platform/module"
@@ -36,12 +38,18 @@ type Options struct {
 	// Authenticate wraps all module-owned routes. Health and readiness stay
 	// public; when nil, module routes are left unwrapped (tests only).
 	Authenticate func(http.Handler) http.Handler
+	// Metrics is optional; when nil the server creates its own registry.
+	Metrics *observability.Metrics
+	// Tracer starts the inbound HTTP span; nil uses a no-op tracer.
+	Tracer trace.Tracer
+	// Commit is exposed through ontoaxis_build_info.
+	Commit string
 }
 
 type Server struct {
 	opts       Options
 	mux        *chi.Mux
-	metrics    *prometheus.Registry
+	metrics    *observability.Metrics
 	httpSrv    *http.Server
 	metricsSrv *http.Server
 }
@@ -56,10 +64,16 @@ func New(opts Options) *Server {
 	if opts.Logger == nil {
 		opts.Logger = slog.Default()
 	}
-	metrics := prometheus.NewRegistry()
+	metrics := opts.Metrics
+	if metrics == nil {
+		metrics = observability.NewMetrics(prometheus.NewRegistry())
+	}
+	metrics.SetBuildInfo(opts.Version, opts.Commit)
 	mux := chi.NewRouter()
 	s := &Server{opts: opts, mux: mux, metrics: metrics}
+	s.initReadinessMetrics()
 	mux.Use(s.requestID)
+	mux.Use(observability.HTTPMiddleware(opts.Tracer))
 	mux.Use(s.recoverer)
 	mux.Use(s.accessLog)
 	mux.Use(s.metricsMiddleware)
@@ -81,11 +95,38 @@ func New(opts Options) *Server {
 		httperr.Write(w, r, httperr.NotFound("route not found"))
 	})
 	s.httpSrv = &http.Server{Addr: opts.HTTPAddr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
-	s.metricsSrv = &http.Server{Addr: opts.MetricsAddr, Handler: promhttp.HandlerFor(metrics, promhttp.HandlerOpts{})}
+	s.metricsSrv = &http.Server{Addr: opts.MetricsAddr, Handler: promhttp.HandlerFor(metrics.Registry, promhttp.HandlerOpts{})}
 	return s
 }
 
 func (s *Server) Router() http.Handler { return s.mux }
+
+// initReadinessMetrics makes readiness and pool gauges visible before the first
+// /readyz call. The readiness loop still flips them to 0 on failure.
+func (s *Server) initReadinessMetrics() {
+	if s.opts.DB != nil {
+		s.metrics.ModuleReady.WithLabelValues("database").Set(1)
+		s.observeDBPool()
+	}
+	for _, m := range s.opts.Modules {
+		s.metrics.ModuleReady.WithLabelValues(m.Name()).Set(1)
+	}
+}
+
+func (s *Server) observeDBPool() {
+	statter, ok := s.opts.DB.(interface{ Stat() *pgxpool.Stat })
+	if !ok {
+		return
+	}
+	stat := statter.Stat()
+	s.metrics.DBPoolConnections.WithLabelValues("total").Set(float64(stat.TotalConns()))
+	s.metrics.DBPoolConnections.WithLabelValues("idle").Set(float64(stat.IdleConns()))
+	s.metrics.DBPoolConnections.WithLabelValues("acquired").Set(float64(stat.AcquiredConns()))
+	s.metrics.DBPoolConnections.WithLabelValues("max").Set(float64(stat.MaxConns()))
+}
+
+// Metrics exposes the platform collectors for tests and /metrics.
+func (s *Server) Metrics() *observability.Metrics { return s.metrics }
 
 func (s *Server) requestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -120,25 +161,39 @@ func (w *statusWriter) WriteHeader(code int) {
 	w.ResponseWriter.WriteHeader(code)
 }
 
+// Flush preserves streaming support for SSE/WebSocket-adjacent handlers.
+func (w *statusWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
 func (s *Server) accessLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(sw, r)
-		s.opts.Logger.Info("http request", "method", r.Method, "path", r.URL.Path, "status", sw.status, "duration_ms", time.Since(start).Milliseconds(), "request_id", observability.RequestID(r.Context()))
+		attrs := []any{"method", r.Method, "path", r.URL.Path, "status", sw.status, "duration_ms", time.Since(start).Milliseconds(), "request_id", observability.RequestID(r.Context())}
+		if sc := trace.SpanFromContext(r.Context()).SpanContext(); sc.IsValid() {
+			attrs = append(attrs, "trace_id", sc.TraceID().String(), "span_id", sc.SpanID().String())
+		}
+		s.opts.Logger.Info("http request", attrs...)
 	})
 }
 
 func (s *Server) metricsMiddleware(next http.Handler) http.Handler {
-	requests := prometheus.NewCounterVec(prometheus.CounterOpts{Name: "ontoaxis_http_requests_total", Help: "Total HTTP requests."}, []string{"method", "route", "status"})
-	duration := prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "ontoaxis_http_request_duration_seconds", Help: "HTTP request duration."}, []string{"method", "route"})
-	s.metrics.MustRegister(requests, duration)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.metrics.HTTPInFlight.Inc()
+		defer s.metrics.HTTPInFlight.Dec()
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(sw, r)
-		requests.WithLabelValues(r.Method, r.URL.Path, strconv.Itoa(sw.status)).Inc()
-		duration.WithLabelValues(r.Method, r.URL.Path).Observe(time.Since(start).Seconds())
+		route := "unmatched"
+		if rc := chi.RouteContext(r.Context()); rc != nil && rc.RoutePattern() != "" {
+			route = rc.RoutePattern()
+		}
+		s.metrics.HTTPRequestsTotal.WithLabelValues(r.Method, route, strconv.Itoa(sw.status)).Inc()
+		s.metrics.HTTPRequestDuration.WithLabelValues(r.Method, route).Observe(time.Since(start).Seconds())
 	})
 }
 
@@ -152,17 +207,27 @@ func (s *Server) readyz(w http.ResponseWriter, r *http.Request) {
 	if s.opts.DB != nil {
 		if err := s.opts.DB.Ping(r.Context()); err != nil {
 			checks["database"] = "down"
+			s.metrics.ModuleReady.WithLabelValues("database").Set(0)
 			status = http.StatusServiceUnavailable
 		} else {
 			checks["database"] = "ok"
+			s.metrics.ModuleReady.WithLabelValues("database").Set(1)
+		}
+		if statter, ok := s.opts.DB.(interface{ Stat() *pgxpool.Stat }); ok {
+			stat := statter.Stat()
+			s.metrics.DBPoolConnections.WithLabelValues("total").Set(float64(stat.TotalConns()))
+			s.metrics.DBPoolConnections.WithLabelValues("idle").Set(float64(stat.IdleConns()))
+			s.metrics.DBPoolConnections.WithLabelValues("acquired").Set(float64(stat.AcquiredConns()))
 		}
 	}
 	for _, m := range s.opts.Modules {
 		if err := m.Ready(r.Context()); err != nil {
 			checks[m.Name()] = "not_ready"
+			s.metrics.ModuleReady.WithLabelValues(m.Name()).Set(0)
 			status = http.StatusServiceUnavailable
 		} else {
 			checks[m.Name()] = "ok"
+			s.metrics.ModuleReady.WithLabelValues(m.Name()).Set(1)
 		}
 	}
 	writeJSON(w, status, map[string]any{"status": map[bool]string{true: "ok", false: "not_ready"}[status == http.StatusOK], "checks": checks})

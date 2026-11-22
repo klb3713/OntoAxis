@@ -76,6 +76,24 @@ jobs:
       - name: Build web image
         run: docker build -f web/Dockerfile -t ontoaxis-web:ci .
 
+  observability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rules test
+        run: make observability-rules-test
+      - name: Start observability stack and assert metrics/traces
+        env:
+          ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+        run: scripts/observability-smoke.sh
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose -f deploy/compose/compose.yaml --profile observability logs --tail=120
+      - name: Tear down
+        if: always()
+        run: docker compose -f deploy/compose/compose.yaml --profile observability down -v
+
   compose-smoke:
     runs-on: ubuntu-latest
     needs: docker

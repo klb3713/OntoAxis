@@ -10,6 +10,12 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/klb3713/ontoaxis/internal/modules/query/domain"
 )
 
@@ -120,12 +126,25 @@ func (c *Client) next(ctx context.Context, nextURI string) (statementResponse, e
 }
 
 func (c *Client) do(req *http.Request) (statementResponse, error) {
+	ctx, span := otel.Tracer("ontoaxis/trino").Start(req.Context(), "trino query",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system", "trino"),
+			attribute.String("db.operation", "query"),
+		),
+	)
+	defer span.End()
+	req = req.WithContext(ctx)
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	resp, err := c.http.Do(req)
 	if err != nil {
+		span.SetStatus(codes.Error, "request failed")
 		return statementResponse{}, fmt.Errorf("trino request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+	span.SetAttributes(attribute.Int("http.response.status_code", resp.StatusCode))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		span.SetStatus(codes.Error, "non-2xx response")
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return statementResponse{}, fmt.Errorf("trino HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}

@@ -1,0 +1,98 @@
+groups:
+  - name: ontoaxis-slo
+    interval: 30s
+    rules:
+      - record: ontoaxis:slo_http_availability:ratio_5m
+        expr: |
+          sum(rate(ontoaxis_http_requests_total{status!~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(ontoaxis_http_requests_total[5m])), 1e-9)
+
+      - record: ontoaxis:slo_read_latency:p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(ontoaxis_http_request_duration_seconds_bucket{method="GET"}[5m]))
+          )
+
+      - record: ontoaxis:slo_write_latency:p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(ontoaxis_http_request_duration_seconds_bucket{method=~"POST|PUT|PATCH|DELETE"}[5m]))
+          )
+
+      - record: ontoaxis:slo_readyz:ratio_5m
+        expr: |
+          avg(ontoaxis_module_ready)
+
+      - record: ontoaxis:slo_http_availability:ratio_30d
+        expr: |
+          sum(rate(ontoaxis_http_requests_total{status!~"5.."}[30d]))
+          /
+          clamp_min(sum(rate(ontoaxis_http_requests_total[30d])), 1e-9)
+
+      - record: ontoaxis:slo_readyz:ratio_30d
+        expr: avg(ontoaxis_module_ready)
+
+  - name: ontoaxis-alerts
+    interval: 30s
+    rules:
+      - alert: OntoAxisCoreDown
+        expr: up{job="ontoaxis-core"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OntoAxis core is down"
+          description: "Prometheus cannot scrape ontoaxis-core for 2 minutes."
+
+      - alert: OntoAxisHighErrorRate
+        expr: |
+          sum(rate(ontoaxis_http_requests_total{status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(ontoaxis_http_requests_total[5m])), 1e-9)
+          > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OntoAxis 5xx error rate is above 1%"
+          description: "5xx ratio has exceeded 1% for 5 minutes."
+
+      - alert: OntoAxisLatencyP95High
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(ontoaxis_http_request_duration_seconds_bucket[5m]))
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OntoAxis p95 latency is above 500ms"
+          description: "p95 latency has exceeded 500ms for 10 minutes."
+
+      - alert: OntoAxisReadinessFailing
+        expr: ontoaxis_module_ready == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "A core module is not ready"
+          description: "module={{ $labels.module }} has reported readiness 0 for 2 minutes."
+
+      - alert: OntoAxisDBPoolSaturated
+        expr: ontoaxis_db_pool_connections{state="acquired"} > 18
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OntoAxis database pool is saturated"
+          description: "More than 18 database connections have been acquired for 5 minutes."
+
+      - alert: OntoAxisCollectorExportFailing
+        expr: up{job="otel-collector"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OTel Collector is unavailable"
+          description: "Traces and OTLP metrics may be dropped because the collector has been down for 5 minutes."

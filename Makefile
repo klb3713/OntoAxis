@@ -3,10 +3,10 @@ GO ?= go
 BUF ?= buf
 BUF_DOCKER ?= docker run --rm -v "$(CURDIR)":/workspace -w /workspace/proto bufbuild/buf:latest
 
-.PHONY: help build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check docker-build compose-up compose-down smoke
+.PHONY: help build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke
 
 help:
-	@echo "Targets: build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check docker-build compose-up compose-down smoke"
+	@echo "Targets: build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke"
 
 build:
 	$(GO) build ./...
@@ -25,6 +25,9 @@ vet:
 
 lint: vet
 	@if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run; else echo "golangci-lint not installed; go vet passed"; fi
+
+license-check:
+	$(GO) run github.com/google/go-licenses@v1.6.0 check ./...
 
 proto-lint:
 	@if command -v $(BUF) >/dev/null 2>&1; then cd proto && $(BUF) lint; else $(BUF_DOCKER) lint; fi
@@ -50,3 +53,9 @@ compose-down:
 
 smoke:
 	./scripts/smoke-foundation.sh
+
+observability-rules-test:
+	docker run --rm --entrypoint promtool -v "$(CURDIR)/deploy/observability/prometheus":/etc/prometheus prom/prometheus:v3.1.0 test rules /etc/prometheus/rules_test.yaml
+
+observability-smoke:
+	./scripts/observability-smoke.sh

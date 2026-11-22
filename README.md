@@ -4,7 +4,7 @@ OntoAxis 是面向企业的 Ontology 数据平台，围绕对象类型、对象�
 
 当前仓库已完成 **Stage 1：Core 一次性构建**（`exited`，2026-11-22）。九个业务模块、单进程 `ontoaxis-core`、OIDC/Keycloak、Trino、`oa-web` 与 Compose 本地闭环已落地。
 
-**Stage 2：真实运行时与生产入口** 目前为 `draft`，等待负责人评审；未批准前不创建 change、不实施。
+**Stage 2：真实运行时与生产入口** 已获负责人批准（approved，2026-11-22），按 change map 逐项实施。
 
 ## 设计收益
 
@@ -21,8 +21,8 @@ OntoAxis 是面向企业的 Ontology 数据平台，围绕对象类型、对象�
 - [`CLAUDE.md`](CLAUDE.md)：Claude Code 入口
 - [`docs/stages/stage-1-ontoaxis-core-brief.md`](docs/stages/stage-1-ontoaxis-core-brief.md)：Stage 1 范围与 AC
 - [`docs/stages/stage-1-change-map.md`](docs/stages/stage-1-change-map.md)：Stage 1 change 拆解
-- [`docs/stages/stage-2-ontoaxis-runtime-brief.md`](docs/stages/stage-2-ontoaxis-runtime-brief.md)：Stage 2 范围与 AC（draft）
-- [`docs/stages/stage-2-change-map.md`](docs/stages/stage-2-change-map.md)：Stage 2 change 拆解（draft）
+- [`docs/stages/stage-2-ontoaxis-runtime-brief.md`](docs/stages/stage-2-ontoaxis-runtime-brief.md)：Stage 2 范围与 AC（approved）
+- [`docs/stages/stage-2-change-map.md`](docs/stages/stage-2-change-map.md)：Stage 2 change 拆解（approved）
 - [`docs/workflow/RUNBOOK.md`](docs/workflow/RUNBOOK.md)：Stage 与 OpenSpec 工作流
 - [`openspec/config.yaml`](openspec/config.yaml)：OpenSpec 项目上下文与 artifact 规则
 
