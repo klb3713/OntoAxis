@@ -1,0 +1,82 @@
+syntax = "proto3";
+package ontoaxis.v1.datasets;
+
+import "google/protobuf/struct.proto";
+import "ontoaxis/v1/common/types.proto";
+import "ontoaxis/v1/datasets/schema.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/datasets;datasetsv1";
+
+service DatasetService {
+  rpc CreateDataset(CreateDatasetRequest) returns (Dataset);
+  rpc GetDataset(GetDatasetRequest) returns (Dataset);
+  rpc ListDatasets(ListDatasetsRequest) returns (ListDatasetsResponse);
+  rpc UpdateDataset(UpdateDatasetRequest) returns (Dataset);
+  rpc DeleteDataset(DeleteDatasetRequest) returns (DeleteDatasetResponse);
+  rpc PreviewData(PreviewDataRequest) returns (PreviewDataResponse);
+  rpc ListVersions(ListVersionsRequest) returns (ListVersionsResponse);
+}
+enum DatasetFormat {
+  DATASET_FORMAT_UNSPECIFIED = 0;
+  DATASET_FORMAT_ICEBERG = 1;
+  DATASET_FORMAT_PARQUET = 2;
+}
+message Dataset {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  string description = 4;
+  string owner_id = 5;
+  DatasetFormat format = 6;
+  string storage_location = 7;
+  ontoaxis.v1.common.Timestamps timestamps = 8;
+}
+message DatasetVersion {
+  string id = 1;
+  string dataset_id = 2;
+  int64 row_count = 3;
+  int64 size_bytes = 4;
+  string created_by = 5;
+  ontoaxis.v1.common.Timestamps timestamps = 6;
+}
+message PreviewDataRequest {
+  string dataset_id = 1;
+  int32 limit = 2;
+}
+message PreviewDataResponse {
+  Schema schema = 1;
+  repeated google.protobuf.Struct rows = 2;
+}
+message CreateDatasetRequest {
+  string name = 1;
+  string display_name = 2;
+  string description = 3;
+  DatasetFormat format = 4;
+}
+message GetDatasetRequest {
+  string id = 1;
+}
+message ListDatasetsRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListDatasetsResponse {
+  repeated Dataset datasets = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdateDatasetRequest {
+  string id = 1;
+  string display_name = 2;
+  string description = 3;
+}
+message DeleteDatasetRequest {
+  string id = 1;
+}
+message DeleteDatasetResponse {}
+message ListVersionsRequest {
+  string dataset_id = 1;
+  ontoaxis.v1.common.PageRequest page = 2;
+}
+message ListVersionsResponse {
+  repeated DatasetVersion versions = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}

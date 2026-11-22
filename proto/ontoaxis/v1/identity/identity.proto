@@ -1,0 +1,40 @@
+syntax = "proto3";
+package ontoaxis.v1.identity;
+
+import "google/protobuf/timestamp.proto";
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/identity;identityv1";
+
+service IdentityService {
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+  rpc GetTenantContext(GetTenantContextRequest) returns (TenantContext);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+}
+message User {
+  string id = 1;
+  string email = 2;
+  string display_name = 3;
+  string organization_id = 4;
+  string tenant_id = 5;
+  repeated string roles = 6;
+  map<string, string> attributes = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+message GetMeRequest {}
+message GetMeResponse {
+  User user = 1;
+}
+message GetTenantContextRequest {}
+message TenantContext {
+  string organization_id = 1;
+  string tenant_id = 2;
+  repeated string roles = 3;
+}
+message ListUsersRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListUsersResponse {
+  repeated User users = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}

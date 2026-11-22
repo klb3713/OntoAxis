@@ -1,0 +1,55 @@
+syntax = "proto3";
+package ontoaxis.v1.pipelines;
+
+import "google/protobuf/struct.proto";
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/pipelines;pipelinesv1";
+
+service ScheduleService {
+  rpc CreateSchedule(CreateScheduleRequest) returns (Schedule);
+  rpc GetSchedule(GetScheduleRequest) returns (Schedule);
+  rpc ListSchedules(ListSchedulesRequest) returns (ListSchedulesResponse);
+  rpc UpdateSchedule(UpdateScheduleRequest) returns (Schedule);
+  rpc DeleteSchedule(DeleteScheduleRequest) returns (DeleteScheduleResponse);
+  rpc PauseSchedule(PauseScheduleRequest) returns (Schedule);
+  rpc ResumeSchedule(ResumeScheduleRequest) returns (Schedule);
+}
+message Schedule {
+  string id = 1;
+  string name = 2;
+  string pipeline_id = 3;
+  string cron = 4;
+  bool paused = 5;
+  google.protobuf.Struct target = 6;
+  ontoaxis.v1.common.Timestamps timestamps = 7;
+}
+message CreateScheduleRequest {
+  string name = 1;
+  string pipeline_id = 2;
+  string cron = 3;
+}
+message GetScheduleRequest {
+  string id = 1;
+}
+message ListSchedulesRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListSchedulesResponse {
+  repeated Schedule schedules = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdateScheduleRequest {
+  string id = 1;
+  string cron = 2;
+}
+message DeleteScheduleRequest {
+  string id = 1;
+}
+message DeleteScheduleResponse {}
+message PauseScheduleRequest {
+  string id = 1;
+}
+message ResumeScheduleRequest {
+  string id = 1;
+}

@@ -1,0 +1,100 @@
+syntax = "proto3";
+package ontoaxis.v1.actions;
+
+import "google/protobuf/struct.proto";
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/actions;actionsv1";
+
+service ActionService {
+  rpc CreateActionType(CreateActionTypeRequest) returns (ActionType);
+  rpc GetActionType(GetActionTypeRequest) returns (ActionType);
+  rpc ListActionTypes(ListActionTypesRequest) returns (ListActionTypesResponse);
+  rpc UpdateActionType(UpdateActionTypeRequest) returns (ActionType);
+  rpc DeleteActionType(DeleteActionTypeRequest) returns (DeleteActionTypeResponse);
+  rpc ValidateAction(ValidateActionRequest) returns (ValidateActionResponse);
+  rpc PreviewAction(PreviewActionRequest) returns (PreviewActionResponse);
+  rpc RunAction(RunActionRequest) returns (ActionExecution);
+  rpc GetActionExecution(GetActionExecutionRequest) returns (ActionExecution);
+  rpc ListActionExecutions(ListActionExecutionsRequest) returns (ListActionExecutionsResponse);
+  rpc CancelActionExecution(CancelActionExecutionRequest) returns (ActionExecution);
+  rpc RetryActionExecution(RetryActionExecutionRequest) returns (ActionExecution);
+}
+message ActionType {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  string description = 4;
+  google.protobuf.Struct parameters = 5;
+  ontoaxis.v1.common.Timestamps timestamps = 6;
+}
+message ActionExecution {
+  string id = 1;
+  string action_type_id = 2;
+  string status = 3;
+  google.protobuf.Struct parameters = 4;
+  google.protobuf.Struct result = 5;
+  string error = 6;
+  ontoaxis.v1.common.Timestamps timestamps = 7;
+}
+message CreateActionTypeRequest {
+  string name = 1;
+  string display_name = 2;
+  string description = 3;
+  google.protobuf.Struct parameters = 4;
+}
+message GetActionTypeRequest {
+  string id = 1;
+}
+message ListActionTypesRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListActionTypesResponse {
+  repeated ActionType action_types = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdateActionTypeRequest {
+  string id = 1;
+  string display_name = 2;
+  google.protobuf.Struct parameters = 3;
+}
+message DeleteActionTypeRequest {
+  string id = 1;
+}
+message DeleteActionTypeResponse {}
+message ValidateActionRequest {
+  string action_type_id = 1;
+  google.protobuf.Struct parameters = 2;
+}
+message ValidateActionResponse {
+  bool valid = 1;
+  repeated string errors = 2;
+}
+message PreviewActionRequest {
+  string action_type_id = 1;
+  google.protobuf.Struct parameters = 2;
+}
+message PreviewActionResponse {
+  google.protobuf.Struct preview = 1;
+}
+message RunActionRequest {
+  string action_type_id = 1;
+  google.protobuf.Struct parameters = 2;
+}
+message GetActionExecutionRequest {
+  string id = 1;
+}
+message ListActionExecutionsRequest {
+  string action_type_id = 1;
+  ontoaxis.v1.common.PageRequest page = 2;
+}
+message ListActionExecutionsResponse {
+  repeated ActionExecution executions = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message CancelActionExecutionRequest {
+  string id = 1;
+}
+message RetryActionExecutionRequest {
+  string id = 1;
+}

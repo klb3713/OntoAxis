@@ -1,0 +1,32 @@
+syntax = "proto3";
+package ontoaxis.v1.audit;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/audit;auditv1";
+
+service AuditService {
+  rpc ListAuditEvents(ListAuditEventsRequest) returns (ListAuditEventsResponse);
+  rpc GetAuditEvent(GetAuditEventRequest) returns (AuditEvent);
+}
+message AuditEvent {
+  string id = 1;
+  string event_type = 2;
+  string actor_id = 3;
+  string resource_type = 4;
+  string resource_id = 5;
+  google.protobuf.Struct payload = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+message ListAuditEventsRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListAuditEventsResponse {
+  repeated AuditEvent events = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message GetAuditEventRequest {
+  string id = 1;
+}

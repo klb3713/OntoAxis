@@ -1,0 +1,35 @@
+syntax = "proto3";
+package ontoaxis.v1.datasets;
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/datasets;datasetsv1";
+
+enum FieldType {
+  FIELD_TYPE_UNSPECIFIED = 0;
+  FIELD_TYPE_BOOLEAN = 1;
+  FIELD_TYPE_INT32 = 2;
+  FIELD_TYPE_INT64 = 3;
+  FIELD_TYPE_FLOAT = 4;
+  FIELD_TYPE_DOUBLE = 5;
+  FIELD_TYPE_STRING = 6;
+  FIELD_TYPE_BINARY = 7;
+  FIELD_TYPE_DATE = 8;
+  FIELD_TYPE_TIMESTAMP = 9;
+  FIELD_TYPE_DECIMAL = 10;
+  FIELD_TYPE_STRUCT = 11;
+  FIELD_TYPE_ARRAY = 12;
+  FIELD_TYPE_MAP = 13;
+}
+message Field {
+  string name = 1;
+  string display_name = 2;
+  FieldType type = 3;
+  bool required = 4;
+  bool unique_constraint = 5;
+}
+message Schema {
+  repeated Field fields = 1;
+}
+message CsvOptions {
+  string delimiter = 1;
+  bool has_header = 2;
+}

@@ -1,0 +1,51 @@
+syntax = "proto3";
+package ontoaxis.v1.ingestion;
+
+import "google/protobuf/timestamp.proto";
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/ingestion;ingestionv1";
+
+service IngestJobService {
+  rpc CreateIngestJob(CreateIngestJobRequest) returns (IngestJob);
+  rpc GetIngestJob(GetIngestJobRequest) returns (IngestJob);
+  rpc ListIngestJobs(ListIngestJobsRequest) returns (ListIngestJobsResponse);
+  rpc CancelIngestJob(CancelIngestJobRequest) returns (IngestJob);
+  rpc WatchIngestJob(WatchIngestJobRequest) returns (stream IngestJob);
+}
+enum IngestJobStatus {
+  INGEST_JOB_STATUS_UNSPECIFIED = 0;
+  INGEST_JOB_STATUS_QUEUED = 1;
+  INGEST_JOB_STATUS_RUNNING = 2;
+  INGEST_JOB_STATUS_SUCCEEDED = 3;
+  INGEST_JOB_STATUS_FAILED = 4;
+  INGEST_JOB_STATUS_CANCELLED = 5;
+}
+message IngestJob {
+  string id = 1;
+  string connector_id = 2;
+  IngestJobStatus status = 3;
+  string message = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Timestamp finished_at = 6;
+}
+message CreateIngestJobRequest {
+  string connector_id = 1;
+}
+message GetIngestJobRequest {
+  string id = 1;
+}
+message ListIngestJobsRequest {
+  string connector_id = 1;
+  ontoaxis.v1.common.PageRequest page = 2;
+}
+message ListIngestJobsResponse {
+  repeated IngestJob jobs = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message CancelIngestJobRequest {
+  string id = 1;
+}
+message WatchIngestJobRequest {
+  string id = 1;
+}

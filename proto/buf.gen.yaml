@@ -1,0 +1,20 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/klb3713/ontoaxis/gen
+inputs:
+  - directory: .
+plugins:
+  # Run from the repo root: `cd proto && buf generate`.
+  - local: protoc-gen-go
+    out: ../gen
+    opt: paths=source_relative
+  - local: protoc-gen-connect-go
+    out: ../gen
+    opt: paths=source_relative
+  - local: protoc-gen-openapi
+    out: ../openapi
+  - local: protoc-gen-es
+    out: ../web/src/generated

@@ -1,0 +1,32 @@
+syntax = "proto3";
+package ontoaxis.v1.common;
+
+import "google/protobuf/timestamp.proto";
+import "ontoaxis/v1/common/errors.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/common;commonv1";
+
+enum OperationStatus {
+  OPERATION_STATUS_UNSPECIFIED = 0;
+  OPERATION_STATUS_PENDING = 1;
+  OPERATION_STATUS_RUNNING = 2;
+  OPERATION_STATUS_SUCCEEDED = 3;
+  OPERATION_STATUS_FAILED = 4;
+  OPERATION_STATUS_CANCELLED = 5;
+}
+message Operation {
+  string id = 1;
+  OperationStatus status = 2;
+  int32 progress_percent = 3;
+  string resource_type = 4;
+  string resource_id = 5;
+  ErrorDetail error = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+service OperationService {
+  rpc GetOperation(GetOperationRequest) returns (Operation);
+}
+message GetOperationRequest {
+  string id = 1;
+}

@@ -1,0 +1,41 @@
+syntax = "proto3";
+package ontoaxis.v1.authorization;
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/authorization;authorizationv1";
+
+service AuthorizationService {
+  rpc Check(CheckRequest) returns (CheckResponse);
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse);
+  rpc Explain(ExplainRequest) returns (ExplainResponse);
+}
+message CheckRequest {
+  string user_id = 1;
+  string relation = 2;
+  string object_type = 3;
+  string object_id = 4;
+  string tenant_id = 5;
+}
+message CheckResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+message ListPermissionsRequest {
+  string user_id = 1;
+  string object_type = 2;
+  string object_id = 3;
+}
+message ListPermissionsResponse {
+  repeated string permissions = 1;
+}
+message ExplainRequest {
+  string user_id = 1;
+  string relation = 2;
+  string object_type = 3;
+  string object_id = 4;
+  string tenant_id = 5;
+}
+message ExplainResponse {
+  bool allowed = 1;
+  repeated string matched_policies = 2;
+  string explanation = 3;
+}

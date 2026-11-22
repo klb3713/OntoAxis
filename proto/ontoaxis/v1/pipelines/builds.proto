@@ -1,0 +1,42 @@
+syntax = "proto3";
+package ontoaxis.v1.pipelines;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/pipelines;pipelinesv1";
+
+enum BuildState {
+  BUILD_STATE_UNSPECIFIED = 0;
+  BUILD_STATE_QUEUED = 1;
+  BUILD_STATE_RUNNING = 2;
+  BUILD_STATE_SUCCEEDED = 3;
+  BUILD_STATE_FAILED = 4;
+  BUILD_STATE_CANCELLED = 5;
+}
+enum JobState {
+  JOB_STATE_UNSPECIFIED = 0;
+  JOB_STATE_PENDING = 1;
+  JOB_STATE_RUNNING = 2;
+  JOB_STATE_SUCCEEDED = 3;
+  JOB_STATE_FAILED = 4;
+}
+message Build {
+  string id = 1;
+  string pipeline_id = 2;
+  BuildState state = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+message Job {
+  string id = 1;
+  string build_id = 2;
+  JobState state = 3;
+  string message = 4;
+}
+message JobSpec {
+  string image = 1;
+  repeated string command = 2;
+}
+message InputSpec {
+  string dataset_id = 1;
+  string branch_id = 2;
+}

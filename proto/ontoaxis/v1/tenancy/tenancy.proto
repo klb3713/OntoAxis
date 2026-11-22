@@ -1,0 +1,183 @@
+syntax = "proto3";
+package ontoaxis.v1.tenancy;
+
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/tenancy;tenancyv1";
+
+service TenancyService {
+  rpc CreateOrganization(CreateOrganizationRequest) returns (Organization);
+  rpc GetOrganization(GetOrganizationRequest) returns (Organization);
+  rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse);
+  rpc UpdateOrganization(UpdateOrganizationRequest) returns (Organization);
+  rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse);
+  rpc CreateWorkspace(CreateWorkspaceRequest) returns (Workspace);
+  rpc GetWorkspace(GetWorkspaceRequest) returns (Workspace);
+  rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse);
+  rpc UpdateWorkspace(UpdateWorkspaceRequest) returns (Workspace);
+  rpc DeleteWorkspace(DeleteWorkspaceRequest) returns (DeleteWorkspaceResponse);
+  rpc AddMembership(AddMembershipRequest) returns (Membership);
+  rpc ListMemberships(ListMembershipsRequest) returns (ListMembershipsResponse);
+  rpc RemoveMembership(RemoveMembershipRequest) returns (RemoveMembershipResponse);
+  rpc CreateProject(CreateProjectRequest) returns (Project);
+  rpc GetProject(GetProjectRequest) returns (Project);
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+  rpc UpdateProject(UpdateProjectRequest) returns (Project);
+  rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
+  rpc AddProjectResource(AddProjectResourceRequest) returns (ProjectResource);
+  rpc ListProjectResources(ListProjectResourcesRequest) returns (ListProjectResourcesResponse);
+  rpc RemoveProjectResource(RemoveProjectResourceRequest) returns (RemoveProjectResourceResponse);
+}
+message Organization {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  string description = 4;
+  string owner_id = 5;
+  ontoaxis.v1.common.Timestamps timestamps = 6;
+}
+message Workspace {
+  string id = 1;
+  string organization_id = 2;
+  string name = 3;
+  string display_name = 4;
+  string description = 5;
+  ontoaxis.v1.common.Timestamps timestamps = 6;
+}
+message Membership {
+  string id = 1;
+  string organization_id = 2;
+  string user_id = 3;
+  string role = 4;
+  string status = 5;
+  ontoaxis.v1.common.Timestamps timestamps = 6;
+}
+message Project {
+  string id = 1;
+  string organization_id = 2;
+  string workspace_id = 3;
+  string name = 4;
+  string display_name = 5;
+  string description = 6;
+  string owner_id = 7;
+  ontoaxis.v1.common.Timestamps timestamps = 8;
+}
+message ProjectResource {
+  string id = 1;
+  string project_id = 2;
+  string resource_type = 3;
+  string resource_id = 4;
+  ontoaxis.v1.common.Timestamps timestamps = 5;
+}
+message CreateOrganizationRequest {
+  string name = 1;
+  string display_name = 2;
+  string description = 3;
+}
+message GetOrganizationRequest {
+  string id = 1;
+}
+message ListOrganizationsRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListOrganizationsResponse {
+  repeated Organization organizations = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdateOrganizationRequest {
+  string id = 1;
+  string display_name = 2;
+  string description = 3;
+}
+message DeleteOrganizationRequest {
+  string id = 1;
+}
+message DeleteOrganizationResponse {}
+message CreateWorkspaceRequest {
+  string organization_id = 1;
+  string name = 2;
+  string display_name = 3;
+  string description = 4;
+}
+message GetWorkspaceRequest {
+  string id = 1;
+}
+message ListWorkspacesRequest {
+  string organization_id = 1;
+  ontoaxis.v1.common.PageRequest page = 2;
+}
+message ListWorkspacesResponse {
+  repeated Workspace workspaces = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdateWorkspaceRequest {
+  string id = 1;
+  string display_name = 2;
+  string description = 3;
+}
+message DeleteWorkspaceRequest {
+  string id = 1;
+}
+message DeleteWorkspaceResponse {}
+message AddMembershipRequest {
+  string organization_id = 1;
+  string user_id = 2;
+  string role = 3;
+}
+message ListMembershipsRequest {
+  string organization_id = 1;
+  ontoaxis.v1.common.PageRequest page = 2;
+}
+message ListMembershipsResponse {
+  repeated Membership memberships = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message RemoveMembershipRequest {
+  string id = 1;
+}
+message RemoveMembershipResponse {}
+message CreateProjectRequest {
+  string organization_id = 1;
+  string workspace_id = 2;
+  string name = 3;
+  string display_name = 4;
+  string description = 5;
+}
+message GetProjectRequest {
+  string id = 1;
+}
+message ListProjectsRequest {
+  string organization_id = 1;
+  string workspace_id = 2;
+  ontoaxis.v1.common.PageRequest page = 3;
+}
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdateProjectRequest {
+  string id = 1;
+  string display_name = 2;
+  string description = 3;
+}
+message DeleteProjectRequest {
+  string id = 1;
+}
+message DeleteProjectResponse {}
+message AddProjectResourceRequest {
+  string project_id = 1;
+  string resource_type = 2;
+  string resource_id = 3;
+}
+message ListProjectResourcesRequest {
+  string project_id = 1;
+  ontoaxis.v1.common.PageRequest page = 2;
+}
+message ListProjectResourcesResponse {
+  repeated ProjectResource resources = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message RemoveProjectResourceRequest {
+  string id = 1;
+}
+message RemoveProjectResourceResponse {}

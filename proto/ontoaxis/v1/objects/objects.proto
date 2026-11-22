@@ -1,0 +1,83 @@
+syntax = "proto3";
+package ontoaxis.v1.objects;
+
+import "google/protobuf/struct.proto";
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/objects;objectsv1";
+
+service ObjectService {
+  rpc GetObject(GetObjectRequest) returns (Object);
+  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse);
+  rpc CreateObject(CreateObjectRequest) returns (Object);
+  rpc UpdateObject(UpdateObjectRequest) returns (Object);
+  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse);
+  rpc BatchUpsertObjects(BatchUpsertObjectsRequest) returns (BatchUpsertObjectsResponse);
+  rpc GetObjectLink(GetObjectLinkRequest) returns (ObjectLink);
+  rpc ListObjectLinks(ListObjectLinksRequest) returns (ListObjectLinksResponse);
+  rpc CreateObjectLink(CreateObjectLinkRequest) returns (ObjectLink);
+  rpc DeleteObjectLink(DeleteObjectLinkRequest) returns (DeleteObjectLinkResponse);
+}
+message Object {
+  string id = 1;
+  string object_type_id = 2;
+  google.protobuf.Struct properties = 3;
+  int64 version = 4;
+  ontoaxis.v1.common.Timestamps timestamps = 5;
+}
+message ObjectLink {
+  string id = 1;
+  string source_id = 2;
+  string target_id = 3;
+  string link_type_id = 4;
+  google.protobuf.Struct properties = 5;
+}
+message GetObjectRequest {
+  string id = 1;
+}
+message ListObjectsRequest {
+  string object_type_id = 1;
+  ontoaxis.v1.common.PageRequest page = 2;
+}
+message ListObjectsResponse {
+  repeated Object objects = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message CreateObjectRequest {
+  string object_type_id = 1;
+  google.protobuf.Struct properties = 2;
+}
+message UpdateObjectRequest {
+  string id = 1;
+  google.protobuf.Struct properties = 2;
+}
+message DeleteObjectRequest {
+  string id = 1;
+}
+message DeleteObjectResponse {}
+message BatchUpsertObjectsRequest {
+  repeated CreateObjectRequest objects = 1;
+}
+message BatchUpsertObjectsResponse {
+  repeated Object objects = 1;
+}
+message GetObjectLinkRequest {
+  string id = 1;
+}
+message ListObjectLinksRequest {
+  string source_id = 1;
+  string target_id = 2;
+}
+message ListObjectLinksResponse {
+  repeated ObjectLink links = 1;
+}
+message CreateObjectLinkRequest {
+  string source_id = 1;
+  string target_id = 2;
+  string link_type_id = 3;
+  google.protobuf.Struct properties = 4;
+}
+message DeleteObjectLinkRequest {
+  string id = 1;
+}
+message DeleteObjectLinkResponse {}

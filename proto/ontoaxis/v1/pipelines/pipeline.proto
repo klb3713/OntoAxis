@@ -1,0 +1,93 @@
+syntax = "proto3";
+package ontoaxis.v1.pipelines;
+
+import "google/protobuf/struct.proto";
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/pipelines;pipelinesv1";
+
+service PipelineService {
+  rpc CreatePipeline(CreatePipelineRequest) returns (Pipeline);
+  rpc GetPipeline(GetPipelineRequest) returns (Pipeline);
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse);
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (Pipeline);
+  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse);
+  rpc PublishPipeline(PublishPipelineRequest) returns (Pipeline);
+  rpc TriggerPipelineRun(TriggerPipelineRunRequest) returns (PipelineRun);
+  rpc GetPipelineRun(GetPipelineRunRequest) returns (PipelineRun);
+  rpc ListPipelineRuns(ListPipelineRunsRequest) returns (ListPipelineRunsResponse);
+}
+enum PipelineType {
+  PIPELINE_TYPE_UNSPECIFIED = 0;
+  PIPELINE_TYPE_BATCH = 1;
+  PIPELINE_TYPE_FASTER = 2;
+  PIPELINE_TYPE_INCREMENTAL = 3;
+}
+enum PipelineRunStatus {
+  PIPELINE_RUN_STATUS_UNSPECIFIED = 0;
+  PIPELINE_RUN_STATUS_QUEUED = 1;
+  PIPELINE_RUN_STATUS_RUNNING = 2;
+  PIPELINE_RUN_STATUS_SUCCEEDED = 3;
+  PIPELINE_RUN_STATUS_FAILED = 4;
+  PIPELINE_RUN_STATUS_CANCELLED = 5;
+}
+message Pipeline {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  string description = 4;
+  PipelineType type = 5;
+  google.protobuf.Struct definition = 6;
+  ontoaxis.v1.common.Timestamps timestamps = 7;
+}
+message PipelineRun {
+  string id = 1;
+  string pipeline_id = 2;
+  PipelineRunStatus status = 3;
+  string message = 4;
+  ontoaxis.v1.common.Timestamps timestamps = 5;
+}
+message CreatePipelineRequest {
+  string name = 1;
+  string display_name = 2;
+  string description = 3;
+  PipelineType type = 4;
+  google.protobuf.Struct definition = 5;
+}
+message GetPipelineRequest {
+  string id = 1;
+}
+message ListPipelinesRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListPipelinesResponse {
+  repeated Pipeline pipelines = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdatePipelineRequest {
+  string id = 1;
+  string display_name = 2;
+  string description = 3;
+  google.protobuf.Struct definition = 4;
+}
+message DeletePipelineRequest {
+  string id = 1;
+}
+message DeletePipelineResponse {}
+message PublishPipelineRequest {
+  string id = 1;
+}
+message TriggerPipelineRunRequest {
+  string id = 1;
+}
+message GetPipelineRunRequest {
+  string id = 1;
+}
+message ListPipelineRunsRequest {
+  string pipeline_id = 1;
+  ontoaxis.v1.common.PageRequest page = 2;
+}
+message ListPipelineRunsResponse {
+  repeated PipelineRun runs = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}

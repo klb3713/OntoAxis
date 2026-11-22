@@ -1,0 +1,52 @@
+syntax = "proto3";
+package ontoaxis.v1.query;
+
+import "google/protobuf/struct.proto";
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/query;queryv1";
+
+service QueryService {
+  rpc ExecuteQuery(ExecuteQueryRequest) returns (QueryResult);
+  rpc ExplainQuery(ExplainQueryRequest) returns (ExplainQueryResponse);
+  rpc SaveQuery(SaveQueryRequest) returns (SavedQuery);
+  rpc ListSavedQueries(ListSavedQueriesRequest) returns (ListSavedQueriesResponse);
+  rpc DeleteSavedQuery(DeleteSavedQueryRequest) returns (DeleteSavedQueryResponse);
+}
+message QueryResult {
+  repeated string columns = 1;
+  repeated google.protobuf.Struct rows = 2;
+  int64 row_count = 3;
+}
+message ExecuteQueryRequest {
+  string sql = 1;
+  int32 limit = 2;
+}
+message ExplainQueryRequest {
+  string sql = 1;
+}
+message ExplainQueryResponse {
+  string plan = 1;
+}
+message SavedQuery {
+  string id = 1;
+  string name = 2;
+  string sql = 3;
+  string owner_id = 4;
+  ontoaxis.v1.common.Timestamps timestamps = 5;
+}
+message SaveQueryRequest {
+  string name = 1;
+  string sql = 2;
+}
+message ListSavedQueriesRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListSavedQueriesResponse {
+  repeated SavedQuery queries = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message DeleteSavedQueryRequest {
+  string id = 1;
+}
+message DeleteSavedQueryResponse {}

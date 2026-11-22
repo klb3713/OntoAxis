@@ -1,0 +1,86 @@
+syntax = "proto3";
+package ontoaxis.v1.connectors;
+
+import "google/protobuf/struct.proto";
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/connectors;connectorsv1";
+
+service ConnectorService {
+  rpc CreateConnector(CreateConnectorRequest) returns (Connector);
+  rpc GetConnector(GetConnectorRequest) returns (Connector);
+  rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse);
+  rpc UpdateConnector(UpdateConnectorRequest) returns (Connector);
+  rpc DeleteConnector(DeleteConnectorRequest) returns (DeleteConnectorResponse);
+  rpc TestConnector(TestConnectorRequest) returns (TestConnectorResponse);
+  rpc StartSync(StartSyncRequest) returns (StartSyncResponse);
+  rpc InferSchema(InferSchemaRequest) returns (InferSchemaResponse);
+}
+enum ConnectorType {
+  CONNECTOR_TYPE_UNSPECIFIED = 0;
+  CONNECTOR_TYPE_POSTGRES = 1;
+  CONNECTOR_TYPE_MYSQL = 2;
+  CONNECTOR_TYPE_S3 = 3;
+  CONNECTOR_TYPE_REST_API = 4;
+  CONNECTOR_TYPE_KAFKA = 5;
+}
+enum ConnectorStatus {
+  CONNECTOR_STATUS_UNSPECIFIED = 0;
+  CONNECTOR_STATUS_ACTIVE = 1;
+  CONNECTOR_STATUS_PAUSED = 2;
+  CONNECTOR_STATUS_ERROR = 3;
+}
+message Connector {
+  string id = 1;
+  string name = 2;
+  ConnectorType type = 3;
+  google.protobuf.Struct config = 4;
+  ConnectorStatus status = 5;
+  repeated string tags = 6;
+  ontoaxis.v1.common.Timestamps timestamps = 7;
+}
+message CreateConnectorRequest {
+  string name = 1;
+  ConnectorType type = 2;
+  google.protobuf.Struct config = 3;
+  repeated string tags = 4;
+}
+message GetConnectorRequest {
+  string id = 1;
+}
+message ListConnectorsRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListConnectorsResponse {
+  repeated Connector connectors = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdateConnectorRequest {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Struct config = 3;
+  ConnectorStatus status = 4;
+}
+message DeleteConnectorRequest {
+  string id = 1;
+}
+message DeleteConnectorResponse {}
+message TestConnectorRequest {
+  string id = 1;
+}
+message TestConnectorResponse {
+  bool ok = 1;
+  string message = 2;
+}
+message StartSyncRequest {
+  string connector_id = 1;
+}
+message StartSyncResponse {
+  string job_id = 1;
+}
+message InferSchemaRequest {
+  string connector_id = 1;
+}
+message InferSchemaResponse {
+  google.protobuf.Struct schema = 1;
+}

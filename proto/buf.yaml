@@ -1,0 +1,19 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+  except:
+    # The API version is intentionally before the domain segment:
+    # ontoaxis.v1.<domain>. Keep this convention stable for all v1 files.
+    - PACKAGE_VERSION_SUFFIX
+    # These initial contracts intentionally return domain resources directly
+    # instead of generating one wrapper message per RPC. Revisit when the
+    # API surface is frozen.
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
+    - RPC_REQUEST_RESPONSE_UNIQUE
+breaking:
+  use:
+    - FILE

@@ -1,0 +1,133 @@
+syntax = "proto3";
+package ontoaxis.v1.ontology;
+
+import "ontoaxis/v1/common/types.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/ontology;ontologyv1";
+
+service OntologyService {
+  rpc CreateObjectType(CreateObjectTypeRequest) returns (ObjectType);
+  rpc GetObjectType(GetObjectTypeRequest) returns (ObjectType);
+  rpc ListObjectTypes(ListObjectTypesRequest) returns (ListObjectTypesResponse);
+  rpc UpdateObjectType(UpdateObjectTypeRequest) returns (ObjectType);
+  rpc DeleteObjectType(DeleteObjectTypeRequest) returns (DeleteObjectTypeResponse);
+  rpc CreateProperty(CreatePropertyRequest) returns (Property);
+  rpc ListProperties(ListPropertiesRequest) returns (ListPropertiesResponse);
+  rpc UpdateProperty(UpdatePropertyRequest) returns (Property);
+  rpc DeleteProperty(DeletePropertyRequest) returns (DeletePropertyResponse);
+  rpc CreateLinkType(CreateLinkTypeRequest) returns (LinkType);
+  rpc ListLinkTypes(ListLinkTypesRequest) returns (ListLinkTypesResponse);
+  rpc UpdateLinkType(UpdateLinkTypeRequest) returns (LinkType);
+  rpc DeleteLinkType(DeleteLinkTypeRequest) returns (DeleteLinkTypeResponse);
+  rpc BindDataset(BindDatasetRequest) returns (ObjectType);
+  rpc UnbindDataset(UnbindDatasetRequest) returns (ObjectType);
+  rpc MaterializeBinding(MaterializeBindingRequest) returns (MaterializeBindingResponse);
+}
+message ObjectType {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  string description = 4;
+  string primary_key_property = 5;
+  repeated Property properties = 6;
+  ontoaxis.v1.common.Timestamps timestamps = 7;
+}
+message Property {
+  string id = 1;
+  string object_type_id = 2;
+  string name = 3;
+  string display_name = 4;
+  string description = 5;
+  string property_type = 6;
+  bool required = 7;
+  bool unique_constraint = 8;
+}
+message LinkType {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  string source_type_id = 4;
+  string target_type_id = 5;
+}
+message CreateObjectTypeRequest {
+  string name = 1;
+  string display_name = 2;
+  string description = 3;
+  string primary_key_property = 4;
+}
+message GetObjectTypeRequest {
+  string id = 1;
+}
+message ListObjectTypesRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListObjectTypesResponse {
+  repeated ObjectType object_types = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdateObjectTypeRequest {
+  string id = 1;
+  string display_name = 2;
+  string description = 3;
+}
+message DeleteObjectTypeRequest {
+  string id = 1;
+}
+message DeleteObjectTypeResponse {}
+message CreatePropertyRequest {
+  string object_type_id = 1;
+  string name = 2;
+  string display_name = 3;
+  string property_type = 4;
+  bool required = 5;
+}
+message ListPropertiesRequest {
+  string object_type_id = 1;
+}
+message ListPropertiesResponse {
+  repeated Property properties = 1;
+}
+message UpdatePropertyRequest {
+  string id = 1;
+  string display_name = 2;
+  bool required = 3;
+}
+message DeletePropertyRequest {
+  string id = 1;
+}
+message DeletePropertyResponse {}
+message CreateLinkTypeRequest {
+  string name = 1;
+  string display_name = 2;
+  string source_type_id = 3;
+  string target_type_id = 4;
+}
+message ListLinkTypesRequest {
+  ontoaxis.v1.common.PageRequest page = 1;
+}
+message ListLinkTypesResponse {
+  repeated LinkType link_types = 1;
+  ontoaxis.v1.common.PageResponse page = 2;
+}
+message UpdateLinkTypeRequest {
+  string id = 1;
+  string display_name = 2;
+}
+message DeleteLinkTypeRequest {
+  string id = 1;
+}
+message DeleteLinkTypeResponse {}
+message BindDatasetRequest {
+  string object_type_id = 1;
+  string dataset_id = 2;
+  string sync_mode = 3;
+}
+message UnbindDatasetRequest {
+  string object_type_id = 1;
+}
+message MaterializeBindingRequest {
+  string object_type_id = 1;
+}
+message MaterializeBindingResponse {
+  string operation_id = 1;
+}

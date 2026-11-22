@@ -1,0 +1,32 @@
+syntax = "proto3";
+package ontoaxis.v1.pipelines;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/pipelines;pipelinesv1";
+
+service ScheduleRunsService {
+  rpc ListScheduleRuns(ListScheduleRunsRequest) returns (ListScheduleRunsResponse);
+  rpc GetScheduleRun(GetScheduleRunRequest) returns (ScheduleRun);
+}
+enum RunOutcome {
+  RUN_OUTCOME_UNSPECIFIED = 0;
+  RUN_OUTCOME_SUCCEEDED = 1;
+  RUN_OUTCOME_FAILED = 2;
+  RUN_OUTCOME_SKIPPED = 3;
+}
+message ScheduleRun {
+  string id = 1;
+  string schedule_id = 2;
+  RunOutcome outcome = 3;
+  google.protobuf.Timestamp started_at = 4;
+}
+message ListScheduleRunsRequest {
+  string schedule_id = 1;
+}
+message ListScheduleRunsResponse {
+  repeated ScheduleRun runs = 1;
+}
+message GetScheduleRunRequest {
+  string id = 1;
+}

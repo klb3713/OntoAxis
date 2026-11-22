@@ -1,0 +1,45 @@
+syntax = "proto3";
+package ontoaxis.v1.datasets;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/klb3713/ontoaxis/gen/ontoaxis/v1/datasets;datasetsv1";
+
+enum TransactionStatus {
+  TRANSACTION_STATUS_UNSPECIFIED = 0;
+  TRANSACTION_STATUS_OPEN = 1;
+  TRANSACTION_STATUS_COMMITTED = 2;
+  TRANSACTION_STATUS_ABORTED = 3;
+}
+message Branch {
+  string id = 1;
+  string dataset_id = 2;
+  string name = 3;
+  string parent_branch_id = 4;
+  string head_transaction_id = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+message DatasetTransaction {
+  string id = 1;
+  string dataset_id = 2;
+  string branch_id = 3;
+  TransactionStatus status = 4;
+  string message = 5;
+  google.protobuf.Timestamp started_at = 6;
+  google.protobuf.Timestamp committed_at = 7;
+}
+message CreateBranchRequest {
+  string dataset_id = 1;
+  string name = 2;
+  string parent_branch_id = 3;
+}
+message BeginTransactionRequest {
+  string dataset_id = 1;
+  string branch_id = 2;
+}
+message CommitTransactionRequest {
+  string transaction_id = 1;
+}
+message AbortTransactionRequest {
+  string transaction_id = 1;
+}
