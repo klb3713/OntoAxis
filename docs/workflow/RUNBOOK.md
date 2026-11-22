@@ -179,7 +179,7 @@ openspec status --change <change-name>
 
 - 当前 Stage：Stage 1 已退出（exited，2026-11-22；见 `docs/stages/stage-1-ontoaxis-core-brief.md` 与 `stage-1-exit-report.md`）
 - 当前 change：无 active change；12 个 Stage 1 change 已归档到 `openspec/changes/archive/`
-- 主规格：`openspec/specs/` 下 10 个 capability spec 已由归档 change 写入
+- 主规格：`openspec/specs/` 下 11 个 capability spec 已由归档 change 写入
 - 未决事项：Stage 2 的范围、AC 与授权尚未定义
 
 ## 11. 技能分工

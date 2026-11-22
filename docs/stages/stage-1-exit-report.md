@@ -1,6 +1,6 @@
 # Stage 1 退出报告（已批准）
 
-状态：`exited` —— 负责人已于 2026-11-22 批准 Stage 1 退出；12 个 change 已归档，10 个 capability spec 已写入主规格。
+状态：`exited` —— 负责人已于 2026-11-22 批准 Stage 1 退出；12 个 change 已归档，11 个 capability spec 已写入主规格。
 日期：2026-11-22
 
 ## 1. Stage 范围
@@ -36,4 +36,4 @@
 
 ## 4. 结论
 
-Stage 1 的实现、change 级任务、本地验收与 GitHub Actions 实跑均已完成；12 个 change 已全部归档，10 个 capability spec 已写入主规格，`openspec validate --all --strict` 通过，CI run 全绿。负责人已批准 Stage 1 退出，本 Stage 状态更新为 `exited`。
+Stage 1 的实现、change 级任务、本地验收与 GitHub Actions 实跑均已完成；12 个 change 已全部归档，11 个 capability spec 已写入主规格，`openspec validate --all --strict` 通过，CI run 全绿。负责人已批准 Stage 1 退出，本 Stage 状态更新为 `exited`。
