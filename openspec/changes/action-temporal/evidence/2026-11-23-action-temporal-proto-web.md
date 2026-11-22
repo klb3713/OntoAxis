@@ -96,7 +96,7 @@ $ make vet                  # exit 0
 $ make license-check        # exit 1（已知：github.com/nexus-rpc/nexus-proto-annotations 无许可证元数据）
 ```
 
-`openspec validate action-temporal --strict` 通过；当前 51/55。
+`openspec validate action-temporal --strict` 通过；当前 55/55。
 
 剩余：5.2（generate-check 需提交后验证）、7.2（API/workflow/activity span 未接）、9.2（真实 Temporal+Postgres env-gated 集成测试未写）、11.1（license-check 失败）。
 
@@ -127,4 +127,4 @@ go test -tags=integration -run TestActionWorkflowWithRealTemporalAndPostgres -v 
 --- PASS: TestActionWorkflowWithRealTemporalAndPostgres (0.47s)
 ```
 
-当前 54/55；仅剩 5.2（`make generate-check` 需要生成文件已提交）。
+当前 55/55。5.2 在提交 `13a2f15` 后执行 `make generate-check` exit 0。

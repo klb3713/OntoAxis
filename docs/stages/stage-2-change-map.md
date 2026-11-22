@@ -175,7 +175,7 @@ flowchart TB
 | `authorization-openfga-cedar` | 43/43（已归档 2026-11-23） | 核心 authz、策略、9 模块接缝、真实 handler + 真实 OpenFGA 集成、29 条负向矩阵、审计一致性、CI job；见 `openspec/changes/archive/2026-11-23-authorization-openfga-cedar/` |
 | `connector-runtime` | 20/25 | connectors/ingestion runtime、调度/对账、迁移、Compose 资产；真实 Connect/Trino E2E 与 verifier 未闭合 |
 | `pipeline-kestra-dbt` | 55/69 | DAG/Flow/dbt/HTTP adapter、service 编排、迁移/单测；Kestra/dbt spike、幂等、E2E 未闭合 |
-| `action-temporal` | 54/55 | 领域/迁移/repo、Temporal adapter/workflow/worker、审批 REST + UI、proto/幂等/审计/授权接缝已闭合；仅剩 generate-check 待提交后验证 |
+| `action-temporal` | 55/55 | 领域/迁移/repo、Temporal adapter/workflow/worker、审批 REST + UI、proto/幂等/审计/授权接缝、span、真实 Temporal 集成测试与门禁均已闭合；可进入归档评审 |
 | `object-search-meilisearch` | 32/52 | search 客户端/consumer/rebuild、outbox、search API、app adapter；真实 Meilisearch/Postgres E2E 未闭合 |
 | `production-delivery` | 29/66 | Helm/ArgoCD/kind/脚本静态资产与语法校验；helm/kind/ArgoCD/备份/回滚/IdP 全部未执行 |
 | `stage-2-integration` | 22/52 | `internal/app`/`cmd` 运行时装配、fail-fast 组合测试、go mod tidy、基础 Compose + OpenFGA 冒烟与重复性完成；Gate G2/kind/全链路 E2E/质量门未闭合 |

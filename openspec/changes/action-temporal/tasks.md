@@ -38,7 +38,7 @@
 ## 5. 调度接入、API 与 proto
 
 - [x] 5.1 更新 `proto/ontoaxis/v1/actions/actions.proto`：扩展执行字段（object_id/attempt/current_step_index/workflow_refs/approval_state/failure_code/cancel_requested_at/steps）与审批 RPC/消息，字段编号追加且通过 `buf breaking`。验证：`make proto-lint`、`make proto-breaking` 通过。
-- [ ] 5.2 运行 `make generate` 生成 Go/前端产物并提交生成差异（`make generate-check` 一致）。验证：`make generate && make generate-check` 通过。
+- [x] 5.2 运行 `make generate` 生成 Go/前端产物并提交生成差异（`make generate-check` 一致）。验证：`make generate && make generate-check` 通过。
 - [x] 5.3 改造 service `Run`：定义与参数校验 → 创建 `queued` 执行并写定义快照 → 幂等预写 → `adapter.Start`；提交失败投影 `failed`（`engine_unavailable`）且返回可重试错误。验证：service 单测覆盖成功、引擎失败、幂等重复提交。
 - [x] 5.4 改造 `Cancel`/`Retry`：终态拒绝冲突、重试创建新执行并重新校验/授权、取消调用 adapter 并写 `cancel_requested_at`。验证：单测覆盖各状态组合与 adapter 调用。
 - [x] 5.5 扩展执行查询返回状态、步骤进度、尝试次数、审批状态与 workflow 引用；审批任务查询按租户与状态过滤。验证：handler/service 测试断言字段与跨租户 404。
