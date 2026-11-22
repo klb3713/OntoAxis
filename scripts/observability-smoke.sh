@@ -64,7 +64,12 @@ def request(path, payload, method):
 request("/api/v1/projects", {"kind": "Project", "metadata": {"name": "ontoaxis"}, "spec": {"display": {"name": "OntoAxis"}}}, "POST")
 with open(datasource_path, encoding="utf-8") as fh:
     datasource = json.load(fh)
-request("/api/v1/globaldatasources/prometheus", datasource, "PUT")
+try:
+    request("/api/v1/globaldatasources/prometheus", datasource, "PUT")
+except urllib.error.HTTPError as exc:
+    if exc.code != 404:
+        raise
+    request("/api/v1/globaldatasources", datasource, "POST")
 with open(dashboard_path, encoding="utf-8") as fh:
     dashboard = json.load(fh)
 request("/api/v1/projects/ontoaxis/dashboards", dashboard, "POST")
