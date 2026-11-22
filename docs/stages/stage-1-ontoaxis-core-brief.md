@@ -1,10 +1,10 @@
-# Stage 1 — OntoAxis Core 一次性构建（批准版）
+# Stage 1 — OntoAxis Core 一次性构建（已退出）
 
-> 状态：approved（负责人复核确认，2026-11-22）<br>
+> 状态：exited（负责人批准退出，2026-11-22）<br>
 > 本次更新：按 `ARCHITECTURE.md` v1.0（2026-11-22）同步模块清单、数据所有权、契约基线、目录与部署口径；变更后的 Stage 范围与 AC 已按负责人复核确认，作为 Stage 1 新基线。<br>
 > 阶段编号：S1<br>
 > 负责人：klb3713<br>
-> 最后更新：2026-11-22<br>
+> 最后更新：2026-11-22（退出）<br>
 > 目标设计：[`ARCHITECTURE.md`](../../ARCHITECTURE.md)（v1.0，2026-11-22，重点第 3、5、6、9、16、17 章）<br>
 > 已确认决策：Go module `github.com/klb3713/ontoaxis`、GitHub Actions、Keycloak 单 realm + Organizations、Trino 真实单节点、Kestra/Temporal 契约适配器、`oa-web` Refine resource-first、Stage 1 actions 只到 Action Type + adapter 骨架；业务模块固定 9 个，`proto/ontoaxis/v1` 的 21 个 proto 文件（1,272 行）已通过 `buf format`/`buf lint`/`buf build`，作为 Stage 1 的冻结契约基线。
 

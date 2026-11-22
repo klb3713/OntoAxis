@@ -5,7 +5,7 @@
 > 1. [`AGENTS.md`](AGENTS.md)：项目硬约束、命令、代码规范。
 > 2. [`docs/workflow/RUNBOOK.md`](docs/workflow/RUNBOOK.md)：Stage 与 OpenSpec 的操作流程、门禁和命令。
 > 3. [`ARCHITECTURE.md`](ARCHITECTURE.md)：目标设计；目标设计不等于已实现。
-> 4. 当前 Stage brief（如有）：`docs/stages/`；当前治理基础阶段尚未建立。
+> 4. 当前 Stage brief：`docs/stages/`；Stage 1 已退出，Stage 2 尚未定义。
 > 5. OpenSpec：`openspec/config.yaml`、`openspec/specs/`、`openspec/changes/`。
 
 ## 工作规则

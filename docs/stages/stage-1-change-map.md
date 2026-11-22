@@ -1,6 +1,6 @@
 # Stage 1 Change Map — OntoAxis Core 并行拆解
 
-> 状态：approved（负责人复核确认，2026-11-22）<br>
+> 状态：exited（Stage 1 已退出，全部 change 已归档，2026-11-22）<br>
 > 本次更新：按 `ARCHITECTURE.md` v1.0（2026-11-22）同步模块清单、数据所有权、契约基线、目录与部署口径；更新后的 change 边界已按负责人复核确认，作为 Stage 1 新基线。<br>
 > 归属 Stage：[`stage-1-ontoaxis-core-brief.md`](stage-1-ontoaxis-core-brief.md)<br>
 > 用途：把 `ARCHITECTURE.md` v1.0 第 3、5、6、9、16、17 章拆成适合多 Agent 并行执行的 change 包<br>

@@ -1,12 +1,12 @@
-# Stage 1 退出报告（草案）
+# Stage 1 退出报告（已批准）
 
-状态：`ready-for-exit-review` —— 实现与本地证据已齐，等待负责人确认后进入 Stage 退出评审，不得据此自动归档 change 或宣告 Stage 退出。
+状态：`exited` —— 负责人已于 2026-11-22 批准 Stage 1 退出；12 个 change 已归档，10 个 capability spec 已写入主规格。
 日期：2026-11-22
 
 ## 1. Stage 范围
 
 - Stage：Stage 1 "OntoAxis Core 一次性构建"
-- Change 数：11（Wave 0 基座、Wave 1 七个模块、Wave 2 对象/查询/动作、Wave 3 集成）
+- Change 数：12（Wave 0 基座、Wave 1 七个模块、Wave 2 对象/查询/动作、Wave 3 集成）
 - 依据：`docs/stages/stage-1-ontoaxis-core-brief.md`、`docs/stages/stage-1-change-map.md`
 
 ## 2. AC 证据
@@ -36,4 +36,4 @@
 
 ## 4. 结论
 
-Stage 1 的实现、change 级任务、本地验收与 GitHub Actions 实跑均已完成；11 个 change 全部 `openspec` 任务完成，12/12 OpenSpec 校验通过，CI run 全绿。现进入 **Stage 1 退出评审**，请负责人复核本报告与证据后确认是否批准 Stage 1 退出并归档 changes。
+Stage 1 的实现、change 级任务、本地验收与 GitHub Actions 实跑均已完成；12 个 change 已全部归档，10 个 capability spec 已写入主规格，`openspec validate --all --strict` 通过，CI run 全绿。负责人已批准 Stage 1 退出，本 Stage 状态更新为 `exited`。

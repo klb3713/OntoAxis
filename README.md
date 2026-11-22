@@ -2,7 +2,7 @@
 
 OntoAxis 是面向企业的 Ontology 数据平台，围绕对象类型、对象实例、数据集、Pipeline 与查询提供统一的数据建模和探索能力。
 
-当前仓库处于 **Stage 1：Core 一次性构建**。九个业务模块、单进程 `ontoaxis-core`、OIDC/Keycloak、Trino、`oa-web` 与 Compose 本地闭环已落地；Stage 1 的退出评审仍需负责人确认。
+当前仓库已完成 **Stage 1：Core 一次性构建**（`exited`，2026-11-22）。九个业务模块、单进程 `ontoaxis-core`、OIDC/Keycloak、Trino、`oa-web` 与 Compose 本地闭环已落地；Stage 2 尚未定义或批准。
 
 ## 目录
 

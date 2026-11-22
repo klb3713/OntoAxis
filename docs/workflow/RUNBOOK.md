@@ -131,23 +131,29 @@ openspec archive <change-name>
 
 工具链：OpenSpec 2.1.0（global npm，命令前缀 `openspec`）、Node.js >=22.20.0。
 
-当前仓库尚无 Go module、前端 package.json 或 CI 配置，以下命令**尚未建立**；Stage 1 建立构建体系后替换为真实命令并验证。
+Stage 1 已建立并通过 CI 验证的命令：
 
 ```bash
-# 安装/同步依赖
-尚未建立（仓库没有 go.mod / package.json）
+# 编译、测试、静态检查
+make build
+make test
+make test-race
+make lint
+make vet
 
-# 开发
-尚未建立
+# 契约与生成
+make proto-lint
+make proto-breaking
+make generate
+make generate-check
 
-# 测试
-尚未建立
+# 全栈本地启动
+docker compose -f deploy/compose/compose.yaml up -d --build
+scripts/smoke-foundation.sh
+docker compose -f deploy/compose/compose.yaml down -v
 
-# 静态检查/格式
-尚未建立
-
-# 构建
-尚未建立
+# 前端
+cd web && pnpm install --frozen-lockfile && pnpm check && pnpm test && pnpm build
 
 # OpenSpec
 openspec list
@@ -171,10 +177,10 @@ openspec status --change <change-name>
 
 ## 10. 当前状态
 
-- 当前 Stage：Stage 1 已批准（approved，2026-11-22；见 `docs/stages/stage-1-ontoaxis-core-brief.md`）
-- 当前 change：`stage-1-platform-foundation`（规划完成，待变更评审）
-- 主规格：空（尚无归档 capability）
-- 未决事项：`stage-1-platform-foundation` 变更评审与实施授权、Stage 1 构建体系建立
+- 当前 Stage：Stage 1 已退出（exited，2026-11-22；见 `docs/stages/stage-1-ontoaxis-core-brief.md` 与 `stage-1-exit-report.md`）
+- 当前 change：无 active change；12 个 Stage 1 change 已归档到 `openspec/changes/archive/`
+- 主规格：`openspec/specs/` 下 10 个 capability spec 已由归档 change 写入
+- 未决事项：Stage 2 的范围、AC 与授权尚未定义
 
 ## 11. 技能分工
 
