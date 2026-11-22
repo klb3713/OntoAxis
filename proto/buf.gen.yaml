@@ -7,14 +7,16 @@ managed:
 inputs:
   - directory: .
 plugins:
-  # Run from the repo root: `cd proto && buf generate`.
-  - local: protoc-gen-go
+  # Remote plugins are pinned so local development and CI do not require
+  # manually installing protoc-gen-* binaries.
+  - remote: buf.build/protocolbuffers/go:v1.36.12
     out: ../gen
     opt: paths=source_relative
-  - local: protoc-gen-connect-go
+  - remote: buf.build/connectrpc/go:v2.0.2
     out: ../gen
     opt: paths=source_relative
-  - local: protoc-gen-openapi
+  - remote: buf.build/community/google-gnostic-openapi:v0.7.1
     out: ../openapi
-  - local: protoc-gen-es
+  - remote: buf.build/bufbuild/es:v2.14.0
     out: ../web/src/generated
+    opt: target=ts

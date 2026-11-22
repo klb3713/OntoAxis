@@ -1,0 +1,102 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+      - name: Build
+        run: go build ./...
+      - name: Test
+        run: go test -race ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Lint
+        run: docker run --rm -v "$PWD":/src -w /src golangci/golangci-lint:v2.15.0 golangci-lint run ./...
+      - name: License
+        run: go run github.com/google/go-licenses@v1.6.0 check ./...
+
+  proto:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ github.token }}
+      - name: Lint
+        run: cd proto && buf lint
+      - name: Generate drift check
+        run: make generate-check
+      - name: Breaking
+        run: make proto-breaking
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Frontend checks (skip until web/package.json exists)
+        run: |
+          if [ -f web/package.json ]; then
+            cd web && pnpm install --frozen-lockfile && pnpm check && pnpm build && pnpm test
+          else
+            echo "web/package.json not present yet; skipping frontend checks"
+          fi
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build core image
+        run: docker build -t ontoaxis-core:ci .
+      - name: Build web image
+        run: docker build -f web/Dockerfile -t ontoaxis-web:ci web
+
+  compose-smoke:
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start core loop
+        run: docker compose -f deploy/compose/compose.yaml up -d postgres ontoaxis-core
+      - name: Wait for readiness
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18080/readyz >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose -f deploy/compose/compose.yaml logs ontoaxis-core
+          exit 1
+      - name: Smoke
+        run: |
+          curl -fsS http://127.0.0.1:18080/healthz
+          curl -fsS http://127.0.0.1:18080/readyz
+      - name: Tear down
+        if: always()
+        run: docker compose -f deploy/compose/compose.yaml down -v

@@ -1,0 +1,78 @@
+# OntoAxis edge route table (oa-edge)
+#
+# This file is the single source of truth for the public edge path prefixes.
+# It is a declarative skeleton: gateway-specific resources (Envoy Gateway or
+# Traefik) are generated/deployed in a later change that owns deploy/.
+apiVersion: ontoaxis.edge/v1
+kind: EdgeRouteTable
+metadata:
+  name: oa-edge
+  owner: identity-edge
+  stage: stage-1
+spec:
+  gateway:
+    provider: envoy-gateway
+    listener: oa-edge
+    publicRoutes:
+      - method: GET
+        path: /healthz
+      - method: GET
+        path: /readyz
+      - method: GET
+        path: /.well-known/*
+    metrics:
+      path: /metrics
+      internalOnly: true
+    # The gateway MUST delete these client-controlled headers before
+    # forwarding a request to oa-core.
+    clientHeadersToStrip:
+      - X-Tenant-Id
+      - X-User-Id
+      - X-Org-Ids
+      - X-Workspace-Ids
+      - X-Roles
+    # The gateway MUST inject these headers only after JWT validation.
+    internalHeadersToInject:
+      - x-ontoaxis-tenant-id
+      - x-ontoaxis-user-id
+      - x-ontoaxis-org-ids
+      - x-ontoaxis-workspace-ids
+      - x-ontoaxis-roles
+      - x-ontoaxis-request-id
+  routes:
+    - name: tenancy
+      prefix: /api/v1/tenancy
+      module: tenancy
+      auth: jwt
+    - name: ontology
+      prefix: /api/v1/ontology
+      module: ontology
+      auth: jwt
+    - name: datasets
+      prefix: /api/v1/datasets
+      module: datasets
+      auth: jwt
+    - name: connectors
+      prefix: /api/v1/connectors
+      module: connectors
+      auth: jwt
+    - name: ingestion
+      prefix: /api/v1/ingestion
+      module: ingestion
+      auth: jwt
+    - name: pipelines
+      prefix: /api/v1/pipelines
+      module: pipelines
+      auth: jwt
+    - name: objects
+      prefix: /api/v1/objects
+      module: objects
+      auth: jwt
+    - name: query
+      prefix: /api/v1/query
+      module: query
+      auth: jwt
+    - name: actions
+      prefix: /api/v1/actions
+      module: actions
+      auth: jwt

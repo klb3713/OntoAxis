@@ -1,0 +1,26 @@
+import { chromium } from '@playwright/test';
+const browser = await chromium.launch({ headless: true, executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+const page = await context.newPage();
+const events = [];
+page.on('response', async (r) => { if (r.url().includes('/api/')) { let b=''; try{b=(await r.text()).slice(0,300)}catch{}; events.push({status:r.status(), url:r.url(), body:b}); } });
+page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
+await page.goto('http://localhost:18082/', { waitUntil: 'networkidle' });
+await page.getByRole('button').filter({ hasText: 'Keycloak' }).click();
+await page.locator('#username').fill('admin');
+await page.locator('#password').fill('admin123');
+await page.locator('#kc-login').click();
+await page.waitForURL(/\/projects/, { timeout: 15000 });
+await page.waitForTimeout(1500);
+// create project
+await page.getByRole('button').filter({ hasText: '新建项目' }).first().click();
+const inputs = page.locator('#create-project-form input');
+await inputs.nth(0).fill('trail-demo');
+await inputs.nth(1).fill('Trail Demo');
+await page.locator('#create-project-form textarea').fill('Stage 1 E2E project');
+await page.locator('button[form="create-project-form"]').click();
+await page.waitForTimeout(2000);
+console.log('BODY', (await page.locator('body').innerText()).slice(0,1200));
+await page.screenshot({ path: '/tmp/ontoaxis-projects-created.png', fullPage: true });
+console.log('API', JSON.stringify(events.slice(-10), null, 2));
+await browser.close();

@@ -1,0 +1,13 @@
+{
+  "request": {
+    "name": "customer",
+    "display_name": "Customer",
+    "primary_key_property": "customer_id"
+  },
+  "expected": {
+    "name": "customer",
+    "display_name": "Customer",
+    "primary_key_property": "customer_id",
+    "status": "active"
+  }
+}

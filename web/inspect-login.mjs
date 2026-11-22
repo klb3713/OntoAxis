@@ -1,0 +1,11 @@
+import { chromium } from '@playwright/test';
+const browser = await chromium.launch({ headless: true, executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+page.on('console', (m) => console.log('CONSOLE', m.type(), m.text()));
+page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
+await page.goto('http://localhost:18082/', { waitUntil: 'networkidle' });
+console.log('URL', page.url());
+console.log('BODY', (await page.locator('body').innerText()).slice(0, 1500));
+console.log('BUTTONS', await page.getByRole('button').allTextContents());
+await page.screenshot({ path: '/tmp/ontoaxis-login-debug.png', fullPage: true });
+await browser.close();
