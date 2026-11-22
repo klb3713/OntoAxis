@@ -56,6 +56,12 @@ Compose 服务：`postgres`、`keycloak`、`trino`、`ontoaxis-core`、`web`。
 
 全部步骤 `ok: true`，无浏览器 console error。
 
+## GitHub Actions
+
+- Run: <https://github.com/klb3713/OntoAxis/actions/runs/45014009410>
+- Commit: `0399da3942570fbdc766821b4354dca9974c48fd`
+- Jobs: `build-test` ✅ / `proto` ✅ / `docker` ✅ / `frontend` ✅ / `compose-smoke` ✅
+
 ## 4. 镜像与回滚
 
 - 两次相同源码构建得到相同 image id：`sha256:ebf55002ffb562e759df61f8e05f70749e36015d55a2d9469d5c934761d7d834`。
