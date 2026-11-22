@@ -139,6 +139,6 @@
 ## 10. 关联文档
 
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md)
-- [`doc/workflow/RUNBOOK.md`](../workflow/RUNBOOK.md)
+- [`docs/workflow/RUNBOOK.md`](../workflow/RUNBOOK.md)
 - [`stage-1-change-map.md`](stage-1-change-map.md)
 - [`openspec/config.yaml`](../../openspec/config.yaml)

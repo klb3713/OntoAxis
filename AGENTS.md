@@ -9,8 +9,8 @@
 
 ## 0. 当前治理状态
 
-- 治理基础已建立：`AGENTS.md`、`CLAUDE.md`、`doc/workflow/RUNBOOK.md`、`openspec/config.yaml`。
-- Stage 1 已批准：`doc/stages/stage-1-ontoaxis-core-brief.md` 与 `doc/stages/stage-1-change-map.md`；Stage 已通过评审，按 change map 推进首个 change。
+- 治理基础已建立：`AGENTS.md`、`CLAUDE.md`、`docs/workflow/RUNBOOK.md`、`openspec/config.yaml`。
+- Stage 1 已批准：`docs/stages/stage-1-ontoaxis-core-brief.md` 与 `docs/stages/stage-1-change-map.md`；Stage 已通过评审，按 change map 推进首个 change。
 - 这不代表任何业务能力已实现或已获实施授权。Stage 1 的代码、环境、真实数据和服务启动都需要单独授权。
 
 ## 1. 真源与读取顺序
@@ -18,19 +18,19 @@
 开始工作前按顺序读取：
 
 1. 本文件：硬约束、命令、安全边界。
-2. `doc/workflow/RUNBOOK.md`：Stage/change 操作流程、门禁和常见错误。
+2. `docs/workflow/RUNBOOK.md`：Stage/change 操作流程、门禁和常见错误。
 3. `ARCHITECTURE.md`（仓库根目录）：目标设计；目标设计不等于已实现。
-4. 当前 Stage brief：从 `doc/stages/` 进入（Stage 1 批准版见 `doc/stages/stage-1-ontoaxis-core-brief.md`）。
+4. 当前 Stage brief：从 `docs/stages/` 进入（Stage 1 批准版见 `docs/stages/stage-1-ontoaxis-core-brief.md`）。
 5. OpenSpec：`openspec/config.yaml`、`openspec/specs/`、`openspec/changes/`。
 
 | 主题 | 真源 |
 | --- | --- |
 | 目标架构与职责边界 | `ARCHITECTURE.md` |
-| 当前阶段范围/AC/退出条件 | `doc/stages/stage-<N>-*-brief.md`（Stage 1 已批准） |
+| 当前阶段范围/AC/退出条件 | `docs/stages/stage-<N>-*-brief.md`（Stage 1 已批准） |
 | 当前行为契约 | `openspec/specs/`（归档后） |
 | 在途行为变更 | `openspec/changes/` |
-| 工作流与门禁 | `doc/workflow/RUNBOOK.md` |
-| 阶段状态 | `doc/stages/` + 项目看板/路线图（如已有） |
+| 工作流与门禁 | `docs/workflow/RUNBOOK.md` |
+| 阶段状态 | `docs/stages/` + 项目看板/路线图（如已有） |
 | 验证证据 | 报告、测试输出、运行记录；不写进规格冒充事实 |
 
 ## 2. Stage 与 OpenSpec 的分工

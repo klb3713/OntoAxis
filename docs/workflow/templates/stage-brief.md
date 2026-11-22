@@ -1,6 +1,6 @@
 # Stage Brief 模板
 
-> 使用说明：复制本文件到 `doc/stages/`，按 `stage-<序号>-<切片名>-brief.md` 命名，填写各节后删除本说明。
+> 使用说明：复制本文件到 `docs/stages/`，按 `stage-<序号>-<切片名>-brief.md` 命名，填写各节后删除本说明。
 > 状态从 `draft` 开始；只有负责人确认后才能改为 `approved`。
 > Stage brief 只写范围、AC、非目标、约束和退出条件，不写行为细节。
 
@@ -65,5 +65,5 @@
 ## 9. 参考
 
 - `ARCHITECTURE.md`
-- `doc/workflow/RUNBOOK.md`
+- `docs/workflow/RUNBOOK.md`
 - `openspec/changes/<change-name>/proposal.md`

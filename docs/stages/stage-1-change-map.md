@@ -136,7 +136,7 @@ flowchart TB
 
 每个 change 的启动 prompt 应包含：
 
-1. 必读：`ARCHITECTURE.md` 第 3、5、6、9、16、17 章对应部分、`doc/stages/stage-1-ontoaxis-core-brief.md`、本 change 的 OpenSpec artifacts；
+1. 必读：`ARCHITECTURE.md` 第 3、5、6、9、16、17 章对应部分、`docs/stages/stage-1-ontoaxis-core-brief.md`、本 change 的 OpenSpec artifacts；
 2. 写作范围：仅允许修改 `internal/modules/<module>/`（或 `web/` 等指定目录）；
 3. 禁止：修改共享文件、直接读其他模块表、绕过 proto/OpenAPI、写真实数据；
 4. 交付：代码 + 迁移 + 测试 + fixture + 变更说明；

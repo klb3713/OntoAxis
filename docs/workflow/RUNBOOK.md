@@ -10,10 +10,10 @@
 | --- | --- | --- |
 | `AGENTS.md` | 硬约束、命令、安全边界 | 具体行为需求 |
 | `ARCHITECTURE.md` | 目标设计、职责边界、关键决策 | 实施状态、验收证据 |
-| `doc/stages/stage-<N>-*-brief.md` | 范围、AC、非目标、退出条件 | 行为细节 |
+| `docs/stages/stage-<N>-*-brief.md` | 范围、AC、非目标、退出条件 | 行为细节 |
 | `openspec/specs/<capability>/spec.md` | 当前行为契约 | 阶段状态、路线图 |
 | `openspec/changes/<change>/` | 在途行为变更 | 阶段验收结论 |
-| `doc/workflow/RUNBOOK.md` | 操作步骤、门禁、常见错误 | 总体设计 |
+| `docs/workflow/RUNBOOK.md` | 操作步骤、门禁、常见错误 | 总体设计 |
 | 报告/测试输出/运行记录 | 证据 | 需求定义 |
 
 一份事实只维护一个地方；其他文档用链接引用。
@@ -171,7 +171,7 @@ openspec status --change <change-name>
 
 ## 10. 当前状态
 
-- 当前 Stage：Stage 1 已批准（approved，2026-11-22；见 `doc/stages/stage-1-ontoaxis-core-brief.md`）
+- 当前 Stage：Stage 1 已批准（approved，2026-11-22；见 `docs/stages/stage-1-ontoaxis-core-brief.md`）
 - 当前 change：`stage-1-platform-foundation`（规划完成，待变更评审）
 - 主规格：空（尚无归档 capability）
 - 未决事项：`stage-1-platform-foundation` 变更评审与实施授权、Stage 1 构建体系建立
