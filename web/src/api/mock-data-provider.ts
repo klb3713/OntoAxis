@@ -330,6 +330,46 @@ export function createMockDataProvider(options: MockDataProviderOptions = {}): D
       await wait();
       const url = params.url.replace(/^\/+/, "");
 
+      if (url === "actions/approvals" && params.method === "get") {
+        const query = asRecord(params.query);
+        const status = typeof query.status === "string" ? query.status : "all";
+        const parsedLimit = Number(query.limit);
+        const parsedOffset = Number(query.offset);
+        const limit = Number.isFinite(parsedLimit) ? Math.min(200, Math.max(1, parsedLimit)) : 50;
+        const offset = Number.isFinite(parsedOffset) ? Math.max(0, parsedOffset) : 0;
+        const matched = db.approvals.filter((task) => status === "all" || task.status === status);
+        return {
+          data: { items: matched.slice(offset, offset + limit), total: matched.length } as unknown as TData,
+        };
+      }
+
+      const approvalDecisionMatch = /^actions\/approvals\/([^/]+)\/(approve|reject)$/.exec(url);
+      if (approvalDecisionMatch && params.method === "post") {
+        const approvalId = decodeURIComponent(approvalDecisionMatch[1] ?? "");
+        const decision = approvalDecisionMatch[2];
+        if (typeof window !== "undefined" && (window as unknown as { __MOCK_APPROVAL_FORBIDDEN__?: boolean }).__MOCK_APPROVAL_FORBIDDEN__) {
+          throw new ApiError({ code: "permission_denied", message: "无审批权限。", status: 403 });
+        }
+        const task = findOrThrow(db.approvals, approvalId, "审批任务");
+        if (task.status !== "pending") {
+          throw new ApiError({ code: "conflict", message: "审批任务已处理，无法重复决定", status: 409 });
+        }
+        const payload = asRecord(params.payload);
+        task.status = decision === "approve" ? "approved" : "rejected";
+        task.decidedAt = now();
+        task.decidedBy = "usr_01";
+        task.comment = String(payload.comment ?? "");
+        task.reasonCode = decision === "approve" ? "approved" : "approval_rejected";
+        return { data: task as unknown as TData };
+      }
+
+      const approvalDetailMatch = /^actions\/approvals\/([^/]+)$/.exec(url);
+      if (approvalDetailMatch && params.method === "get") {
+        const approvalId = decodeURIComponent(approvalDetailMatch[1] ?? "");
+        const task = findOrThrow(db.approvals, approvalId, "审批任务");
+        return { data: task as unknown as TData };
+      }
+
       const previewMatch = /^datasets\/([^/]+)\/preview$/.exec(url);
       if (previewMatch && params.method === "get") {
         const datasetId = decodeURIComponent(previewMatch[1] ?? "");
@@ -383,6 +423,7 @@ export function createEmptyMockDatabase(): MockDatabase {
     datasets: [],
     datasetPreviews: {},
     savedQueries: [],
+    approvals: [],
   };
 }
 

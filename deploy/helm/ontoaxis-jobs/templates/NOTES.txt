@@ -1,0 +1,17 @@
+ontoaxis-jobs has been rendered for environment: {{ .Values.global.environment }}
+
+Backup CronJob:
+  name:      {{ .Values.backup.name }}
+  namespace: {{ .Values.backup.namespace }}
+  schedule:  {{ .Values.backup.schedule }} (UTC)
+  retention: {{ .Values.backup.retention }} most-recent backups
+  pvc:       {{ .Values.backup.pvc.name }} ({{ .Values.backup.pvc.size }})
+  image:     {{ .Values.backup.image.repository }}@{{ .Values.backup.image.digest }}
+
+Manual trigger:
+  kubectl create job --from=cronjob/{{ .Values.backup.name }} -n {{ .Values.backup.namespace }} {{ .Values.backup.name }}-manual-$(date -u +%Y%m%dT%H%M%SZ)
+
+Each run writes <BACKUP_DIR>/<timestamp>/ontoaxis.dump plus manifest.json with
+backup_id, created_at, sha256, size_bytes, schema_version, image_digest, pg_version.
+The DB password is read from Secret {{ .Values.backup.secretName }} (via External
+Secrets Operator); no literal credential lives in this chart.

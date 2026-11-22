@@ -111,3 +111,14 @@ scripts/observability-smoke.sh
 ```sh
 docker compose -f deploy/compose/compose.yaml down -v
 ```
+
+## Stage 2 运行时配置
+
+Stage 2 新增的非密钥配置键已列入 `.env.example`，包括：
+- 授权：`ONTOAXIS_AUTHZ_OPENFGA_API_URL/STORE_ID/MODEL_ID/API_TOKEN/POLICY_DIR/AUDIT_SINK`
+- 对象搜索：`ONTOAXIS_SEARCH_ENABLED/URL/API_KEY/INDEX_VERSION`
+- Actions/Temporal：`ONTOAXIS_ACTIONS_EXECUTION_MODE/TEMPORAL_HOST_PORT/ACTIONS_APPROVAL_TIMEOUT/ACTIONS_WORKFLOW_TIMEOUT/ACTIONS_WORKER_HTTP_ADDR`
+- Connector runtime：`ONTOAXIS_CONNECT_URL/TIMEOUT/RETRY_MAX/VERIFY_MAX_ROWS`
+- Pipelines/Kestra：`ONTOAXIS_KESTRA_URL/TIMEOUT/API_TOKEN`、`ONTOAXIS_PIPELINE_DBT_CATALOG/DBT_IMAGE`
+
+真实 token/密码/生产连接串不得写入仓库；本地由 compose authz profile 或环境变量注入。默认 `ACTIONS_EXECUTION_MODE=noop` 仅用于本地无 Temporal 环境，生产默认 `temporal` 且缺少 Temporal host 启动失败。

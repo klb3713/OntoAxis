@@ -1,4 +1,5 @@
 import type {
+  ApprovalTask,
   Dataset,
   DatasetPreview,
   LinkType,
@@ -16,6 +17,7 @@ export type MockDatabase = {
   datasets: Dataset[];
   datasetPreviews: Record<string, DatasetPreview>;
   savedQueries: SavedQuery[];
+  approvals: ApprovalTask[];
 };
 
 const T = {
@@ -408,6 +410,74 @@ const savedQueries: SavedQuery[] = [
   },
 ];
 
+const approvals: ApprovalTask[] = [
+  {
+    id: "a1f0c2d4-6b3e-4f5a-8c7d-9e0b1a2c3d40",
+    tenantId: "7d1c9a3e-5b2f-4e8d-8a6c-1f0b3d7e9c21",
+    executionId: "5e2b8c47-9d1a-4f3b-b6c5-7a8f9d0e1c23",
+    stepIndex: 1,
+    status: "pending",
+    requestedAt: "2026-11-22T08:15:00Z",
+    deadlineAt: "2026-11-23T08:15:00Z",
+    decidedAt: null,
+    decidedBy: null,
+    comment: "",
+    reasonCode: "",
+  },
+  {
+    id: "f4b7e2a9-1c8d-4a3b-9e6f-2d5c8b0a7e41",
+    tenantId: "7d1c9a3e-5b2f-4e8d-8a6c-1f0b3d7e9c21",
+    executionId: "9c4d1e7a-2b8f-4a6c-9d3e-5f7b8a0c2d46",
+    stepIndex: 0,
+    status: "pending",
+    requestedAt: "2026-11-22T09:40:00Z",
+    deadlineAt: "2026-11-23T09:40:00Z",
+    decidedAt: null,
+    decidedBy: null,
+    comment: "",
+    reasonCode: "",
+  },
+  {
+    id: "c9e3b7a1-5d2f-4c8e-8a4b-7f1d9c2e6b44",
+    tenantId: "7d1c9a3e-5b2f-4e8d-8a6c-1f0b3d7e9c21",
+    executionId: "c7a2f3b9-1d5e-4c8a-8b6f-2e9d0a1b3c45",
+    stepIndex: 2,
+    status: "approved",
+    requestedAt: "2026-11-21T10:30:00Z",
+    deadlineAt: "2026-11-22T10:30:00Z",
+    decidedAt: "2026-11-21T12:05:00Z",
+    decidedBy: "usr_01",
+    comment: "金额与预算一致，同意执行。",
+    reasonCode: "approved",
+  },
+  {
+    id: "d2a8f4c6-9e3b-4a7d-8c1f-5b0e2d9a4c47",
+    tenantId: "7d1c9a3e-5b2f-4e8d-8a6c-1f0b3d7e9c21",
+    executionId: "e3b8d6a1-7c4f-4a2d-9e5b-1f0c8a3d6e42",
+    stepIndex: 3,
+    status: "rejected",
+    requestedAt: "2026-11-20T14:10:00Z",
+    deadlineAt: "2026-11-21T14:10:00Z",
+    decidedAt: "2026-11-20T16:45:00Z",
+    decidedBy: "usr_02",
+    comment: "导出涉及敏感字段，驳回。",
+    reasonCode: "approval_rejected",
+  },
+  {
+    id: "e8c1a5d3-7b4e-4f9a-9d2c-6a3e0b8f5d48",
+    tenantId: "7d1c9a3e-5b2f-4e8d-8a6c-1f0b3d7e9c21",
+    executionId: "b1d9e4f7-3a6c-4b8e-8d2f-5c7a0e9b1d43",
+    stepIndex: 1,
+    status: "expired",
+    requestedAt: "2026-11-19T09:00:00Z",
+    deadlineAt: "2026-11-21T00:00:00Z",
+    decidedAt: null,
+    decidedBy: null,
+    comment: "",
+    reasonCode: "approval_timeout",
+  },
+];
+
 export function createFixtureDatabase(): MockDatabase {
   const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
   return {
@@ -418,5 +488,6 @@ export function createFixtureDatabase(): MockDatabase {
     datasets: clone(datasets),
     datasetPreviews: clone(datasetPreviews),
     savedQueries: clone(savedQueries),
+    approvals: clone(approvals),
   };
 }

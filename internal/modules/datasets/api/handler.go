@@ -17,6 +17,7 @@ import (
 
 	"github.com/klb3713/ontoaxis/internal/modules/datasets/domain"
 	"github.com/klb3713/ontoaxis/internal/modules/datasets/service"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/httperr"
 )
 
@@ -47,13 +48,34 @@ func (GatewayTenantResolver) ResolveTenant(r *http.Request) (string, error) {
 type Handler struct {
 	service service.Service
 	tenants TenantResolver
+	guard   authz.DecisionGuard
 }
 
-func NewHandler(svc service.Service, tenants TenantResolver) *Handler {
+// Option customizes the dataset handler without changing the service contract.
+type Option func(*Handler)
+
+// WithDecisionGuard wires the single authorization decision point. The
+// production app must set it; tests that predate authz may omit it.
+func WithDecisionGuard(guard authz.DecisionGuard) Option {
+	return func(h *Handler) { h.guard = guard }
+}
+
+func NewHandler(svc service.Service, tenants TenantResolver, opts ...Option) *Handler {
 	if tenants == nil {
 		tenants = GatewayTenantResolver{}
 	}
-	return &Handler{service: svc, tenants: tenants}
+	h := &Handler{service: svc, tenants: tenants}
+	for _, opt := range opts {
+		opt(h)
+	}
+	return h
+}
+
+// authorize fails closed on denial and writes the stable HTTP error. A nil
+// guard means the handler was constructed without the app wiring; integration
+// tests assert the production path uses one.
+func (h *Handler) authorize(w http.ResponseWriter, r *http.Request, action authz.Action, resource authz.ResourceFact) bool {
+	return authz.AuthorizeHTTP(w, r, h.guard, action, resource)
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {

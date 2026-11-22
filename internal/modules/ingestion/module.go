@@ -14,7 +14,9 @@ import (
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/api"
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/migrations"
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/repo"
+	ingestionruntime "github.com/klb3713/ontoaxis/internal/modules/ingestion/runtime"
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/service"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/module"
 )
 
@@ -22,10 +24,12 @@ var _ module.Module = (*Module)(nil)
 
 // Module implements the ingestion platform capability.
 type Module struct {
-	mu    sync.RWMutex
-	store service.Store
-	svc   service.Service
-	opts  []service.Option
+	mu         sync.RWMutex
+	guard      authz.DecisionGuard
+	connectors api.ConnectorReader
+	store      service.Store
+	svc        service.Service
+	opts       []service.Option
 }
 
 // New builds an ingestion module. Pass service.WithConnectorReader to inject the
@@ -64,8 +68,28 @@ func (m *Module) Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 }
 
 // RegisterRoutes mounts /api/v1/ingestion routes.
+func (m *Module) SetDecisionGuard(guard authz.DecisionGuard) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.guard = guard
+}
+
+func (m *Module) SetConnectorReader(reader api.ConnectorReader) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.connectors = reader
+	m.opts = append(m.opts, service.WithConnectorReader(reader))
+	if m.store != nil {
+		m.svc = service.NewService(m.store, m.opts...)
+	}
+}
+
 func (m *Module) RegisterRoutes(r chi.Router) {
-	api.NewHandler(m.Service()).Register(r)
+	m.mu.RLock()
+	guard := m.guard
+	connectors := m.connectors
+	m.mu.RUnlock()
+	api.NewHandler(m.Service(), api.WithDecisionGuard(guard), api.WithConnectorReader(connectors)).Register(r)
 }
 
 // Ready reports whether the module has a usable service.
@@ -85,4 +109,28 @@ func (m *Module) Service() service.Service {
 		m.svc = service.NewService(m.store, m.opts...)
 	}
 	return m.svc
+}
+
+// NewRuntime builds the ingestion dispatcher/reconciler runtime over this
+// module's store and configured connector reader. The application owns its
+// lifecycle (Start/Stop) so a missing Kafka Connect profile leaves the module
+// serving HTTP without background workers. jobRuntime and verifier are supplied
+// by integration wiring; a nil verifier keeps jobs running rather than guessing
+// completion.
+func (m *Module) NewRuntime(jobRuntime ingestionruntime.JobRuntime, verifier ingestionruntime.SnapshotVerifier, opts ingestionruntime.Options) (*ingestionruntime.Runtime, error) {
+	m.mu.RLock()
+	store := m.store
+	reader := m.connectors
+	m.mu.RUnlock()
+	if store == nil {
+		return nil, fmt.Errorf("ingestion: runtime requires an initialized store")
+	}
+	runtimeStore, ok := store.(ingestionruntime.RuntimeStore)
+	if !ok {
+		return nil, fmt.Errorf("ingestion: store does not implement the runtime port")
+	}
+	if reader == nil {
+		return nil, fmt.Errorf("ingestion: runtime requires the connectors module")
+	}
+	return ingestionruntime.NewRuntime(runtimeStore, reader, jobRuntime, verifier, opts)
 }

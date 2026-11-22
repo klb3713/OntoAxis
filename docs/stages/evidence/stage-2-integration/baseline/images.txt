@@ -1,0 +1,23 @@
+# Local images relevant to Stage 2 (captured 2026-11-23)
+ontoaxis-local-ontoaxis-core-edge:latest ed4338bac7df 2026-11-23 02:06:05 +0800 CST
+ontoaxis-local-ontoaxis-core:latest 006f96267250 2026-11-23 02:06:05 +0800 CST
+ontoaxis-local-ontoaxis-actions-worker:latest a1e57176bca4 2026-11-23 01:54:31 +0800 CST
+ontoaxis-local-web:latest 53cde98ef178 2026-11-23 01:47:53 +0800 CST
+ontoaxis-core:obs 5cc1f50614b8 2026-11-22 19:54:10 +0800 CST
+ontoaxis-core:stage1-a ebf55002ffb5 2026-11-22 18:23:00 +0800 CST
+ontoaxis-core:stage1-b ebf55002ffb5 2026-11-22 18:23:00 +0800 CST
+ontoaxis-core:dev 02082f177ec4 2026-11-22 15:35:31 +0800 CST
+openfga/openfga:v1.23.0 44a1a3e84ab9 2026-11-21 04:10:31 +0800 CST
+golang:1.26 71b3fb919d74 2026-11-11 02:21:21 +0800 CST
+golang:1.26-alpine c759fe8ff9ac 2026-11-11 02:21:01 +0800 CST
+postgres:16-alpine 4278d7b1e3de 2026-11-06 03:09:58 +0800 CST
+trinodb/trino:latest e54a8dff51ae 2026-10-16 08:22:48 +0800 CST
+temporalio/admin-tools:1.30.8 3a5f609bbc87 2026-10-10 08:08:30 +0800 CST
+temporalio/server:1.30.8 02379cc8adc9 2026-10-10 08:08:28 +0800 CST
+golang:1.26.3 dce756aef3ea 2026-05-20 09:15:43 +0800 CST
+quay.io/keycloak/keycloak:26.5 fe1a82d7e323 2026-04-02 22:48:04 +0800 CST
+trinodb/trino:479 42ff730095f0 2025-12-15 11:47:26 +0800 CST
+quay.io/keycloak/keycloak:26.0 e447933b6a50 2025-02-20 22:47:15 +0800 CST
+temporalio/admin-tools:1.26.2 b3c0136b47f7 2024-12-24 01:56:16 +0800 CST
+temporalio/auto-setup:1.26.2 ad3270ff2833 2024-12-24 01:56:13 +0800 CST
+temporalio/ui:2.31.2 f7b0a4ca39a5 2024-10-02 23:40:29 +0800 CST

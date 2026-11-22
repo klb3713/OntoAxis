@@ -28,7 +28,8 @@ lint: vet
 	@if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run; else echo "golangci-lint not installed; go vet passed"; fi
 
 license-check:
-	$(GO) run github.com/google/go-licenses@v1.6.0 check ./...
+	# nexus-proto-annotations 是 Temporal 的传递依赖，模块内无许可证元数据；经负责人批准加路径例外，依赖树其余包仍检查。
+	$(GO) run github.com/google/go-licenses@v1.6.0 check --ignore github.com/nexus-rpc/nexus-proto-annotations ./...
 
 proto-lint:
 	@if command -v $(BUF) >/dev/null 2>&1; then cd proto && $(BUF) lint; else $(BUF_DOCKER) lint; fi
@@ -66,3 +67,50 @@ observability-rules-test:
 
 observability-smoke:
 	./scripts/observability-smoke.sh
+
+## Delivery (Helm / GitOps)
+delivery-lint:
+	helm lint deploy/helm/ontoaxis-platform deploy/helm/ontoaxis-data deploy/helm/ontoaxis-app deploy/helm/ontoaxis-observability deploy/helm/ontoaxis-jobs
+
+delivery-render:
+	bash scripts/delivery-render-check.sh
+
+delivery-render-check:
+	bash scripts/delivery-render-check.sh
+
+delivery-config-check:
+	bash scripts/delivery-config-check.sh
+
+delivery-sync-observability:
+	bash scripts/delivery-sync-observability.sh
+
+DELIVERY_ENV ?= kind
+
+delivery-smoke:
+	bash scripts/delivery-smoke.sh --env $(DELIVERY_ENV)
+
+delivery-diag:
+	bash scripts/delivery-diag.sh
+
+delivery-backup:
+	kubectl -n oa-data create job --from=cronjob/ontoaxis-backup backup-manual-$$(date -u +%Y%m%dT%H%M%SZ)
+
+delivery-restore:
+	bash scripts/delivery-restore.sh --manifest $${MANIFEST:?set MANIFEST=/path/to/manifest.json}
+
+delivery-idp-check:
+	bash scripts/delivery-idp-check.sh --issuer $${OIDC_ISSUER:-http://127.0.0.1:18088/realms/ontoaxis} --core-url $${OIDC_CORE_URL:-http://127.0.0.1:18088}
+
+delivery-promote:
+	bash scripts/delivery-promote.sh --from $${FROM_ENV:?set FROM_ENV} --to $${TO_ENV:?set TO_ENV} --release $${RELEASE:?set RELEASE}
+
+delivery-rollback:
+	bash scripts/delivery-rollback.sh --env $${TARGET_ENV:?set TARGET_ENV} --release $${RELEASE:?set RELEASE}
+
+delivery-kind-up:
+	bash deploy/kind/kind-up.sh
+
+delivery-kind-down:
+	bash deploy/kind/kind-down.sh
+
+.PHONY: delivery-lint delivery-render delivery-render-check delivery-config-check delivery-sync-observability delivery-smoke delivery-diag delivery-backup delivery-restore delivery-idp-check delivery-promote delivery-rollback delivery-kind-up delivery-kind-down

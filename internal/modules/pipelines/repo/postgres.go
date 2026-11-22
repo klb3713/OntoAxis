@@ -37,6 +37,51 @@ func (s *PostgresStore) Ping(ctx context.Context) error {
 
 const pipelineColumns = `id::text, tenant_id::text, name, display_name, description, pipeline_type, dag, version, status, created_by, deleted_at, created_at, updated_at`
 
+// runColumns keeps every run SELECT/RETURNING in the same column order as
+// scanRun. Migration 00002 made execution_id and failure_code nullable, so both
+// are normalised to empty strings here instead of scanning NULL into a string.
+const runColumns = `id::text, tenant_id::text, pipeline_id::text, version, status, trigger_type,
+	COALESCE(execution_id, ''), COALESCE(failure_code, ''), attempt_count, last_reconciled_at,
+	started_at, finished_at, error, created_at, updated_at`
+
+const createRunSQL = `
+		INSERT INTO pipeline.runs
+			(id, tenant_id, pipeline_id, version, status, trigger_type, execution_id, failure_code,
+			 attempt_count, last_reconciled_at, started_at, finished_at, error, created_at, updated_at)
+		VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, NULLIF($7, ''), NULLIF($8, ''),
+			$9, $10, $11, $12, $13, $14, $15)`
+
+// updateRunConditionalSQL is the only run write that can reach a terminal state.
+// The status guard makes the write a compare-and-set: once a run is terminal the
+// UPDATE affects no row, so a late or replayed reconciliation can never regress
+// it (D7). Nullable references merge with COALESCE and the attempt counter only
+// grows.
+const updateRunConditionalSQL = `
+		UPDATE pipeline.runs
+		SET status = $3,
+		    execution_id = COALESCE(NULLIF($4, ''), execution_id),
+		    failure_code = COALESCE(NULLIF($5, ''), failure_code),
+		    attempt_count = GREATEST(attempt_count, $6),
+		    last_reconciled_at = COALESCE($7, last_reconciled_at),
+		    started_at = COALESCE(started_at, $8),
+		    finished_at = COALESCE(finished_at, $9),
+		    error = COALESCE(NULLIF($10, ''), error),
+		    updated_at = $11
+		WHERE tenant_id = $1::uuid AND id = $2::uuid
+		  AND status IN ('queued', 'running')
+		RETURNING ` + runColumns
+
+const insertRunInputSQL = `
+				INSERT INTO pipeline.run_inputs (run_id, tenant_id, dataset_id, created_at)
+				VALUES ($1::uuid, $2::uuid, $3::uuid, $4)
+				ON CONFLICT (run_id, dataset_id) DO NOTHING`
+
+const insertRunOutputSQL = `
+				INSERT INTO pipeline.run_outputs
+					(run_id, tenant_id, dataset_id, model, relation_catalog, relation_schema, relation_table, created_at)
+				VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8)
+				ON CONFLICT (run_id, dataset_id) DO NOTHING`
+
 // CreatePipeline inserts a new definition.
 func (s *PostgresStore) CreatePipeline(ctx context.Context, pipeline domain.Pipeline) (domain.Pipeline, error) {
 	_, err := s.pool.Exec(ctx, `
@@ -177,11 +222,9 @@ func (s *PostgresStore) PublishPipeline(ctx context.Context, pipeline domain.Pip
 
 // CreateRun inserts one run record.
 func (s *PostgresStore) CreateRun(ctx context.Context, run domain.PipelineRun) (domain.PipelineRun, error) {
-	_, err := s.pool.Exec(ctx, `
-		INSERT INTO pipeline.runs
-			(id, tenant_id, pipeline_id, version, status, trigger_type, started_at, finished_at, error, created_at, updated_at)
-		VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11)`,
+	_, err := s.pool.Exec(ctx, createRunSQL,
 		run.ID, run.TenantID, run.PipelineID, run.Version, string(run.Status), string(run.TriggerType),
+		run.ExecutionID, run.FailureCode, run.AttemptCount, run.LastReconciledAt,
 		run.StartedAt, run.FinishedAt, run.Error, run.CreatedAt, run.UpdatedAt)
 	if err != nil {
 		return domain.PipelineRun{}, fmt.Errorf("create pipeline run: %w", mapPostgresError(err))
@@ -191,10 +234,7 @@ func (s *PostgresStore) CreateRun(ctx context.Context, run domain.PipelineRun) (
 
 // GetRun loads one run scoped to tenant and Pipeline.
 func (s *PostgresStore) GetRun(ctx context.Context, tenantID, pipelineID, runID string) (domain.PipelineRun, error) {
-	row := s.pool.QueryRow(ctx, `
-		SELECT id::text, tenant_id::text, pipeline_id::text, version, status, trigger_type,
-		       started_at, finished_at, error, created_at, updated_at
-		FROM pipeline.runs
+	row := s.pool.QueryRow(ctx, `SELECT `+runColumns+` FROM pipeline.runs
 		WHERE id = $1::uuid AND tenant_id = $2::uuid AND pipeline_id = $3::uuid`, runID, tenantID, pipelineID)
 	run, err := scanRun(row)
 	if err != nil {
@@ -218,8 +258,7 @@ func (s *PostgresStore) ListRuns(ctx context.Context, filter service.RunFilter) 
 	}
 	listArgs := append(append([]any{}, args...), filter.PerPage, (filter.Page-1)*filter.PerPage)
 	rows, err := s.pool.Query(ctx, `
-		SELECT id::text, tenant_id::text, pipeline_id::text, version, status, trigger_type,
-		       started_at, finished_at, error, created_at, updated_at
+		SELECT `+runColumns+`
 		FROM pipeline.runs WHERE `+clause+
 		fmt.Sprintf(` ORDER BY COALESCE(started_at, created_at) DESC, id LIMIT $%d OFFSET $%d`, len(args)+1, len(args)+2), listArgs...)
 	if err != nil {
@@ -231,6 +270,89 @@ func (s *PostgresStore) ListRuns(ctx context.Context, filter service.RunFilter) 
 		return nil, 0, fmt.Errorf("list pipeline runs: %w", mapPostgresError(err))
 	}
 	return items, total, nil
+}
+
+// UpdateRunConditional applies a forward-only run write with a compare-and-set
+// guard: only runs that are still queued or running may transition, so a late
+// or replayed reconciliation can never move a terminal run (D7). Nullable
+// execution references and the attempt counter merge monotonically; a nil
+// started_at/finished_at/last_reconciled_at or empty error keeps the stored
+// value. A run that is missing, belongs to another tenant or is already
+// terminal yields ErrInvalidState.
+func (s *PostgresStore) UpdateRunConditional(ctx context.Context, run domain.PipelineRun) (domain.PipelineRun, error) {
+	row := s.pool.QueryRow(ctx, updateRunConditionalSQL,
+		run.TenantID, run.ID, string(run.Status), run.ExecutionID, run.FailureCode,
+		run.AttemptCount, run.LastReconciledAt, run.StartedAt, run.FinishedAt,
+		run.Error, run.UpdatedAt)
+	updated, err := scanRun(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.PipelineRun{}, fmt.Errorf("%w: pipeline run %s is not queued or running", domain.ErrInvalidState, run.ID)
+		}
+		return domain.PipelineRun{}, fmt.Errorf("update pipeline run conditionally: %w", mapPostgresError(err))
+	}
+	return updated, nil
+}
+
+// CreateRunInputs appends the declared input datasets of a run. The write is
+// idempotent per (run_id, dataset_id), so a replayed trigger cannot duplicate
+// lineage rows (D10, task 9.4).
+func (s *PostgresStore) CreateRunInputs(ctx context.Context, inputs []domain.PipelineRunInput) error {
+	if len(inputs) == 0 {
+		return nil
+	}
+	if err := s.insertRunRows(ctx, "create pipeline run inputs", func(tx pgx.Tx) error {
+		for _, input := range inputs {
+			if _, err := tx.Exec(ctx, insertRunInputSQL,
+				input.PipelineRunID, input.TenantID, input.DatasetID, input.CreatedAt); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// CreateRunOutputs appends the dataset outputs of a succeeded run. The relation
+// columns store the fully qualified physical table (catalog, schema, table).
+// The write is idempotent per (run_id, dataset_id) so replaying a terminal
+// callback cannot duplicate outputs (D10, task 9.4).
+func (s *PostgresStore) CreateRunOutputs(ctx context.Context, outputs []domain.PipelineRunOutput) error {
+	if len(outputs) == 0 {
+		return nil
+	}
+	if err := s.insertRunRows(ctx, "create pipeline run outputs", func(tx pgx.Tx) error {
+		for _, output := range outputs {
+			if _, err := tx.Exec(ctx, insertRunOutputSQL,
+				output.PipelineRunID, output.TenantID, output.DatasetID, output.Model,
+				output.Catalog, output.Schema, output.Table, output.CreatedAt); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// insertRunRows runs one lineage write as an atomic transaction. The callback
+// only issues INSERT ... ON CONFLICT DO NOTHING statements.
+func (s *PostgresStore) insertRunRows(ctx context.Context, operation string, write func(pgx.Tx) error) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if err := write(tx); err != nil {
+		return fmt.Errorf("%s: %w", operation, mapPostgresError(err))
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+	return nil
 }
 
 // CreateSchedule inserts a schedule.
@@ -339,6 +461,7 @@ func scanRun(row rowScanner) (domain.PipelineRun, error) {
 	var run domain.PipelineRun
 	var status, triggerType string
 	err := row.Scan(&run.ID, &run.TenantID, &run.PipelineID, &run.Version, &status, &triggerType,
+		&run.ExecutionID, &run.FailureCode, &run.AttemptCount, &run.LastReconciledAt,
 		&run.StartedAt, &run.FinishedAt, &run.Error, &run.CreatedAt, &run.UpdatedAt)
 	if err != nil {
 		return domain.PipelineRun{}, err
@@ -415,4 +538,35 @@ func mapPostgresError(err error) error {
 		}
 	}
 	return err
+}
+
+// MarkSucceededWithOutputs writes the terminal run state and its output lineage
+// in one transaction: either both are observable or neither is.
+func (s *PostgresStore) MarkSucceededWithOutputs(ctx context.Context, run domain.PipelineRun, outputs []domain.PipelineRunOutput) (domain.PipelineRun, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return domain.PipelineRun{}, fmt.Errorf("mark run succeeded with outputs: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	updated, err := scanRun(tx.QueryRow(ctx, updateRunConditionalSQL,
+		run.TenantID, run.ID, string(run.Status), run.ExecutionID, run.FailureCode,
+		run.AttemptCount, run.LastReconciledAt, run.StartedAt, run.FinishedAt,
+		run.Error, run.UpdatedAt))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.PipelineRun{}, fmt.Errorf("%w: pipeline run %s is not queued or running", domain.ErrInvalidState, run.ID)
+		}
+		return domain.PipelineRun{}, fmt.Errorf("mark run succeeded with outputs: %w", mapPostgresError(err))
+	}
+	for _, output := range outputs {
+		if _, err := tx.Exec(ctx, insertRunOutputSQL,
+			output.PipelineRunID, output.TenantID, output.DatasetID, output.Model,
+			output.Catalog, output.Schema, output.Table, output.CreatedAt); err != nil {
+			return domain.PipelineRun{}, fmt.Errorf("mark run succeeded with outputs: %w", mapPostgresError(err))
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return domain.PipelineRun{}, fmt.Errorf("mark run succeeded with outputs: %w", err)
+	}
+	return updated, nil
 }

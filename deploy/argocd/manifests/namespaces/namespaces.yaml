@@ -1,0 +1,59 @@
+# Runtime namespaces for the OntoAxis platform.
+#
+# This is the sync-wave -10 batch: namespaces exist before any workload, Secret
+# or chart is applied. `argocd` and `external-secrets` are created by the
+# bootstrap installer (Helm), not here, because their controllers own those
+# namespaces. `oa-restore` is created transiently by scripts/delivery-restore.sh
+# and is intentionally not declared here.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oa-system
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/managed-by: argocd
+    # Enforce the baseline Pod Security Standard for runtime namespaces.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oa-app
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/managed-by: argocd
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oa-data
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/managed-by: argocd
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oa-observability
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/managed-by: argocd
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"

@@ -1,0 +1,15 @@
+{{- if .Values.createNamespaces }}
+{{- range .Values.namespaces }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .name }}
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+    ontoaxis.io/environment: {{ $.Values.global.environment }}
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .syncWave | default "-10" | quote }}
+{{- end }}
+{{- end }}

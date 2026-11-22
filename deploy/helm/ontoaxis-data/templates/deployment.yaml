@@ -1,0 +1,109 @@
+{{- include "ontoaxis.validateEnvironment" . -}}
+{{- range $name, $c := .Values.components }}
+{{- if and $c.enabled (eq $c.chart $.Chart.Name) }}
+{{- $res := $c.resources | default $.Values.global.defaultResources }}
+{{- $replicas := $c.replicas | default $.Values.global.defaultReplicas }}
+{{- $mount := and $c.configMap $c.configMap.enabled $c.configMap.mountPath }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ $c.namespace | default $.Values.global.namespace | default "oa-app" }}
+  labels:
+    {{- include "ontoaxis.labels" (dict "name" $name "root" $) | nindent 4 }}
+spec:
+  replicas: {{ $replicas }}
+  selector:
+    matchLabels:
+      {{- include "ontoaxis.selectorLabels" (dict "name" $name "root" $) | nindent 6 }}
+  strategy:
+    type: {{ $c.strategy | default "RollingUpdate" }}
+  template:
+    metadata:
+      labels:
+        {{- include "ontoaxis.selectorLabels" (dict "name" $name "root" $) | nindent 8 }}
+    spec:
+      {{- if $c.serviceAccountName }}
+      serviceAccountName: {{ $c.serviceAccountName }}
+      {{- else if and $c.serviceAccount $c.serviceAccount.create }}
+      serviceAccountName: {{ $c.serviceAccount.name | default $name }}
+      {{- end }}
+      {{- with $c.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ . }}
+      {{- end }}
+      containers:
+        - name: {{ $name }}
+          image: {{ include "ontoaxis.image" (dict "image" $c.image) }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy | default "IfNotPresent" }}
+          {{- with $c.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $c.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            {{- range $c.ports }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+          {{- if or $c.env $c.secretRefs $c.oidcEnv }}
+          env:
+            {{- range $c.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+            {{- range $c.secretRefs }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required (printf "ontoaxis: %s secretRef %s secretName is required" $name .name) .secretName }}
+                  key: {{ required (printf "ontoaxis: %s secretRef %s key is required" $name .name) .key }}
+            {{- end }}
+            {{- if $c.oidcEnv }}
+            - name: ONTOAXIS_ENVIRONMENT
+              value: {{ $.Values.global.environment | quote }}
+            - name: ONTOAXIS_OIDC_ISSUER
+              value: {{ required "ontoaxis: global.oidc.issuer is required" $.Values.global.oidc.issuer | quote }}
+            - name: ONTOAXIS_OIDC_AUDIENCE
+              value: {{ required "ontoaxis: global.oidc.audience is required" $.Values.global.oidc.audience | quote }}
+            {{- if $.Values.global.oidc.jwksUrl }}
+            - name: ONTOAXIS_OIDC_JWKS_URL
+              value: {{ $.Values.global.oidc.jwksUrl | quote }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- with $res }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if $c.probes }}
+          {{- include "ontoaxis.probes" (dict "probes" $c.probes "root" $) | nindent 10 }}
+          {{- end }}
+          {{- if $mount }}
+          volumeMounts:
+            - name: config
+              mountPath: {{ $c.configMap.mountPath }}
+              readOnly: true
+          {{- end }}
+          {{- if $c.preStop }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", {{ printf "sleep %d" (int $c.preStop.sleepSeconds) | quote }}]
+          {{- end }}
+      {{- if $mount }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $c.configMap.name | default (printf "%s-config" $name) }}
+      {{- end }}
+      {{- with $c.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- end }}

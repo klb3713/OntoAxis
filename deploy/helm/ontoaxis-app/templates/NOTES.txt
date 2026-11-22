@@ -1,0 +1,14 @@
+ontoaxis-app has been rendered for environment: {{ .Values.global.environment }}
+
+All app components run in namespace oa-app (created by ontoaxis-platform).
+
+Component summary (replicas / image):
+{{- range $name, $c := .Values.components }}
+{{- if and $c.enabled (eq $c.chart $.Chart.Name) }}
+  - {{ $name }} replicas={{ $c.replicas | default $.Values.global.defaultReplicas }} image={{ $c.image.repository }}@{{ $c.image.digest }}
+{{- end }}
+{{- end }}
+
+ontoaxis-core uses strategy Recreate (single replica, run migrations at startup)
+and receives OIDC issuer/audience from global.oidc. Database and Meilisearch keys
+are referenced from Secret ontoaxis-core-secrets (never literal values).

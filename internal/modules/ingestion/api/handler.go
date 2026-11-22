@@ -15,8 +15,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	connectordomain "github.com/klb3713/ontoaxis/internal/modules/connectors/domain"
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/domain"
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/service"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/httperr"
 )
 
@@ -35,14 +37,121 @@ type Service interface {
 	Watch(ctx context.Context, tenantID, jobID string) (<-chan *domain.SyncJob, <-chan error, error)
 }
 
+// ConnectorReader is the tenant-scoped connector lookup used to build the
+// authoritative Connector resource fact for ingestion:create. It mirrors
+// service.ConnectorReader so production wiring can reuse the same reader.
+type ConnectorReader interface {
+	GetConnector(ctx context.Context, tenantID, id string) (*connectordomain.Connector, error)
+}
+
 // Handler serves the /api/v1/ingestion routes.
 type Handler struct {
-	svc Service
+	svc        Service
+	guard      authz.DecisionGuard
+	connectors ConnectorReader
+}
+
+// Option customises the ingestion HTTP handler.
+type Option func(*Handler)
+
+// WithDecisionGuard injects the authorization guard. A nil guard keeps the
+// legacy behaviour: every route is allowed exactly as before the seam existed.
+func WithDecisionGuard(guard authz.DecisionGuard) Option {
+	return func(h *Handler) { h.guard = guard }
+}
+
+// WithConnectorReader injects the tenant-scoped connector lookup required to
+// authorize ingestion:create on the Connector resource. When a guard is wired
+// but no reader is set, create fails closed with 503.
+func WithConnectorReader(reader ConnectorReader) Option {
+	return func(h *Handler) { h.connectors = reader }
 }
 
 // NewHandler builds an ingestion HTTP handler.
-func NewHandler(svc Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc Service, opts ...Option) *Handler {
+	h := &Handler{svc: svc}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(h)
+		}
+	}
+	return h
+}
+
+// authorize delegates to the platform guard. A nil guard authorizes without a
+// side effect, which is the documented fail-closed seam default.
+func (h *Handler) authorize(w http.ResponseWriter, r *http.Request, action authz.Action, resource authz.ResourceFact) bool {
+	return authz.AuthorizeHTTP(w, r, h.guard, action, resource)
+}
+
+func tenantFact(tenantID string) authz.ResourceFact {
+	return authz.ResourceFact{Type: "tenant", ID: tenantID, TenantID: tenantID}
+}
+
+func connectorFact(connector *connectordomain.Connector) authz.ResourceFact {
+	return authz.ResourceFact{
+		Type:     "connector",
+		ID:       connector.ID,
+		TenantID: connector.TenantID,
+		Status:   string(connector.Status),
+	}
+}
+
+func jobFact(job *domain.SyncJob) authz.ResourceFact {
+	return authz.ResourceFact{
+		Type:     "ingest_job",
+		ID:       job.ID,
+		TenantID: job.TenantID,
+		Status:   string(job.Status),
+		Ancestors: []authz.Ancestor{
+			{Type: "connector", ID: job.ConnectorID},
+			{Type: "tenant", ID: job.TenantID},
+		},
+	}
+}
+
+// authorizeJob authorizes an already tenant-scoped IngestJob. The guard is the
+// only consumer of the fact, so the legacy nil-guard path does not build it.
+func (h *Handler) authorizeJob(w http.ResponseWriter, r *http.Request, job *domain.SyncJob, action authz.Action) bool {
+	if h.guard == nil {
+		return true
+	}
+	if job == nil {
+		httperr.Write(w, r, httperr.Internal())
+		return false
+	}
+	return h.authorize(w, r, action, jobFact(job))
+}
+
+// authorizeCreate loads the request's connector tenant-scoped and authorizes
+// ingestion:create on the Connector fact. The connector status comes from that
+// authoritative load, never from the request body.
+func (h *Handler) authorizeCreate(w http.ResponseWriter, r *http.Request, tenantID, connectorID string) bool {
+	if h.guard == nil {
+		return true
+	}
+	if _, err := uuid.Parse(connectorID); err != nil {
+		httperr.Write(w, r, httperr.BadRequest("connector id must be a UUID"))
+		return false
+	}
+	if h.connectors == nil {
+		httperr.Write(w, r, httperr.Unavailable("connector reader is not configured"))
+		return false
+	}
+	connector, err := h.connectors.GetConnector(r.Context(), tenantID, connectorID)
+	if err != nil {
+		if errors.Is(err, connectordomain.ErrNotFound) {
+			httperr.Write(w, r, httperr.NotFound("connector not found"))
+			return false
+		}
+		httperr.Write(w, r, httperr.Internal())
+		return false
+	}
+	if connector == nil {
+		httperr.Write(w, r, httperr.Internal())
+		return false
+	}
+	return h.authorize(w, r, "ingestion:create", connectorFact(connector))
 }
 
 // Register mounts all ingestion routes on the supplied chi router.
@@ -120,6 +229,9 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	if !h.requireService(w, r) {
 		return
 	}
+	if !h.authorizeCreate(w, r, tenantID, req.ConnectorID) {
+		return
+	}
 	job, err := h.svc.CreateJob(r.Context(), tenantID, req.ConnectorID)
 	if err != nil {
 		writeServiceError(w, r, err)
@@ -142,6 +254,9 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, r, err)
 		return
 	}
+	if !h.authorizeJob(w, r, job, "ingestion:read") {
+		return
+	}
 	writeJSON(w, http.StatusOK, toJobDTO(job))
 }
 
@@ -158,6 +273,9 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	}
 	connectorID := strings.TrimSpace(r.URL.Query().Get("connector_id"))
 	if !h.requireService(w, r) {
+		return
+	}
+	if !h.authorize(w, r, "ingestion:read", tenantFact(tenantID)) {
 		return
 	}
 	result, err := h.svc.ListJobs(r.Context(), tenantID, connectorID, page, perPage)
@@ -184,12 +302,27 @@ func (h *Handler) cancel(w http.ResponseWriter, r *http.Request) {
 	if !h.requireService(w, r) {
 		return
 	}
-	job, err := h.svc.CancelJob(r.Context(), tenantID, chi.URLParam(r, "jobID"))
+	jobID := chi.URLParam(r, "jobID")
+	var job *domain.SyncJob
+	if h.guard != nil {
+		// Tenant-scoped load: a job outside the caller's tenant returns 404
+		// before the guard is consulted.
+		loaded, err := h.svc.GetJob(r.Context(), tenantID, jobID)
+		if err != nil {
+			writeServiceError(w, r, err)
+			return
+		}
+		job = loaded
+	}
+	if !h.authorizeJob(w, r, job, "ingestion:cancel") {
+		return
+	}
+	cancelled, err := h.svc.CancelJob(r.Context(), tenantID, jobID)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toJobDTO(job))
+	writeJSON(w, http.StatusOK, toJobDTO(cancelled))
 }
 
 func (h *Handler) listRuns(w http.ResponseWriter, r *http.Request) {
@@ -201,7 +334,18 @@ func (h *Handler) listRuns(w http.ResponseWriter, r *http.Request) {
 	if !h.requireService(w, r) {
 		return
 	}
-	runs, err := h.svc.ListRuns(r.Context(), tenantID, chi.URLParam(r, "jobID"))
+	jobID := chi.URLParam(r, "jobID")
+	if h.guard != nil {
+		job, err := h.svc.GetJob(r.Context(), tenantID, jobID)
+		if err != nil {
+			writeServiceError(w, r, err)
+			return
+		}
+		if !h.authorizeJob(w, r, job, "ingestion:read") {
+			return
+		}
+	}
+	runs, err := h.svc.ListRuns(r.Context(), tenantID, jobID)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -222,7 +366,18 @@ func (h *Handler) watch(w http.ResponseWriter, r *http.Request) {
 	if !h.requireService(w, r) {
 		return
 	}
-	updates, errs, err := h.svc.Watch(r.Context(), tenantID, chi.URLParam(r, "jobID"))
+	jobID := chi.URLParam(r, "jobID")
+	if h.guard != nil {
+		job, err := h.svc.GetJob(r.Context(), tenantID, jobID)
+		if err != nil {
+			writeServiceError(w, r, err)
+			return
+		}
+		if !h.authorizeJob(w, r, job, "ingestion:watch") {
+			return
+		}
+	}
+	updates, errs, err := h.svc.Watch(r.Context(), tenantID, jobID)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return

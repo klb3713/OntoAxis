@@ -1,0 +1,13 @@
+{{- if .Values.backup.enabled }}
+{{- include "ontoaxis.validateEnvironment" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.backup.name }}-script
+  namespace: {{ .Values.backup.namespace }}
+  labels:
+    {{- include "ontoaxis.labels" (dict "name" "backup" "root" $) | nindent 4 }}
+data:
+  backup.sh: |
+{{ .Values.backup.script | indent 4 }}
+{{- end }}

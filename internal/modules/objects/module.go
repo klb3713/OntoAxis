@@ -12,6 +12,7 @@ import (
 	"github.com/klb3713/ontoaxis/internal/modules/objects/api"
 	"github.com/klb3713/ontoaxis/internal/modules/objects/repo"
 	"github.com/klb3713/ontoaxis/internal/modules/objects/service"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/db"
 	"github.com/klb3713/ontoaxis/internal/platform/module"
 )
@@ -28,14 +29,19 @@ const (
 
 // Module owns object instances and links in the object_data schema.
 type Module struct {
-	pool    *pgxpool.Pool
-	service service.Service
+	pool             *pgxpool.Pool
+	service          service.Service
+	guard            authz.DecisionGuard
+	objectTypeReader api.ObjectTypeReader
+	linkReader       api.LinkReader
+	search           api.SearchBackend
+	searchEnabled    bool
 }
 
 func New(pool *pgxpool.Pool, opts ...service.Option) *Module {
 	m := &Module{pool: pool}
 	if pool != nil {
-		m.service = service.New(repo.New(pool), opts...)
+		m.service = service.New(repo.NewOutbox(pool), opts...)
 	}
 	return m
 }
@@ -58,11 +64,44 @@ func (m *Module) Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
+func (m *Module) SetDecisionGuard(guard authz.DecisionGuard) { m.guard = guard }
+
+func (m *Module) SetObjectTypeReader(reader api.ObjectTypeReader) { m.objectTypeReader = reader }
+
+func (m *Module) SetLinkReader(reader api.LinkReader) { m.linkReader = reader }
+
+// SetSearch wires the object search backend and the authorization guard used by
+// the search route. When enabled is false the search route is not registered.
+func (m *Module) SetSearch(backend api.SearchBackend, enabled bool) {
+	m.search = backend
+	m.searchEnabled = enabled
+}
+
+// SearchStartupError reports a fail-closed misconfiguration of the search route.
+// It returns nil when search is disabled or fully configured.
+func (m *Module) SearchStartupError() error {
+	if m == nil || !m.searchEnabled {
+		return nil
+	}
+	if m.search == nil {
+		return fmt.Errorf("objects: search is enabled but no search backend is configured")
+	}
+	if m.guard == nil {
+		return fmt.Errorf("objects: search is enabled but no authorization guard is configured")
+	}
+	return nil
+}
+
 func (m *Module) RegisterRoutes(r chi.Router) {
 	if r == nil || m.service == nil {
 		return
 	}
-	r.Route("/api/v1/objects", api.NewHandler(m.service).Register)
+	r.Route("/api/v1/objects", api.NewHandler(m.service,
+		api.WithDecisionGuard(m.guard),
+		api.WithObjectTypeReader(m.objectTypeReader),
+		api.WithLinkReader(m.linkReader),
+		api.WithSearch(m.search, m.guard, m.searchEnabled),
+	).Register)
 }
 
 func (m *Module) Ready(ctx context.Context) error {

@@ -13,18 +13,70 @@ import (
 	"github.com/klb3713/ontoaxis/internal/modules/objects/domain"
 	"github.com/klb3713/ontoaxis/internal/modules/objects/service"
 	"github.com/klb3713/ontoaxis/internal/platform/authn"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/httperr"
 )
 
 const maxBody = 1 << 20
 
-type Handler struct{ svc service.Service }
+// Handler serves the objects HTTP routes. Authorization resources are loaded
+// through the optional readers; they are required once a guard is configured.
+type Handler struct {
+	svc service.Service
 
-func NewHandler(svc service.Service) *Handler { return &Handler{svc: svc} }
+	guard       authz.DecisionGuard
+	objectTypes ObjectTypeReader
+	links       LinkReader
+
+	search        SearchBackend
+	searchGuard   authz.DecisionGuard
+	searchEnabled bool
+}
+
+// Option configures optional Handler collaborators.
+type Option func(*Handler)
+
+// WithDecisionGuard installs the platform authorization guard. A nil guard
+// keeps the legacy behavior and performs no authorization decisions.
+func WithDecisionGuard(guard authz.DecisionGuard) Option {
+	return func(h *Handler) { h.guard = guard }
+}
+
+// WithObjectTypeReader installs the tenant-scoped object type loader used to
+// authorize object creation and object type-filtered lists.
+func WithObjectTypeReader(reader ObjectTypeReader) Option {
+	return func(h *Handler) { h.objectTypes = reader }
+}
+
+// WithLinkReader installs the tenant-scoped link loader used to authorize link
+// deletion against the link's source object.
+func WithLinkReader(reader LinkReader) Option {
+	return func(h *Handler) { h.links = reader }
+}
+
+// NewHandler builds an objects HTTP handler.
+func NewHandler(svc service.Service, opts ...Option) *Handler {
+	h := &Handler{svc: svc}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(h)
+		}
+	}
+	return h
+}
 
 func (h *Handler) Register(r chi.Router) {
 	r.Post("/", h.createObject)
 	r.Get("/", h.listObjects)
+	if h.searchEnabled {
+		// Static route must be registered before the /{id} wildcard.
+		r.Get("/search", h.searchObjects)
+	} else {
+		// With search disabled the endpoint is not available. /{id} would
+		// otherwise match "search" and answer 400 (invalid UUID); keep the
+		// unregistered-route contract instead (404).
+		r.Get("/search", http.NotFound)
+	}
 	r.Get("/{id}", h.getObject)
 	r.Patch("/{id}", h.updateObject)
 	r.Delete("/{id}", h.deleteObject)
@@ -86,6 +138,9 @@ func (h *Handler) createObject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, httperr.BadRequest("object_type_id must be a UUID"))
 		return
 	}
+	if !h.authorizeObjectType(w, r, tenantID, objectTypeID, "object:create") {
+		return
+	}
 	obj, err := h.svc.CreateObject(r.Context(), tenantID, objectTypeID, req.Properties)
 	if err != nil {
 		h.writeServiceError(w, r, err)
@@ -107,6 +162,13 @@ func (h *Handler) listObjects(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		objectTypeID = id
+	}
+	if objectTypeID != uuid.Nil {
+		if !h.authorizeObjectType(w, r, tenantID, objectTypeID, "object:read") {
+			return
+		}
+	} else if !h.authorizeTenant(w, r, tenantID, "object:read") {
+		return
 	}
 	limit, offset := page(r)
 	items, total, err := h.svc.ListObjects(r.Context(), tenantID, objectTypeID, limit, offset)
@@ -136,6 +198,13 @@ func (h *Handler) getObject(w http.ResponseWriter, r *http.Request) {
 		h.writeServiceError(w, r, err)
 		return
 	}
+	if h.guard != nil && obj.TenantID != tenantID {
+		writeError(w, r, httperr.NotFound("object not found"))
+		return
+	}
+	if !h.authorize(w, r, "object:read", objectFact(obj)) {
+		return
+	}
 	writeJSON(w, http.StatusOK, toObjectResponse(obj))
 }
 
@@ -152,6 +221,15 @@ func (h *Handler) updateObject(w http.ResponseWriter, r *http.Request) {
 	var req objectRequest
 	if !decode(w, r, &req) {
 		return
+	}
+	if h.guard != nil {
+		current, ok := h.loadObjectForAuthorization(w, r, tenantID, id)
+		if !ok {
+			return
+		}
+		if !h.authorize(w, r, "object:update", objectFact(current)) {
+			return
+		}
 	}
 	obj, err := h.svc.UpdateObject(r.Context(), tenantID, id, req.Properties, req.Replace)
 	if err != nil {
@@ -170,6 +248,15 @@ func (h *Handler) deleteObject(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, r, httperr.BadRequest("id must be a UUID"))
 		return
+	}
+	if h.guard != nil {
+		current, ok := h.loadObjectForAuthorization(w, r, tenantID, id)
+		if !ok {
+			return
+		}
+		if !h.authorize(w, r, "object:delete", objectFact(current)) {
+			return
+		}
 	}
 	if err := h.svc.DeleteObject(r.Context(), tenantID, id); err != nil {
 		h.writeServiceError(w, r, err)
@@ -202,6 +289,9 @@ func (h *Handler) createLink(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, httperr.BadRequest("target_id must be a UUID"))
 		return
 	}
+	if !h.authorizeLinkEndpoints(w, r, tenantID, sourceID, targetID, "object_link:create") {
+		return
+	}
 	link, err := h.svc.CreateLink(r.Context(), tenantID, linkTypeID, sourceID, targetID, req.Properties)
 	if err != nil {
 		h.writeServiceError(w, r, err)
@@ -219,6 +309,15 @@ func (h *Handler) listLinks(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, r, httperr.BadRequest("id must be a UUID"))
 		return
+	}
+	if h.guard != nil {
+		source, ok := h.loadObjectForAuthorization(w, r, tenantID, id)
+		if !ok {
+			return
+		}
+		if !h.authorize(w, r, "object_link:read", objectFact(source)) {
+			return
+		}
 	}
 	limit, offset := page(r)
 	items, total, err := h.svc.ListLinks(r.Context(), tenantID, id, limit, offset)
@@ -241,6 +340,9 @@ func (h *Handler) deleteLink(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, r, httperr.BadRequest("id must be a UUID"))
+		return
+	}
+	if !h.authorizeLink(w, r, tenantID, id, "object_link:delete") {
 		return
 	}
 	if err := h.svc.DeleteLink(r.Context(), tenantID, id); err != nil {

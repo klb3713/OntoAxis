@@ -1,0 +1,2117 @@
+{
+  "": {
+    "entityTypes": {
+      "Tenant": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "Organization": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "Workspace": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "Project": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "Dataset": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "ObjectType": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "Object": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "Connector": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            },
+            "status": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "IngestJob": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            },
+            "status": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "Pipeline": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            },
+            "status": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "PipelineRun": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "PipelineSchedule": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "ActionType": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            },
+            "status": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "ActionExecution": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            },
+            "status": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "SavedQuery": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "AuditEvent": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "Operation": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            }
+          }
+        }
+      },
+      "User": {
+        "memberOfTypes": [],
+        "shape": {
+          "type": "Record",
+          "attributes": {
+            "tenant_id": {
+              "type": "String"
+            },
+            "roles": {
+              "type": "Set",
+              "element": {
+                "type": "String"
+              }
+            }
+          }
+        }
+      }
+    },
+    "actions": {
+      "read": {
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Organization",
+            "Workspace",
+            "Project",
+            "Dataset",
+            "ObjectType",
+            "Object",
+            "Connector",
+            "IngestJob",
+            "Pipeline",
+            "PipelineRun",
+            "PipelineSchedule",
+            "ActionType",
+            "ActionExecution",
+            "SavedQuery",
+            "AuditEvent",
+            "Operation"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "write": {
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Organization",
+            "Workspace",
+            "Project",
+            "Dataset",
+            "ObjectType",
+            "Object",
+            "Connector",
+            "IngestJob",
+            "Pipeline",
+            "PipelineRun",
+            "PipelineSchedule",
+            "ActionType",
+            "ActionExecution",
+            "SavedQuery",
+            "AuditEvent",
+            "Operation"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "delete": {
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Organization",
+            "Workspace",
+            "Project",
+            "Dataset",
+            "ObjectType",
+            "Object",
+            "Connector",
+            "IngestJob",
+            "Pipeline",
+            "PipelineRun",
+            "PipelineSchedule",
+            "ActionType",
+            "ActionExecution",
+            "SavedQuery",
+            "AuditEvent",
+            "Operation"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "invoke": {
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Organization",
+            "Workspace",
+            "Project",
+            "Dataset",
+            "ObjectType",
+            "Object",
+            "Connector",
+            "IngestJob",
+            "Pipeline",
+            "PipelineRun",
+            "PipelineSchedule",
+            "ActionType",
+            "ActionExecution",
+            "SavedQuery",
+            "AuditEvent",
+            "Operation"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "admin": {
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Organization",
+            "Workspace",
+            "Project",
+            "Dataset",
+            "ObjectType",
+            "Object",
+            "Connector",
+            "IngestJob",
+            "Pipeline",
+            "PipelineRun",
+            "PipelineSchedule",
+            "ActionType",
+            "ActionExecution",
+            "SavedQuery",
+            "AuditEvent",
+            "Operation"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "audit": {
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Organization",
+            "Workspace",
+            "Project",
+            "Dataset",
+            "ObjectType",
+            "Object",
+            "Connector",
+            "IngestJob",
+            "Pipeline",
+            "PipelineRun",
+            "PipelineSchedule",
+            "ActionType",
+            "ActionExecution",
+            "SavedQuery",
+            "AuditEvent",
+            "Operation"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:organization:create": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:organization:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Organization"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:organization:update": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Organization"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:organization:delete": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Organization"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:workspace:create": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Organization"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:workspace:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Organization",
+            "Workspace",
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:workspace:update": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Workspace"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:workspace:delete": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Workspace"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:membership:add": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Organization"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:membership:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Organization",
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:membership:remove": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Organization"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:project:create": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Workspace"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:project:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Workspace",
+            "Project",
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:project:update": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Project"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:project:delete": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Project"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:project_resource:add": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Project"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:project_resource:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Project"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "tenancy:project_resource:remove": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Project"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "dataset:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "dataset:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Dataset"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "dataset:update": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Dataset"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "dataset:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Dataset"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "dataset:preview": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Dataset"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "dataset:versions": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Dataset"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:object_type:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:object_type:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:object_type:update": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:object_type:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:property:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:property:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:property:update": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType",
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:property:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType",
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:link_type:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:link_type:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType",
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:link_type:update": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType",
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:link_type:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType",
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:binding:write": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ontology:binding:materialize": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "object:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "object:batch_upsert": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ObjectType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "object:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Object"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "object:update": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Object"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "object:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Object"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "object_link:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Object"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "object_link:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Object"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "object_link:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Object",
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "connector:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "connector:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Connector"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "connector:update": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Connector"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "connector:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Connector"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "connector:test": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Connector"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "connector:sync": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Connector"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "connector:infer_schema": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Connector"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ingestion:create": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Connector"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ingestion:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "IngestJob"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ingestion:watch": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "IngestJob"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "ingestion:cancel": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "IngestJob"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "Pipeline"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline:update": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Pipeline"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Pipeline"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline:publish": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Pipeline"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline:invoke": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Pipeline"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline_run:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "PipelineRun"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline_schedule:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "PipelineSchedule"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline_schedule:write": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "PipelineSchedule"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "pipeline_schedule:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "PipelineSchedule"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_type:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_type:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "ActionType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_type:update": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ActionType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_type:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ActionType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_type:validate": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ActionType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_type:preview": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ActionType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_type:run": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ActionType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_execution:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ActionExecution",
+            "ActionType"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_execution:cancel": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ActionExecution"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_execution:retry": {
+        "memberOf": [
+          {
+            "id": "invoke"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ActionExecution"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "query:execute": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "query:explain": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "saved_query:create": {
+        "memberOf": [
+          {
+            "id": "write"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "saved_query:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant",
+            "SavedQuery"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "saved_query:delete": {
+        "memberOf": [
+          {
+            "id": "delete"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "SavedQuery"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "audit:read": {
+        "memberOf": [
+          {
+            "id": "audit"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "authorization:check": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "authorization:list": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "authorization:explain": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "identity:list": {
+        "memberOf": [
+          {
+            "id": "audit"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Tenant"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "operation:read": {
+        "memberOf": [
+          {
+            "id": "read"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Operation"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      },
+      "action_execution:approve": {
+        "memberOf": [
+          {
+            "id": "admin"
+          }
+        ],
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "ActionExecution"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {}
+          }
+        }
+      }
+    }
+  }
+}

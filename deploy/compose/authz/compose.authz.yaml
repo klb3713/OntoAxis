@@ -1,0 +1,47 @@
+# Local authorization dependency overlay for base compose.
+# Usage: docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml up -d --build
+name: ontoaxis-local
+services:
+  openfga:
+    image: openfga/openfga:v1.23.0
+    command: ["run"]
+    environment:
+      OPENFGA_DATASTORE_ENGINE: memory
+      OPENFGA_LOG_FORMAT: json
+
+  authz-init:
+    image: curlimages/curl:8.10.1
+    user: root
+    entrypoint: ["/bin/sh", "/authz-init.sh"]
+    depends_on:
+      openfga:
+        condition: service_started
+    volumes:
+      - ./authz/authz-init.sh:/authz-init.sh:ro
+      - ../../policies/openfga/model.json:/model.json:ro
+      - authz_shared:/shared
+
+  ontoaxis-core:
+    environment:
+      ONTOAXIS_ACTIONS_EXECUTION_MODE: "noop"
+    depends_on:
+      authz-init:
+        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["set -a; . /shared/authz.env; exec /usr/local/bin/ontoaxis-core"]
+    volumes:
+      - authz_shared:/shared
+
+  ontoaxis-core-edge:
+    environment:
+      ONTOAXIS_ACTIONS_EXECUTION_MODE: "noop"
+    depends_on:
+      authz-init:
+        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["set -a; . /shared/authz.env; exec /usr/local/bin/ontoaxis-core"]
+    volumes:
+      - authz_shared:/shared
+
+volumes:
+  authz_shared:

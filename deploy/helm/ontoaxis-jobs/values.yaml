@@ -1,0 +1,114 @@
+# ontoaxis-jobs default values.
+# Image digest is a deterministic PLACEHOLDER and must be replaced by the
+# release manifest before real deployment. See deploy/helm/README.md.
+
+global:
+  environment: kind
+  imagePullPolicy: IfNotPresent
+  secretStore:
+    name: ontoaxis-kubernetes-store
+    kind: ClusterSecretStore
+
+backup:
+  enabled: true
+  name: ontoaxis-backup
+  namespace: oa-data
+  schedule: "0 2 * * *"
+  suspend: false
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  retention: 7
+  image:
+    repository: docker.io/library/postgres
+    digest: sha256:6fea524445be83b661e89d8c10d4280535e3ec8af116d4f0a9395d28adf67872
+  # Secret created by External Secrets Operator from external keys. Values only
+  # carry name + key names, never literal credentials.
+  secretName: ontoaxis-backup-secrets
+  secretKeys:
+    password: postgres-password
+    user: postgres-user
+    database: postgres-database
+  pgHost: postgres.oa-data.svc.cluster.local
+  pgPort: "5432"
+  schemaVersion: ""        # empty => read max(version_id) from goose_db_version at runtime
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  pvc:
+    name: ontoaxis-backups
+    size: 10Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+  serviceAccount:
+    create: true
+    name: ontoaxis-backup
+  externalSecret:
+    enabled: true
+    name: ontoaxis-backup-external-secret
+    targetName: ontoaxis-backup-secrets
+    refreshInterval: 1h
+    data:
+      - secretKey: postgres-password
+        remoteRef:
+          key: backup/postgres-password
+          property: password
+      - secretKey: postgres-user
+        remoteRef:
+          key: backup/postgres-user
+          property: username
+      - secretKey: postgres-database
+        remoteRef:
+          key: backup/postgres-database
+          property: database
+  # Optional one-off manual Job (mirrors the CronJob pod). Usually you trigger
+  # with `kubectl create job --from=cronjob/ontoaxis-backup`; set to true for a
+  # declarative manual run when GitOps-only execution is required.
+  manualJob:
+    enabled: false
+    name: ontoaxis-backup-manual
+  script: |
+    #!/bin/sh
+    set -eu
+    : "${BACKUP_DIR:=/backups}"
+    : "${RETENTION:=7}"
+    : "${IMAGE_DIGEST:=unknown}"
+    ts="$(date -u +%Y%m%dT%H%M%SZ)"
+    backup_id="backup-${ts}"
+    dest="${BACKUP_DIR}/${ts}"
+    mkdir -p "$dest"
+    dump="${dest}/ontoaxis.dump"
+    echo "starting backup ${backup_id} pg=${PGHOST}:${PGPORT:-5432}/${PGDATABASE}"
+    pg_dump -Fc -h "${PGHOST}" -p "${PGPORT:-5432}" -U "${PGUSER}" -d "${PGDATABASE}" -f "$dump"
+    sha="$(sha256sum "$dump" | awk '{print $1}')"
+    size="$(wc -c < "$dump" | tr -d ' ')"
+    schema_version="${SCHEMA_VERSION:-}"
+    if [ -z "$schema_version" ]; then
+      schema_version="$(psql -h "${PGHOST}" -p "${PGPORT:-5432}" -U "${PGUSER}" -d "${PGDATABASE}" -tAc 'SELECT COALESCE(max(version_id),0) FROM goose_db_version' 2>/dev/null || echo 0)"
+    fi
+    pg_version="$(psql -h "${PGHOST}" -p "${PGPORT:-5432}" -U "${PGUSER}" -d "${PGDATABASE}" -tAc 'SHOW server_version' 2>/dev/null || echo unknown)"
+    cat > "${dest}/manifest.json" <<MANIFEST
+    {
+      "backup_id": "${backup_id}",
+      "created_at": "${ts}",
+      "sha256": "${sha}",
+      "size_bytes": ${size},
+      "schema_version": "${schema_version}",
+      "image_digest": "${IMAGE_DIGEST}",
+      "pg_version": "${pg_version}"
+    }
+    MANIFEST
+    count=0
+    for d in $(ls -1dt "${BACKUP_DIR}"/*/ 2>/dev/null); do
+      count=$((count + 1))
+      if [ "$count" -gt "$RETENTION" ]; then
+        rm -rf "$d"
+      fi
+    done
+    echo "backup complete: ${dest} sha256=${sha} size=${size} schema_version=${schema_version}"

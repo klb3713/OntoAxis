@@ -1,0 +1,47 @@
+# Local Meilisearch + object-search worker overlay.
+# Usage: docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml -f deploy/compose/search/compose.search.yaml up -d --build
+name: ontoaxis-local
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    environment:
+      MEILI_MASTER_KEY: local-search-master-key
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      - "127.0.0.1:17700:7700"
+    volumes:
+      - search_data:/meili_data
+
+  search-worker:
+    build:
+      context: ../..
+      dockerfile: deploy/compose/search/Dockerfile
+    command: ["consume"]
+    environment:
+      ONTOAXIS_DATABASE_URL: postgres://ontoaxis:ontoaxis@postgres:5432/ontoaxis?sslmode=disable
+      ONTOAXIS_SEARCH_ENABLED: "true"
+      ONTOAXIS_SEARCH_URL: http://meilisearch:7700
+      ONTOAXIS_SEARCH_API_KEY: local-search-master-key
+      ONTOAXIS_SEARCH_HTTP_ADDR: ":8081"
+      ONTOAXIS_SEARCH_METRICS_ADDR: ":9094"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    ports:
+      - "127.0.0.1:18088:8081"
+    restart: unless-stopped
+
+  ontoaxis-core:
+    environment:
+      ONTOAXIS_SEARCH_ENABLED: "true"
+      ONTOAXIS_SEARCH_URL: http://meilisearch:7700
+      ONTOAXIS_SEARCH_API_KEY: local-search-master-key
+    depends_on:
+      search-worker:
+        condition: service_started
+
+volumes:
+  search_data:

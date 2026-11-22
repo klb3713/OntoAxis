@@ -1,0 +1,255 @@
+# prod-like Application set (manual sync).
+#
+# Same sync-wave layout as deploy/argocd/apps/ but:
+#   - NO syncPolicy.automated: commits stay OutOfSync until an operator runs
+#     `argocd app sync <name>`.
+#   - values come from deploy/values/prod-like.yaml (render-only in Stage 2).
+# This file is a single multi-document manifest so the prod-like root app can
+# recurse a one-file directory.
+#
+# NOTE: replace the repoURL placeholder with the real GitOps repository URL.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-namespaces
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: namespaces
+    ontoaxis.io/environment: prod-like
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  source:
+    repoURL: https://github.com/ontoaxis/ontoaxis.git
+    targetRevision: main
+    path: deploy/argocd/manifests/namespaces
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-secrets
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: secrets
+    ontoaxis.io/environment: prod-like
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  source:
+    repoURL: https://github.com/ontoaxis/ontoaxis.git
+    targetRevision: main
+    path: deploy/argocd/secrets/prod-like
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oa-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-platform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: platform
+    ontoaxis.io/environment: prod-like
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  sources:
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      path: deploy/helm/ontoaxis-platform
+      helm:
+        valueFiles:
+          - $values/deploy/values/prod-like.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oa-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-data
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: data
+    ontoaxis.io/environment: prod-like
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  sources:
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      path: deploy/helm/ontoaxis-data
+      helm:
+        valueFiles:
+          - $values/deploy/values/prod-like.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oa-data
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-app
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: app
+    ontoaxis.io/environment: prod-like
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  sources:
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      path: deploy/helm/ontoaxis-app
+      helm:
+        valueFiles:
+          - $values/deploy/values/prod-like.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oa-app
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-edge
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: edge
+    ontoaxis.io/environment: prod-like
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  source:
+    repoURL: https://github.com/ontoaxis/ontoaxis.git
+    targetRevision: main
+    path: deploy/edge/generated
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oa-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-observability
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: observability
+    ontoaxis.io/environment: prod-like
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  sources:
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      path: deploy/helm/ontoaxis-observability
+      helm:
+        valueFiles:
+          - $values/deploy/values/prod-like.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oa-observability
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-jobs
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: jobs
+    ontoaxis.io/environment: prod-like
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  sources:
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/ontoaxis/ontoaxis.git
+      targetRevision: main
+      path: deploy/helm/ontoaxis-jobs
+      helm:
+        valueFiles:
+          - $values/deploy/values/prod-like.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oa-data
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+      - PruneLast=true

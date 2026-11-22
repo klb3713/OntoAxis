@@ -26,8 +26,18 @@ var Statements = []string{
 		finished_at timestamptz,
 		CONSTRAINT sync_jobs_status_check CHECK (status IN ('queued','running','succeeded','failed','cancelled'))
 	)`,
+	// Additive dispatch fields. CREATE TABLE above intentionally keeps the
+	// original shape so existing clusters can be upgraded in place.
+	`ALTER TABLE ingestion.sync_jobs ADD COLUMN IF NOT EXISTS runtime_ref text`,
+	`ALTER TABLE ingestion.sync_jobs ADD COLUMN IF NOT EXISTS attempt int NOT NULL DEFAULT 0`,
+	`ALTER TABLE ingestion.sync_jobs ADD COLUMN IF NOT EXISTS lease_owner text`,
+	`ALTER TABLE ingestion.sync_jobs ADD COLUMN IF NOT EXISTS lease_until timestamptz`,
 	`CREATE INDEX IF NOT EXISTS sync_jobs_tenant_connector_created_idx
 		ON ingestion.sync_jobs (tenant_id, connector_id, created_at DESC)`,
+	`CREATE INDEX IF NOT EXISTS sync_jobs_dispatch_idx
+		ON ingestion.sync_jobs (status, lease_until)`,
+	`CREATE INDEX IF NOT EXISTS sync_jobs_tenant_connector_status_idx
+		ON ingestion.sync_jobs (tenant_id, connector_id, status)`,
 	`CREATE TABLE IF NOT EXISTS ingestion.sync_runs (
 		id uuid PRIMARY KEY,
 		tenant_id uuid NOT NULL,
@@ -93,7 +103,8 @@ var Statements = []string{
 	END $$`,
 }
 
-// DownStatements reverses Statements in dependency order.
+// DownStatements reverses Statements in dependency order. Dropping the tables
+// also removes the additive runtime columns, so no extra ALTER is required.
 var DownStatements = []string{
 	`DROP TABLE IF EXISTS ingestion.sync_runs`,
 	`DROP TABLE IF EXISTS ingestion.sync_jobs`,

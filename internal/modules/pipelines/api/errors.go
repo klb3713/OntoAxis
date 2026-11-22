@@ -50,3 +50,10 @@ func writeServiceError(w http.ResponseWriter, r *http.Request, err error) {
 		httperr.Write(w, r, httperr.Internal())
 	}
 }
+
+// writeRawJSON writes an already-encoded JSON body.
+func writeRawJSON(w http.ResponseWriter, status int, body []byte) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = w.Write(body)
+}

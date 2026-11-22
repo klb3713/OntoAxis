@@ -1,0 +1,21 @@
+{{- if .Values.backup.enabled }}
+{{- include "ontoaxis.validateEnvironment" . }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.backup.name }}
+  namespace: {{ .Values.backup.namespace }}
+  labels:
+    {{- include "ontoaxis.labels" (dict "name" "backup" "root" $) | nindent 4 }}
+spec:
+  # Daily at 02:00 UTC (CronJob schedules are interpreted in the controller's
+  # UTC clock unless a timeZone is set; this chart intentionally relies on UTC).
+  schedule: {{ .Values.backup.schedule | quote }}
+  suspend: {{ .Values.backup.suspend | default false }}
+  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy | default "Forbid" }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit | default 3 }}
+  jobTemplate:
+    spec:
+      {{- include "ontoaxis.backup.jobSpec" . | nindent 6 }}
+{{- end }}

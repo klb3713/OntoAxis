@@ -3,6 +3,7 @@ package domain_test
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/domain"
 )
@@ -57,5 +58,57 @@ func TestParseStatus(t *testing.T) {
 	}
 	if _, err := domain.ParseStatus("unknown"); !errors.Is(err, domain.ErrInvalidStatus) {
 		t.Fatalf("ParseStatus(unknown) error = %v", err)
+	}
+}
+
+func TestLeaseActive(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	until := now.Add(time.Minute)
+	if !(&domain.SyncJob{LeaseUntil: &until}).LeaseActive(now) {
+		t.Fatal("unexpired lease should be active")
+	}
+	expired := now.Add(-time.Second)
+	if (&domain.SyncJob{LeaseUntil: &expired}).LeaseActive(now) {
+		t.Fatal("expired lease should not be active")
+	}
+	if (&domain.SyncJob{}).LeaseActive(now) {
+		t.Fatal("lease without owner should not be active")
+	}
+	var nilJob *domain.SyncJob
+	if nilJob.LeaseActive(now) {
+		t.Fatal("nil job should not report an active lease")
+	}
+}
+
+func TestRunStatsConstants(t *testing.T) {
+	t.Parallel()
+	keys := map[string]string{
+		"phase":           domain.StatsPhase,
+		"runtime_ref":     domain.StatsRuntimeRef,
+		"attempt":         domain.StatsAttempt,
+		"attempts":        domain.StatsAttempts,
+		"last_error":      domain.StatsLastError,
+		"verified_rows":   domain.StatsVerifiedRows,
+		"expected_rows":   domain.StatsExpectedRows,
+		"dataset_id":      domain.StatsDatasetID,
+		"cleanup_pending": domain.StatsCleanupPending,
+	}
+	for instance, key := range keys {
+		if instance != key {
+			t.Fatalf("stats key %q != %q", key, instance)
+		}
+	}
+	phases := map[string]string{
+		"submitting":   domain.PhaseSubmitting,
+		"snapshotting": domain.PhaseSnapshotting,
+		"verifying":    domain.PhaseVerifying,
+		"stopping":     domain.PhaseStopping,
+		"done":         domain.PhaseDone,
+	}
+	for value, phase := range phases {
+		if value != phase {
+			t.Fatalf("phase %q != %q", phase, value)
+		}
 	}
 }

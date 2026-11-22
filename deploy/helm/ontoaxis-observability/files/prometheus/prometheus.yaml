@@ -1,0 +1,24 @@
+# digest: sha256:736cb3921a19bb86e7b8938017e2c6ee1f220e3fded6f6308d687f422af4bfcc
+# source: deploy/observability/prometheus/prometheus.yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules/*.yaml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: ontoaxis-core
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["ontoaxis-core:9090"]
+
+  - job_name: otel-collector
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["otel-collector:8888"]

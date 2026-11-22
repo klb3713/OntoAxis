@@ -2,16 +2,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-COMPOSE_FILE=deploy/compose/compose.yaml
+COMPOSE_ARGS=(-f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml)
 BASE_URL=http://127.0.0.1:${ONTOAXIS_CORE_HOST_PORT:-18080}
 METRICS_URL=http://127.0.0.1:${ONTOAXIS_METRICS_HOST_PORT:-19090}
 
 cleanup() {
-  docker compose -f "$COMPOSE_FILE" down -v --remove-orphans >/dev/null 2>&1 || true
+  docker compose "${COMPOSE_ARGS[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
-docker compose -f "$COMPOSE_FILE" up -d --build
+docker compose "${COMPOSE_ARGS[@]}" up -d --build
 
 for _ in $(seq 1 60); do
   if curl -fsS "$BASE_URL/healthz" >/dev/null 2>&1; then

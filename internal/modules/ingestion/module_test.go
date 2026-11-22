@@ -12,6 +12,7 @@ import (
 	connectordomain "github.com/klb3713/ontoaxis/internal/modules/connectors/domain"
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion"
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/domain"
+	ingestionruntime "github.com/klb3713/ontoaxis/internal/modules/ingestion/runtime"
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/service"
 )
 
@@ -105,5 +106,12 @@ func TestModuleDoesNotInitializeWithoutStore(t *testing.T) {
 	mod := ingestion.New(service.WithClock(func() time.Time { return time.Unix(0, 0).UTC() }))
 	if mod.Service() != nil {
 		t.Fatal("Service should be nil without store")
+	}
+}
+
+func TestModuleNewRuntimeFailsClosedWithoutRuntimeStore(t *testing.T) {
+	m := ingestion.NewWithStore(&moduleStore{}, service.WithConnectorReader(moduleReader{}))
+	if _, err := m.NewRuntime(nil, nil, ingestionruntime.Options{}); err == nil {
+		t.Fatal("NewRuntime with a non-runtime store must fail")
 	}
 }

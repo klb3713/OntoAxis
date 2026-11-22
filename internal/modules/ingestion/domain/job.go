@@ -67,6 +67,30 @@ func ValidateTransition(from, to JobStatus) error {
 	return nil
 }
 
+// Run stats keys shared by the dispatcher, reconciler and API projections.
+const (
+	StatsPhase          = "phase"
+	StatsRuntimeRef     = "runtime_ref"
+	StatsAttempt        = "attempt"
+	StatsAttempts       = "attempts"
+	StatsLastError      = "last_error"
+	StatsVerifiedRows   = "verified_rows"
+	StatsExpectedRows   = "expected_rows"
+	StatsDatasetID      = "dataset_id"
+	StatsCleanupPending = "cleanup_pending"
+)
+
+// Run phase values trace where one sync run is inside its execution. The four
+// in-flight phases come from the connector runtime design; PhaseDone is the
+// terminal completion marker recorded when the run succeeds.
+const (
+	PhaseSubmitting   = "submitting"
+	PhaseSnapshotting = "snapshotting"
+	PhaseVerifying    = "verifying"
+	PhaseStopping     = "stopping"
+	PhaseDone         = "done"
+)
+
 // SyncJob is the durable task record created for a connector sync request.
 type SyncJob struct {
 	ID          string
@@ -80,6 +104,22 @@ type SyncJob struct {
 	UpdatedAt   time.Time
 	StartedAt   *time.Time
 	FinishedAt  *time.Time
+	// RuntimeRef is the connector runtime resource created for this job. It is
+	// empty until the dispatcher successfully submits the job.
+	RuntimeRef string
+	// Attempt counts runtime submissions consumed across dispatcher claims.
+	Attempt int
+	// LeaseOwner and LeaseUntil describe the dispatcher lease for a queued job.
+	LeaseOwner string
+	LeaseUntil *time.Time
+}
+
+// LeaseActive reports whether another worker holds an unexpired lease at now.
+func (j *SyncJob) LeaseActive(now time.Time) bool {
+	if j == nil || j.LeaseUntil == nil {
+		return false
+	}
+	return j.LeaseUntil.After(now)
 }
 
 // SyncRun is one execution attempt projection for a sync job.

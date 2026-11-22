@@ -1,0 +1,44 @@
+# OntoAxis release manifest for the "staging-like" environment.
+#
+# TEMPLATE: all-zero sha256 digests and REPLACE_ME commits. delivery-release-check.sh
+# fails until replaced (see kind.yaml header). Promote into this file from a
+# verified kind release with: scripts/delivery-promote.sh --from kind --to staging-like
+environment: staging-like
+created_at: "1970-01-01T00:00:00Z"
+operator: "REPLACE_ME"
+components:
+  - component: ontoaxis-platform
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"
+  - component: ontoaxis-data
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"
+  - component: ontoaxis-core
+    repository: ghcr.io/ontoaxis/ontoaxis-core
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: ""
+  - component: ontoaxis-web
+    repository: ghcr.io/ontoaxis/ontoaxis-web
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: ""
+  - component: ontoaxis-edge
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"
+  - component: ontoaxis-observability
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"
+  - component: ontoaxis-jobs
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"

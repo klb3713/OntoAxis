@@ -1,0 +1,11 @@
+apiVersion: v2
+name: ontoaxis-data
+description: OntoAxis data lifecycle chart (Kafka, Debezium, Apicurio, Kestra, Temporal, Trino, Nessie).
+type: application
+version: 0.1.0
+appVersion: "stage-2"
+keywords:
+  - ontoaxis
+  - data
+maintainers:
+  - name: ontoaxis-platform

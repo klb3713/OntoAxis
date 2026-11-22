@@ -1,0 +1,18 @@
+{{- range $name, $c := .Values.components }}
+{{- if and $c.enabled (eq $c.chart $.Chart.Name) }}
+{{- if and $c.configMap $c.configMap.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $c.configMap.name | default (printf "%s-config" $name) }}
+  namespace: {{ $c.namespace | default $.Values.global.namespace | default "oa-app" }}
+  labels:
+    {{- include "ontoaxis.labels" (dict "name" $name "root" $) | nindent 4 }}
+data:
+  {{- range $k, $v := $c.configMap.data }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

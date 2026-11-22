@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -14,14 +15,90 @@ import (
 	"github.com/klb3713/ontoaxis/internal/modules/query/domain"
 	"github.com/klb3713/ontoaxis/internal/modules/query/service"
 	"github.com/klb3713/ontoaxis/internal/platform/authn"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/httperr"
 )
 
 const maxBody = 1 << 20
 
-type Handler struct{ service service.Service }
+// Canonical platform authorization actions for the query module.
+const (
+	queryExecute     authz.Action = "query:execute"
+	queryExplain     authz.Action = "query:explain"
+	savedQueryCreate authz.Action = "saved_query:create"
+	savedQueryRead   authz.Action = "saved_query:read"
+	savedQueryDelete authz.Action = "saved_query:delete"
+	objectRead       authz.Action = "object:read"
+)
 
-func NewHandler(svc service.Service) *Handler { return &Handler{service: svc} }
+type Handler struct {
+	service service.Service
+	guard   authz.DecisionGuard
+}
+
+// Option customizes a Handler without changing existing callers.
+type Option func(*Handler)
+
+// WithDecisionGuard installs the authorization seam. A nil guard keeps the
+// legacy behaviour (authorization disabled) until integration wiring passes one.
+func WithDecisionGuard(guard authz.DecisionGuard) Option {
+	return func(h *Handler) { h.guard = guard }
+}
+
+func NewHandler(svc service.Service, opts ...Option) *Handler {
+	h := &Handler{service: svc}
+	for _, opt := range opts {
+		opt(h)
+	}
+	return h
+}
+
+// authorize evaluates the decision for one resource fact. A nil guard allows the
+// request, which keeps pre-authorization callers working.
+func (h *Handler) authorize(w http.ResponseWriter, r *http.Request, action authz.Action, resource authz.ResourceFact) bool {
+	return authz.AuthorizeHTTP(w, r, h.guard, action, resource)
+}
+
+func tenantFact(tenantID uuid.UUID) authz.ResourceFact {
+	return authz.ResourceFact{Type: "tenant", ID: tenantID.String(), TenantID: tenantID.String()}
+}
+
+func savedQueryFact(item domain.SavedQuery) authz.ResourceFact {
+	fact := authz.ResourceFact{
+		Type:     "saved_query",
+		ID:       item.ID.String(),
+		TenantID: item.TenantID.String(),
+	}
+	if item.OwnerID != uuid.Nil {
+		fact.OwnerID = item.OwnerID.String()
+	}
+	return fact
+}
+
+// savedQueryScanPage bounds the tenant-scoped page scan used to load one saved
+// query for the delete decision. The query service interface exposes no
+// single-row getter, so the row is located through the tenant-filtered list.
+const savedQueryScanPage = 200
+
+func (h *Handler) loadSavedQuery(ctx context.Context, tenantID, id uuid.UUID) (domain.SavedQuery, error) {
+	for offset := 0; ; offset += savedQueryScanPage {
+		rows, total, err := h.service.ListSavedQueries(ctx, tenantID, savedQueryScanPage, offset)
+		if err != nil {
+			return domain.SavedQuery{}, err
+		}
+		for _, row := range rows {
+			if row.ID == id {
+				if row.TenantID != tenantID {
+					return domain.SavedQuery{}, domain.ErrNotFound
+				}
+				return row, nil
+			}
+		}
+		if len(rows) == 0 || int64(offset+len(rows)) >= total {
+			return domain.SavedQuery{}, domain.ErrNotFound
+		}
+	}
+}
 
 func (h *Handler) Register(r chi.Router) {
 	r.Post("/execute", h.execute)
@@ -33,7 +110,8 @@ func (h *Handler) Register(r chi.Router) {
 }
 
 func (h *Handler) execute(w http.ResponseWriter, r *http.Request) {
-	if _, ok := tenant(w, r); !ok {
+	tc, ok := tenant(w, r)
+	if !ok {
 		return
 	}
 	var body struct {
@@ -47,6 +125,9 @@ func (h *Handler) execute(w http.ResponseWriter, r *http.Request) {
 		httperr.Write(w, r, httperr.BadRequest("sql is required"))
 		return
 	}
+	if !h.authorize(w, r, queryExecute, tenantFact(tc.TenantID)) {
+		return
+	}
 	result, err := h.service.Execute(r.Context(), body.SQL, body.Limit)
 	if err != nil {
 		writeServiceError(w, r, err)
@@ -56,13 +137,17 @@ func (h *Handler) execute(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) explain(w http.ResponseWriter, r *http.Request) {
-	if _, ok := tenant(w, r); !ok {
+	tc, ok := tenant(w, r)
+	if !ok {
 		return
 	}
 	var body struct {
 		SQL string `json:"sql"`
 	}
 	if !decode(w, r, &body) {
+		return
+	}
+	if !h.authorize(w, r, queryExplain, tenantFact(tc.TenantID)) {
 		return
 	}
 	plan, err := h.service.Explain(r.Context(), body.SQL)
@@ -79,6 +164,9 @@ func (h *Handler) listSavedQueries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page, perPage := pagination(r)
+	if !h.authorize(w, r, savedQueryRead, tenantFact(tc.TenantID)) {
+		return
+	}
 	items, total, err := h.service.ListSavedQueries(r.Context(), tc.TenantID, perPage, (page-1)*perPage)
 	if err != nil {
 		writeServiceError(w, r, err)
@@ -103,6 +191,9 @@ func (h *Handler) saveQuery(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &body) {
 		return
 	}
+	if !h.authorize(w, r, savedQueryCreate, tenantFact(tc.TenantID)) {
+		return
+	}
 	item, err := h.service.SaveQuery(r.Context(), tc.TenantID, tc.UserID, body.Name, body.SQL)
 	if err != nil {
 		writeServiceError(w, r, err)
@@ -119,6 +210,14 @@ func (h *Handler) deleteSavedQuery(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		httperr.Write(w, r, httperr.BadRequest("invalid saved query id"))
+		return
+	}
+	saved, err := h.loadSavedQuery(r.Context(), tc.TenantID, id)
+	if err != nil {
+		writeServiceError(w, r, err)
+		return
+	}
+	if !h.authorize(w, r, savedQueryDelete, savedQueryFact(saved)) {
 		return
 	}
 	if err := h.service.DeleteSavedQuery(r.Context(), tc.TenantID, id); err != nil {

@@ -1,0 +1,11 @@
+apiVersion: v2
+name: ontoaxis-observability
+description: OntoAxis observability lifecycle chart (OTel Collector, Prometheus, Alertmanager, Jaeger, Perses).
+type: application
+version: 0.1.0
+appVersion: "stage-2"
+keywords:
+  - ontoaxis
+  - observability
+maintainers:
+  - name: ontoaxis-platform

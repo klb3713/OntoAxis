@@ -11,6 +11,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -108,16 +109,25 @@ func (x *ActionType) GetTimestamps() *common.Timestamps {
 }
 
 type ActionExecution struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	ActionTypeId  string                 `protobuf:"bytes,2,opt,name=action_type_id,json=actionTypeId,proto3" json:"action_type_id,omitempty"`
-	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
-	Parameters    *structpb.Struct       `protobuf:"bytes,4,opt,name=parameters,proto3" json:"parameters,omitempty"`
-	Result        *structpb.Struct       `protobuf:"bytes,5,opt,name=result,proto3" json:"result,omitempty"`
-	Error         string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
-	Timestamps    *common.Timestamps     `protobuf:"bytes,7,opt,name=timestamps,proto3" json:"timestamps,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ActionTypeId      string                 `protobuf:"bytes,2,opt,name=action_type_id,json=actionTypeId,proto3" json:"action_type_id,omitempty"`
+	Status            string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	Parameters        *structpb.Struct       `protobuf:"bytes,4,opt,name=parameters,proto3" json:"parameters,omitempty"`
+	Result            *structpb.Struct       `protobuf:"bytes,5,opt,name=result,proto3" json:"result,omitempty"`
+	Error             string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	Timestamps        *common.Timestamps     `protobuf:"bytes,7,opt,name=timestamps,proto3" json:"timestamps,omitempty"`
+	ObjectId          string                 `protobuf:"bytes,8,opt,name=object_id,json=objectId,proto3" json:"object_id,omitempty"`
+	Attempt           int32                  `protobuf:"varint,9,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	CurrentStepIndex  int32                  `protobuf:"varint,10,opt,name=current_step_index,json=currentStepIndex,proto3" json:"current_step_index,omitempty"`
+	WorkflowId        string                 `protobuf:"bytes,11,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	WorkflowRunId     string                 `protobuf:"bytes,12,opt,name=workflow_run_id,json=workflowRunId,proto3" json:"workflow_run_id,omitempty"`
+	ApprovalState     string                 `protobuf:"bytes,13,opt,name=approval_state,json=approvalState,proto3" json:"approval_state,omitempty"`
+	FailureCode       string                 `protobuf:"bytes,14,opt,name=failure_code,json=failureCode,proto3" json:"failure_code,omitempty"`
+	CancelRequestedAt *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=cancel_requested_at,json=cancelRequestedAt,proto3" json:"cancel_requested_at,omitempty"`
+	Steps             []*ExecutionStep       `protobuf:"bytes,16,rep,name=steps,proto3" json:"steps,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ActionExecution) Reset() {
@@ -199,6 +209,277 @@ func (x *ActionExecution) GetTimestamps() *common.Timestamps {
 	return nil
 }
 
+func (x *ActionExecution) GetObjectId() string {
+	if x != nil {
+		return x.ObjectId
+	}
+	return ""
+}
+
+func (x *ActionExecution) GetAttempt() int32 {
+	if x != nil {
+		return x.Attempt
+	}
+	return 0
+}
+
+func (x *ActionExecution) GetCurrentStepIndex() int32 {
+	if x != nil {
+		return x.CurrentStepIndex
+	}
+	return 0
+}
+
+func (x *ActionExecution) GetWorkflowId() string {
+	if x != nil {
+		return x.WorkflowId
+	}
+	return ""
+}
+
+func (x *ActionExecution) GetWorkflowRunId() string {
+	if x != nil {
+		return x.WorkflowRunId
+	}
+	return ""
+}
+
+func (x *ActionExecution) GetApprovalState() string {
+	if x != nil {
+		return x.ApprovalState
+	}
+	return ""
+}
+
+func (x *ActionExecution) GetFailureCode() string {
+	if x != nil {
+		return x.FailureCode
+	}
+	return ""
+}
+
+func (x *ActionExecution) GetCancelRequestedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CancelRequestedAt
+	}
+	return nil
+}
+
+func (x *ActionExecution) GetSteps() []*ExecutionStep {
+	if x != nil {
+		return x.Steps
+	}
+	return nil
+}
+
+type ExecutionStep struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	StepIndex     int32                  `protobuf:"varint,2,opt,name=step_index,json=stepIndex,proto3" json:"step_index,omitempty"`
+	ActivityType  string                 `protobuf:"bytes,3,opt,name=activity_type,json=activityType,proto3" json:"activity_type,omitempty"`
+	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	Attempt       int32                  `protobuf:"varint,5,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	Error         string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	StartedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	FinishedAt    *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecutionStep) Reset() {
+	*x = ExecutionStep{}
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecutionStep) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecutionStep) ProtoMessage() {}
+
+func (x *ExecutionStep) ProtoReflect() protoreflect.Message {
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecutionStep.ProtoReflect.Descriptor instead.
+func (*ExecutionStep) Descriptor() ([]byte, []int) {
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ExecutionStep) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ExecutionStep) GetStepIndex() int32 {
+	if x != nil {
+		return x.StepIndex
+	}
+	return 0
+}
+
+func (x *ExecutionStep) GetActivityType() string {
+	if x != nil {
+		return x.ActivityType
+	}
+	return ""
+}
+
+func (x *ExecutionStep) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *ExecutionStep) GetAttempt() int32 {
+	if x != nil {
+		return x.Attempt
+	}
+	return 0
+}
+
+func (x *ExecutionStep) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ExecutionStep) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+func (x *ExecutionStep) GetFinishedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.FinishedAt
+	}
+	return nil
+}
+
+type ApprovalTask struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ExecutionId   string                 `protobuf:"bytes,2,opt,name=execution_id,json=executionId,proto3" json:"execution_id,omitempty"`
+	ActionTypeId  string                 `protobuf:"bytes,3,opt,name=action_type_id,json=actionTypeId,proto3" json:"action_type_id,omitempty"`
+	StepId        string                 `protobuf:"bytes,4,opt,name=step_id,json=stepId,proto3" json:"step_id,omitempty"`
+	Status        string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
+	RequestedAt   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=requested_at,json=requestedAt,proto3" json:"requested_at,omitempty"`
+	DecidedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=decided_at,json=decidedAt,proto3" json:"decided_at,omitempty"`
+	DecidedBy     string                 `protobuf:"bytes,8,opt,name=decided_by,json=decidedBy,proto3" json:"decided_by,omitempty"`
+	Note          string                 `protobuf:"bytes,9,opt,name=note,proto3" json:"note,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApprovalTask) Reset() {
+	*x = ApprovalTask{}
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApprovalTask) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApprovalTask) ProtoMessage() {}
+
+func (x *ApprovalTask) ProtoReflect() protoreflect.Message {
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApprovalTask.ProtoReflect.Descriptor instead.
+func (*ApprovalTask) Descriptor() ([]byte, []int) {
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ApprovalTask) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ApprovalTask) GetExecutionId() string {
+	if x != nil {
+		return x.ExecutionId
+	}
+	return ""
+}
+
+func (x *ApprovalTask) GetActionTypeId() string {
+	if x != nil {
+		return x.ActionTypeId
+	}
+	return ""
+}
+
+func (x *ApprovalTask) GetStepId() string {
+	if x != nil {
+		return x.StepId
+	}
+	return ""
+}
+
+func (x *ApprovalTask) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *ApprovalTask) GetRequestedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RequestedAt
+	}
+	return nil
+}
+
+func (x *ApprovalTask) GetDecidedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DecidedAt
+	}
+	return nil
+}
+
+func (x *ApprovalTask) GetDecidedBy() string {
+	if x != nil {
+		return x.DecidedBy
+	}
+	return ""
+}
+
+func (x *ApprovalTask) GetNote() string {
+	if x != nil {
+		return x.Note
+	}
+	return ""
+}
+
 type CreateActionTypeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -211,7 +492,7 @@ type CreateActionTypeRequest struct {
 
 func (x *CreateActionTypeRequest) Reset() {
 	*x = CreateActionTypeRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[2]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -223,7 +504,7 @@ func (x *CreateActionTypeRequest) String() string {
 func (*CreateActionTypeRequest) ProtoMessage() {}
 
 func (x *CreateActionTypeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[2]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -236,7 +517,7 @@ func (x *CreateActionTypeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateActionTypeRequest.ProtoReflect.Descriptor instead.
 func (*CreateActionTypeRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{2}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateActionTypeRequest) GetName() string {
@@ -276,7 +557,7 @@ type GetActionTypeRequest struct {
 
 func (x *GetActionTypeRequest) Reset() {
 	*x = GetActionTypeRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[3]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -288,7 +569,7 @@ func (x *GetActionTypeRequest) String() string {
 func (*GetActionTypeRequest) ProtoMessage() {}
 
 func (x *GetActionTypeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[3]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -301,7 +582,7 @@ func (x *GetActionTypeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionTypeRequest.ProtoReflect.Descriptor instead.
 func (*GetActionTypeRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{3}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetActionTypeRequest) GetId() string {
@@ -320,7 +601,7 @@ type ListActionTypesRequest struct {
 
 func (x *ListActionTypesRequest) Reset() {
 	*x = ListActionTypesRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[4]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -332,7 +613,7 @@ func (x *ListActionTypesRequest) String() string {
 func (*ListActionTypesRequest) ProtoMessage() {}
 
 func (x *ListActionTypesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[4]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -345,7 +626,7 @@ func (x *ListActionTypesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionTypesRequest.ProtoReflect.Descriptor instead.
 func (*ListActionTypesRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{4}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListActionTypesRequest) GetPage() *common.PageRequest {
@@ -365,7 +646,7 @@ type ListActionTypesResponse struct {
 
 func (x *ListActionTypesResponse) Reset() {
 	*x = ListActionTypesResponse{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[5]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -377,7 +658,7 @@ func (x *ListActionTypesResponse) String() string {
 func (*ListActionTypesResponse) ProtoMessage() {}
 
 func (x *ListActionTypesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[5]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -390,7 +671,7 @@ func (x *ListActionTypesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionTypesResponse.ProtoReflect.Descriptor instead.
 func (*ListActionTypesResponse) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{5}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListActionTypesResponse) GetActionTypes() []*ActionType {
@@ -418,7 +699,7 @@ type UpdateActionTypeRequest struct {
 
 func (x *UpdateActionTypeRequest) Reset() {
 	*x = UpdateActionTypeRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[6]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -430,7 +711,7 @@ func (x *UpdateActionTypeRequest) String() string {
 func (*UpdateActionTypeRequest) ProtoMessage() {}
 
 func (x *UpdateActionTypeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[6]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -443,7 +724,7 @@ func (x *UpdateActionTypeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateActionTypeRequest.ProtoReflect.Descriptor instead.
 func (*UpdateActionTypeRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{6}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdateActionTypeRequest) GetId() string {
@@ -476,7 +757,7 @@ type DeleteActionTypeRequest struct {
 
 func (x *DeleteActionTypeRequest) Reset() {
 	*x = DeleteActionTypeRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[7]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -488,7 +769,7 @@ func (x *DeleteActionTypeRequest) String() string {
 func (*DeleteActionTypeRequest) ProtoMessage() {}
 
 func (x *DeleteActionTypeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[7]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -501,7 +782,7 @@ func (x *DeleteActionTypeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteActionTypeRequest.ProtoReflect.Descriptor instead.
 func (*DeleteActionTypeRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{7}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DeleteActionTypeRequest) GetId() string {
@@ -519,7 +800,7 @@ type DeleteActionTypeResponse struct {
 
 func (x *DeleteActionTypeResponse) Reset() {
 	*x = DeleteActionTypeResponse{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[8]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -531,7 +812,7 @@ func (x *DeleteActionTypeResponse) String() string {
 func (*DeleteActionTypeResponse) ProtoMessage() {}
 
 func (x *DeleteActionTypeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[8]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -544,7 +825,7 @@ func (x *DeleteActionTypeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteActionTypeResponse.ProtoReflect.Descriptor instead.
 func (*DeleteActionTypeResponse) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{8}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{10}
 }
 
 type ValidateActionRequest struct {
@@ -557,7 +838,7 @@ type ValidateActionRequest struct {
 
 func (x *ValidateActionRequest) Reset() {
 	*x = ValidateActionRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[9]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -569,7 +850,7 @@ func (x *ValidateActionRequest) String() string {
 func (*ValidateActionRequest) ProtoMessage() {}
 
 func (x *ValidateActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[9]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -582,7 +863,7 @@ func (x *ValidateActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateActionRequest.ProtoReflect.Descriptor instead.
 func (*ValidateActionRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{9}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ValidateActionRequest) GetActionTypeId() string {
@@ -609,7 +890,7 @@ type ValidateActionResponse struct {
 
 func (x *ValidateActionResponse) Reset() {
 	*x = ValidateActionResponse{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[10]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -621,7 +902,7 @@ func (x *ValidateActionResponse) String() string {
 func (*ValidateActionResponse) ProtoMessage() {}
 
 func (x *ValidateActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[10]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -634,7 +915,7 @@ func (x *ValidateActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateActionResponse.ProtoReflect.Descriptor instead.
 func (*ValidateActionResponse) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{10}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ValidateActionResponse) GetValid() bool {
@@ -661,7 +942,7 @@ type PreviewActionRequest struct {
 
 func (x *PreviewActionRequest) Reset() {
 	*x = PreviewActionRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[11]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -673,7 +954,7 @@ func (x *PreviewActionRequest) String() string {
 func (*PreviewActionRequest) ProtoMessage() {}
 
 func (x *PreviewActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[11]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -686,7 +967,7 @@ func (x *PreviewActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PreviewActionRequest.ProtoReflect.Descriptor instead.
 func (*PreviewActionRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{11}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PreviewActionRequest) GetActionTypeId() string {
@@ -712,7 +993,7 @@ type PreviewActionResponse struct {
 
 func (x *PreviewActionResponse) Reset() {
 	*x = PreviewActionResponse{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[12]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -724,7 +1005,7 @@ func (x *PreviewActionResponse) String() string {
 func (*PreviewActionResponse) ProtoMessage() {}
 
 func (x *PreviewActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[12]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -737,7 +1018,7 @@ func (x *PreviewActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PreviewActionResponse.ProtoReflect.Descriptor instead.
 func (*PreviewActionResponse) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{12}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *PreviewActionResponse) GetPreview() *structpb.Struct {
@@ -757,7 +1038,7 @@ type RunActionRequest struct {
 
 func (x *RunActionRequest) Reset() {
 	*x = RunActionRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[13]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -769,7 +1050,7 @@ func (x *RunActionRequest) String() string {
 func (*RunActionRequest) ProtoMessage() {}
 
 func (x *RunActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[13]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -782,7 +1063,7 @@ func (x *RunActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunActionRequest.ProtoReflect.Descriptor instead.
 func (*RunActionRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{13}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *RunActionRequest) GetActionTypeId() string {
@@ -808,7 +1089,7 @@ type GetActionExecutionRequest struct {
 
 func (x *GetActionExecutionRequest) Reset() {
 	*x = GetActionExecutionRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[14]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -820,7 +1101,7 @@ func (x *GetActionExecutionRequest) String() string {
 func (*GetActionExecutionRequest) ProtoMessage() {}
 
 func (x *GetActionExecutionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[14]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -833,7 +1114,7 @@ func (x *GetActionExecutionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActionExecutionRequest.ProtoReflect.Descriptor instead.
 func (*GetActionExecutionRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{14}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetActionExecutionRequest) GetId() string {
@@ -853,7 +1134,7 @@ type ListActionExecutionsRequest struct {
 
 func (x *ListActionExecutionsRequest) Reset() {
 	*x = ListActionExecutionsRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[15]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -865,7 +1146,7 @@ func (x *ListActionExecutionsRequest) String() string {
 func (*ListActionExecutionsRequest) ProtoMessage() {}
 
 func (x *ListActionExecutionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[15]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -878,7 +1159,7 @@ func (x *ListActionExecutionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionExecutionsRequest.ProtoReflect.Descriptor instead.
 func (*ListActionExecutionsRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{15}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ListActionExecutionsRequest) GetActionTypeId() string {
@@ -905,7 +1186,7 @@ type ListActionExecutionsResponse struct {
 
 func (x *ListActionExecutionsResponse) Reset() {
 	*x = ListActionExecutionsResponse{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[16]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -917,7 +1198,7 @@ func (x *ListActionExecutionsResponse) String() string {
 func (*ListActionExecutionsResponse) ProtoMessage() {}
 
 func (x *ListActionExecutionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[16]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -930,7 +1211,7 @@ func (x *ListActionExecutionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListActionExecutionsResponse.ProtoReflect.Descriptor instead.
 func (*ListActionExecutionsResponse) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{16}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListActionExecutionsResponse) GetExecutions() []*ActionExecution {
@@ -956,7 +1237,7 @@ type CancelActionExecutionRequest struct {
 
 func (x *CancelActionExecutionRequest) Reset() {
 	*x = CancelActionExecutionRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[17]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -968,7 +1249,7 @@ func (x *CancelActionExecutionRequest) String() string {
 func (*CancelActionExecutionRequest) ProtoMessage() {}
 
 func (x *CancelActionExecutionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[17]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -981,7 +1262,7 @@ func (x *CancelActionExecutionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelActionExecutionRequest.ProtoReflect.Descriptor instead.
 func (*CancelActionExecutionRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{17}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CancelActionExecutionRequest) GetId() string {
@@ -1000,7 +1281,7 @@ type RetryActionExecutionRequest struct {
 
 func (x *RetryActionExecutionRequest) Reset() {
 	*x = RetryActionExecutionRequest{}
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[18]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1012,7 +1293,7 @@ func (x *RetryActionExecutionRequest) String() string {
 func (*RetryActionExecutionRequest) ProtoMessage() {}
 
 func (x *RetryActionExecutionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[18]
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1025,7 +1306,7 @@ func (x *RetryActionExecutionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryActionExecutionRequest.ProtoReflect.Descriptor instead.
 func (*RetryActionExecutionRequest) Descriptor() ([]byte, []int) {
-	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{18}
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *RetryActionExecutionRequest) GetId() string {
@@ -1035,11 +1316,219 @@ func (x *RetryActionExecutionRequest) GetId() string {
 	return ""
 }
 
+type ListApprovalTasksRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Page          *common.PageRequest    `protobuf:"bytes,2,opt,name=page,proto3" json:"page,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListApprovalTasksRequest) Reset() {
+	*x = ListApprovalTasksRequest{}
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListApprovalTasksRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListApprovalTasksRequest) ProtoMessage() {}
+
+func (x *ListApprovalTasksRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListApprovalTasksRequest.ProtoReflect.Descriptor instead.
+func (*ListApprovalTasksRequest) Descriptor() ([]byte, []int) {
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ListApprovalTasksRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *ListApprovalTasksRequest) GetPage() *common.PageRequest {
+	if x != nil {
+		return x.Page
+	}
+	return nil
+}
+
+type ListApprovalTasksResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ApprovalTasks []*ApprovalTask        `protobuf:"bytes,1,rep,name=approval_tasks,json=approvalTasks,proto3" json:"approval_tasks,omitempty"`
+	Page          *common.PageResponse   `protobuf:"bytes,2,opt,name=page,proto3" json:"page,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListApprovalTasksResponse) Reset() {
+	*x = ListApprovalTasksResponse{}
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListApprovalTasksResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListApprovalTasksResponse) ProtoMessage() {}
+
+func (x *ListApprovalTasksResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListApprovalTasksResponse.ProtoReflect.Descriptor instead.
+func (*ListApprovalTasksResponse) Descriptor() ([]byte, []int) {
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ListApprovalTasksResponse) GetApprovalTasks() []*ApprovalTask {
+	if x != nil {
+		return x.ApprovalTasks
+	}
+	return nil
+}
+
+func (x *ListApprovalTasksResponse) GetPage() *common.PageResponse {
+	if x != nil {
+		return x.Page
+	}
+	return nil
+}
+
+type GetApprovalTaskRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetApprovalTaskRequest) Reset() {
+	*x = GetApprovalTaskRequest{}
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetApprovalTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetApprovalTaskRequest) ProtoMessage() {}
+
+func (x *GetApprovalTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetApprovalTaskRequest.ProtoReflect.Descriptor instead.
+func (*GetApprovalTaskRequest) Descriptor() ([]byte, []int) {
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GetApprovalTaskRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type DecideApprovalTaskRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Decision      string                 `protobuf:"bytes,2,opt,name=decision,proto3" json:"decision,omitempty"`
+	Note          string                 `protobuf:"bytes,3,opt,name=note,proto3" json:"note,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DecideApprovalTaskRequest) Reset() {
+	*x = DecideApprovalTaskRequest{}
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DecideApprovalTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DecideApprovalTaskRequest) ProtoMessage() {}
+
+func (x *DecideApprovalTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ontoaxis_v1_actions_actions_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DecideApprovalTaskRequest.ProtoReflect.Descriptor instead.
+func (*DecideApprovalTaskRequest) Descriptor() ([]byte, []int) {
+	return file_ontoaxis_v1_actions_actions_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *DecideApprovalTaskRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DecideApprovalTaskRequest) GetDecision() string {
+	if x != nil {
+		return x.Decision
+	}
+	return ""
+}
+
+func (x *DecideApprovalTaskRequest) GetNote() string {
+	if x != nil {
+		return x.Note
+	}
+	return ""
+}
+
 var File_ontoaxis_v1_actions_actions_proto protoreflect.FileDescriptor
 
 const file_ontoaxis_v1_actions_actions_proto_rawDesc = "" +
 	"\n" +
-	"!ontoaxis/v1/actions/actions.proto\x12\x13ontoaxis.v1.actions\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1eontoaxis/v1/common/types.proto\"\xee\x01\n" +
+	"!ontoaxis/v1/actions/actions.proto\x12\x13ontoaxis.v1.actions\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eontoaxis/v1/common/types.proto\"\xee\x01\n" +
 	"\n" +
 	"ActionType\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
@@ -1051,7 +1540,7 @@ const file_ontoaxis_v1_actions_actions_proto_rawDesc = "" +
 	"parameters\x12>\n" +
 	"\n" +
 	"timestamps\x18\x06 \x01(\v2\x1e.ontoaxis.v1.common.TimestampsR\n" +
-	"timestamps\"\x9f\x02\n" +
+	"timestamps\"\x9d\x05\n" +
 	"\x0fActionExecution\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\x0eaction_type_id\x18\x02 \x01(\tR\factionTypeId\x12\x16\n" +
@@ -1063,7 +1552,42 @@ const file_ontoaxis_v1_actions_actions_proto_rawDesc = "" +
 	"\x05error\x18\x06 \x01(\tR\x05error\x12>\n" +
 	"\n" +
 	"timestamps\x18\a \x01(\v2\x1e.ontoaxis.v1.common.TimestampsR\n" +
-	"timestamps\"\xab\x01\n" +
+	"timestamps\x12\x1b\n" +
+	"\tobject_id\x18\b \x01(\tR\bobjectId\x12\x18\n" +
+	"\aattempt\x18\t \x01(\x05R\aattempt\x12,\n" +
+	"\x12current_step_index\x18\n" +
+	" \x01(\x05R\x10currentStepIndex\x12\x1f\n" +
+	"\vworkflow_id\x18\v \x01(\tR\n" +
+	"workflowId\x12&\n" +
+	"\x0fworkflow_run_id\x18\f \x01(\tR\rworkflowRunId\x12%\n" +
+	"\x0eapproval_state\x18\r \x01(\tR\rapprovalState\x12!\n" +
+	"\ffailure_code\x18\x0e \x01(\tR\vfailureCode\x12J\n" +
+	"\x13cancel_requested_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\x11cancelRequestedAt\x128\n" +
+	"\x05steps\x18\x10 \x03(\v2\".ontoaxis.v1.actions.ExecutionStepR\x05steps\"\xa3\x02\n" +
+	"\rExecutionStep\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"step_index\x18\x02 \x01(\x05R\tstepIndex\x12#\n" +
+	"\ractivity_type\x18\x03 \x01(\tR\factivityType\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x12\x18\n" +
+	"\aattempt\x18\x05 \x01(\x05R\aattempt\x12\x14\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\x129\n" +
+	"\n" +
+	"started_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12;\n" +
+	"\vfinished_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"finishedAt\"\xc5\x02\n" +
+	"\fApprovalTask\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
+	"\fexecution_id\x18\x02 \x01(\tR\vexecutionId\x12$\n" +
+	"\x0eaction_type_id\x18\x03 \x01(\tR\factionTypeId\x12\x17\n" +
+	"\astep_id\x18\x04 \x01(\tR\x06stepId\x12\x16\n" +
+	"\x06status\x18\x05 \x01(\tR\x06status\x12=\n" +
+	"\frequested_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vrequestedAt\x129\n" +
+	"\n" +
+	"decided_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tdecidedAt\x12\x1d\n" +
+	"\n" +
+	"decided_by\x18\b \x01(\tR\tdecidedBy\x12\x12\n" +
+	"\x04note\x18\t \x01(\tR\x04note\"\xab\x01\n" +
 	"\x17CreateActionTypeRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12 \n" +
@@ -1120,8 +1644,19 @@ const file_ontoaxis_v1_actions_actions_proto_rawDesc = "" +
 	"\x1cCancelActionExecutionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"-\n" +
 	"\x1bRetryActionExecutionRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id2\x89\n" +
-	"\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"g\n" +
+	"\x18ListApprovalTasksRequest\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\x123\n" +
+	"\x04page\x18\x02 \x01(\v2\x1f.ontoaxis.v1.common.PageRequestR\x04page\"\x9b\x01\n" +
+	"\x19ListApprovalTasksResponse\x12H\n" +
+	"\x0eapproval_tasks\x18\x01 \x03(\v2!.ontoaxis.v1.actions.ApprovalTaskR\rapprovalTasks\x124\n" +
+	"\x04page\x18\x02 \x01(\v2 .ontoaxis.v1.common.PageResponseR\x04page\"(\n" +
+	"\x16GetApprovalTaskRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"[\n" +
+	"\x19DecideApprovalTaskRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\bdecision\x18\x02 \x01(\tR\bdecision\x12\x12\n" +
+	"\x04note\x18\x03 \x01(\tR\x04note2\xc9\f\n" +
 	"\rActionService\x12a\n" +
 	"\x10CreateActionType\x12,.ontoaxis.v1.actions.CreateActionTypeRequest\x1a\x1f.ontoaxis.v1.actions.ActionType\x12[\n" +
 	"\rGetActionType\x12).ontoaxis.v1.actions.GetActionTypeRequest\x1a\x1f.ontoaxis.v1.actions.ActionType\x12l\n" +
@@ -1134,7 +1669,10 @@ const file_ontoaxis_v1_actions_actions_proto_rawDesc = "" +
 	"\x12GetActionExecution\x12..ontoaxis.v1.actions.GetActionExecutionRequest\x1a$.ontoaxis.v1.actions.ActionExecution\x12{\n" +
 	"\x14ListActionExecutions\x120.ontoaxis.v1.actions.ListActionExecutionsRequest\x1a1.ontoaxis.v1.actions.ListActionExecutionsResponse\x12p\n" +
 	"\x15CancelActionExecution\x121.ontoaxis.v1.actions.CancelActionExecutionRequest\x1a$.ontoaxis.v1.actions.ActionExecution\x12n\n" +
-	"\x14RetryActionExecution\x120.ontoaxis.v1.actions.RetryActionExecutionRequest\x1a$.ontoaxis.v1.actions.ActionExecutionB\xca\x01\n" +
+	"\x14RetryActionExecution\x120.ontoaxis.v1.actions.RetryActionExecutionRequest\x1a$.ontoaxis.v1.actions.ActionExecution\x12r\n" +
+	"\x11ListApprovalTasks\x12-.ontoaxis.v1.actions.ListApprovalTasksRequest\x1a..ontoaxis.v1.actions.ListApprovalTasksResponse\x12a\n" +
+	"\x0fGetApprovalTask\x12+.ontoaxis.v1.actions.GetApprovalTaskRequest\x1a!.ontoaxis.v1.actions.ApprovalTask\x12g\n" +
+	"\x12DecideApprovalTask\x12..ontoaxis.v1.actions.DecideApprovalTaskRequest\x1a!.ontoaxis.v1.actions.ApprovalTaskB\xca\x01\n" +
 	"\x17com.ontoaxis.v1.actionsB\fActionsProtoP\x01Z3github.com/klb3713/ontoaxis/gen/ontoaxis/v1/actions\xa2\x02\x03OVA\xaa\x02\x13Ontoaxis.V1.Actions\xca\x02\x13Ontoaxis\\V1\\Actions\xe2\x02\x1fOntoaxis\\V1\\Actions\\GPBMetadata\xea\x02\x15Ontoaxis::V1::Actionsb\x06proto3"
 
 var (
@@ -1149,79 +1687,101 @@ func file_ontoaxis_v1_actions_actions_proto_rawDescGZIP() []byte {
 	return file_ontoaxis_v1_actions_actions_proto_rawDescData
 }
 
-var file_ontoaxis_v1_actions_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_ontoaxis_v1_actions_actions_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_ontoaxis_v1_actions_actions_proto_goTypes = []any{
 	(*ActionType)(nil),                   // 0: ontoaxis.v1.actions.ActionType
 	(*ActionExecution)(nil),              // 1: ontoaxis.v1.actions.ActionExecution
-	(*CreateActionTypeRequest)(nil),      // 2: ontoaxis.v1.actions.CreateActionTypeRequest
-	(*GetActionTypeRequest)(nil),         // 3: ontoaxis.v1.actions.GetActionTypeRequest
-	(*ListActionTypesRequest)(nil),       // 4: ontoaxis.v1.actions.ListActionTypesRequest
-	(*ListActionTypesResponse)(nil),      // 5: ontoaxis.v1.actions.ListActionTypesResponse
-	(*UpdateActionTypeRequest)(nil),      // 6: ontoaxis.v1.actions.UpdateActionTypeRequest
-	(*DeleteActionTypeRequest)(nil),      // 7: ontoaxis.v1.actions.DeleteActionTypeRequest
-	(*DeleteActionTypeResponse)(nil),     // 8: ontoaxis.v1.actions.DeleteActionTypeResponse
-	(*ValidateActionRequest)(nil),        // 9: ontoaxis.v1.actions.ValidateActionRequest
-	(*ValidateActionResponse)(nil),       // 10: ontoaxis.v1.actions.ValidateActionResponse
-	(*PreviewActionRequest)(nil),         // 11: ontoaxis.v1.actions.PreviewActionRequest
-	(*PreviewActionResponse)(nil),        // 12: ontoaxis.v1.actions.PreviewActionResponse
-	(*RunActionRequest)(nil),             // 13: ontoaxis.v1.actions.RunActionRequest
-	(*GetActionExecutionRequest)(nil),    // 14: ontoaxis.v1.actions.GetActionExecutionRequest
-	(*ListActionExecutionsRequest)(nil),  // 15: ontoaxis.v1.actions.ListActionExecutionsRequest
-	(*ListActionExecutionsResponse)(nil), // 16: ontoaxis.v1.actions.ListActionExecutionsResponse
-	(*CancelActionExecutionRequest)(nil), // 17: ontoaxis.v1.actions.CancelActionExecutionRequest
-	(*RetryActionExecutionRequest)(nil),  // 18: ontoaxis.v1.actions.RetryActionExecutionRequest
-	(*structpb.Struct)(nil),              // 19: google.protobuf.Struct
-	(*common.Timestamps)(nil),            // 20: ontoaxis.v1.common.Timestamps
-	(*common.PageRequest)(nil),           // 21: ontoaxis.v1.common.PageRequest
-	(*common.PageResponse)(nil),          // 22: ontoaxis.v1.common.PageResponse
+	(*ExecutionStep)(nil),                // 2: ontoaxis.v1.actions.ExecutionStep
+	(*ApprovalTask)(nil),                 // 3: ontoaxis.v1.actions.ApprovalTask
+	(*CreateActionTypeRequest)(nil),      // 4: ontoaxis.v1.actions.CreateActionTypeRequest
+	(*GetActionTypeRequest)(nil),         // 5: ontoaxis.v1.actions.GetActionTypeRequest
+	(*ListActionTypesRequest)(nil),       // 6: ontoaxis.v1.actions.ListActionTypesRequest
+	(*ListActionTypesResponse)(nil),      // 7: ontoaxis.v1.actions.ListActionTypesResponse
+	(*UpdateActionTypeRequest)(nil),      // 8: ontoaxis.v1.actions.UpdateActionTypeRequest
+	(*DeleteActionTypeRequest)(nil),      // 9: ontoaxis.v1.actions.DeleteActionTypeRequest
+	(*DeleteActionTypeResponse)(nil),     // 10: ontoaxis.v1.actions.DeleteActionTypeResponse
+	(*ValidateActionRequest)(nil),        // 11: ontoaxis.v1.actions.ValidateActionRequest
+	(*ValidateActionResponse)(nil),       // 12: ontoaxis.v1.actions.ValidateActionResponse
+	(*PreviewActionRequest)(nil),         // 13: ontoaxis.v1.actions.PreviewActionRequest
+	(*PreviewActionResponse)(nil),        // 14: ontoaxis.v1.actions.PreviewActionResponse
+	(*RunActionRequest)(nil),             // 15: ontoaxis.v1.actions.RunActionRequest
+	(*GetActionExecutionRequest)(nil),    // 16: ontoaxis.v1.actions.GetActionExecutionRequest
+	(*ListActionExecutionsRequest)(nil),  // 17: ontoaxis.v1.actions.ListActionExecutionsRequest
+	(*ListActionExecutionsResponse)(nil), // 18: ontoaxis.v1.actions.ListActionExecutionsResponse
+	(*CancelActionExecutionRequest)(nil), // 19: ontoaxis.v1.actions.CancelActionExecutionRequest
+	(*RetryActionExecutionRequest)(nil),  // 20: ontoaxis.v1.actions.RetryActionExecutionRequest
+	(*ListApprovalTasksRequest)(nil),     // 21: ontoaxis.v1.actions.ListApprovalTasksRequest
+	(*ListApprovalTasksResponse)(nil),    // 22: ontoaxis.v1.actions.ListApprovalTasksResponse
+	(*GetApprovalTaskRequest)(nil),       // 23: ontoaxis.v1.actions.GetApprovalTaskRequest
+	(*DecideApprovalTaskRequest)(nil),    // 24: ontoaxis.v1.actions.DecideApprovalTaskRequest
+	(*structpb.Struct)(nil),              // 25: google.protobuf.Struct
+	(*common.Timestamps)(nil),            // 26: ontoaxis.v1.common.Timestamps
+	(*timestamppb.Timestamp)(nil),        // 27: google.protobuf.Timestamp
+	(*common.PageRequest)(nil),           // 28: ontoaxis.v1.common.PageRequest
+	(*common.PageResponse)(nil),          // 29: ontoaxis.v1.common.PageResponse
 }
 var file_ontoaxis_v1_actions_actions_proto_depIdxs = []int32{
-	19, // 0: ontoaxis.v1.actions.ActionType.parameters:type_name -> google.protobuf.Struct
-	20, // 1: ontoaxis.v1.actions.ActionType.timestamps:type_name -> ontoaxis.v1.common.Timestamps
-	19, // 2: ontoaxis.v1.actions.ActionExecution.parameters:type_name -> google.protobuf.Struct
-	19, // 3: ontoaxis.v1.actions.ActionExecution.result:type_name -> google.protobuf.Struct
-	20, // 4: ontoaxis.v1.actions.ActionExecution.timestamps:type_name -> ontoaxis.v1.common.Timestamps
-	19, // 5: ontoaxis.v1.actions.CreateActionTypeRequest.parameters:type_name -> google.protobuf.Struct
-	21, // 6: ontoaxis.v1.actions.ListActionTypesRequest.page:type_name -> ontoaxis.v1.common.PageRequest
-	0,  // 7: ontoaxis.v1.actions.ListActionTypesResponse.action_types:type_name -> ontoaxis.v1.actions.ActionType
-	22, // 8: ontoaxis.v1.actions.ListActionTypesResponse.page:type_name -> ontoaxis.v1.common.PageResponse
-	19, // 9: ontoaxis.v1.actions.UpdateActionTypeRequest.parameters:type_name -> google.protobuf.Struct
-	19, // 10: ontoaxis.v1.actions.ValidateActionRequest.parameters:type_name -> google.protobuf.Struct
-	19, // 11: ontoaxis.v1.actions.PreviewActionRequest.parameters:type_name -> google.protobuf.Struct
-	19, // 12: ontoaxis.v1.actions.PreviewActionResponse.preview:type_name -> google.protobuf.Struct
-	19, // 13: ontoaxis.v1.actions.RunActionRequest.parameters:type_name -> google.protobuf.Struct
-	21, // 14: ontoaxis.v1.actions.ListActionExecutionsRequest.page:type_name -> ontoaxis.v1.common.PageRequest
-	1,  // 15: ontoaxis.v1.actions.ListActionExecutionsResponse.executions:type_name -> ontoaxis.v1.actions.ActionExecution
-	22, // 16: ontoaxis.v1.actions.ListActionExecutionsResponse.page:type_name -> ontoaxis.v1.common.PageResponse
-	2,  // 17: ontoaxis.v1.actions.ActionService.CreateActionType:input_type -> ontoaxis.v1.actions.CreateActionTypeRequest
-	3,  // 18: ontoaxis.v1.actions.ActionService.GetActionType:input_type -> ontoaxis.v1.actions.GetActionTypeRequest
-	4,  // 19: ontoaxis.v1.actions.ActionService.ListActionTypes:input_type -> ontoaxis.v1.actions.ListActionTypesRequest
-	6,  // 20: ontoaxis.v1.actions.ActionService.UpdateActionType:input_type -> ontoaxis.v1.actions.UpdateActionTypeRequest
-	7,  // 21: ontoaxis.v1.actions.ActionService.DeleteActionType:input_type -> ontoaxis.v1.actions.DeleteActionTypeRequest
-	9,  // 22: ontoaxis.v1.actions.ActionService.ValidateAction:input_type -> ontoaxis.v1.actions.ValidateActionRequest
-	11, // 23: ontoaxis.v1.actions.ActionService.PreviewAction:input_type -> ontoaxis.v1.actions.PreviewActionRequest
-	13, // 24: ontoaxis.v1.actions.ActionService.RunAction:input_type -> ontoaxis.v1.actions.RunActionRequest
-	14, // 25: ontoaxis.v1.actions.ActionService.GetActionExecution:input_type -> ontoaxis.v1.actions.GetActionExecutionRequest
-	15, // 26: ontoaxis.v1.actions.ActionService.ListActionExecutions:input_type -> ontoaxis.v1.actions.ListActionExecutionsRequest
-	17, // 27: ontoaxis.v1.actions.ActionService.CancelActionExecution:input_type -> ontoaxis.v1.actions.CancelActionExecutionRequest
-	18, // 28: ontoaxis.v1.actions.ActionService.RetryActionExecution:input_type -> ontoaxis.v1.actions.RetryActionExecutionRequest
-	0,  // 29: ontoaxis.v1.actions.ActionService.CreateActionType:output_type -> ontoaxis.v1.actions.ActionType
-	0,  // 30: ontoaxis.v1.actions.ActionService.GetActionType:output_type -> ontoaxis.v1.actions.ActionType
-	5,  // 31: ontoaxis.v1.actions.ActionService.ListActionTypes:output_type -> ontoaxis.v1.actions.ListActionTypesResponse
-	0,  // 32: ontoaxis.v1.actions.ActionService.UpdateActionType:output_type -> ontoaxis.v1.actions.ActionType
-	8,  // 33: ontoaxis.v1.actions.ActionService.DeleteActionType:output_type -> ontoaxis.v1.actions.DeleteActionTypeResponse
-	10, // 34: ontoaxis.v1.actions.ActionService.ValidateAction:output_type -> ontoaxis.v1.actions.ValidateActionResponse
-	12, // 35: ontoaxis.v1.actions.ActionService.PreviewAction:output_type -> ontoaxis.v1.actions.PreviewActionResponse
-	1,  // 36: ontoaxis.v1.actions.ActionService.RunAction:output_type -> ontoaxis.v1.actions.ActionExecution
-	1,  // 37: ontoaxis.v1.actions.ActionService.GetActionExecution:output_type -> ontoaxis.v1.actions.ActionExecution
-	16, // 38: ontoaxis.v1.actions.ActionService.ListActionExecutions:output_type -> ontoaxis.v1.actions.ListActionExecutionsResponse
-	1,  // 39: ontoaxis.v1.actions.ActionService.CancelActionExecution:output_type -> ontoaxis.v1.actions.ActionExecution
-	1,  // 40: ontoaxis.v1.actions.ActionService.RetryActionExecution:output_type -> ontoaxis.v1.actions.ActionExecution
-	29, // [29:41] is the sub-list for method output_type
-	17, // [17:29] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	25, // 0: ontoaxis.v1.actions.ActionType.parameters:type_name -> google.protobuf.Struct
+	26, // 1: ontoaxis.v1.actions.ActionType.timestamps:type_name -> ontoaxis.v1.common.Timestamps
+	25, // 2: ontoaxis.v1.actions.ActionExecution.parameters:type_name -> google.protobuf.Struct
+	25, // 3: ontoaxis.v1.actions.ActionExecution.result:type_name -> google.protobuf.Struct
+	26, // 4: ontoaxis.v1.actions.ActionExecution.timestamps:type_name -> ontoaxis.v1.common.Timestamps
+	27, // 5: ontoaxis.v1.actions.ActionExecution.cancel_requested_at:type_name -> google.protobuf.Timestamp
+	2,  // 6: ontoaxis.v1.actions.ActionExecution.steps:type_name -> ontoaxis.v1.actions.ExecutionStep
+	27, // 7: ontoaxis.v1.actions.ExecutionStep.started_at:type_name -> google.protobuf.Timestamp
+	27, // 8: ontoaxis.v1.actions.ExecutionStep.finished_at:type_name -> google.protobuf.Timestamp
+	27, // 9: ontoaxis.v1.actions.ApprovalTask.requested_at:type_name -> google.protobuf.Timestamp
+	27, // 10: ontoaxis.v1.actions.ApprovalTask.decided_at:type_name -> google.protobuf.Timestamp
+	25, // 11: ontoaxis.v1.actions.CreateActionTypeRequest.parameters:type_name -> google.protobuf.Struct
+	28, // 12: ontoaxis.v1.actions.ListActionTypesRequest.page:type_name -> ontoaxis.v1.common.PageRequest
+	0,  // 13: ontoaxis.v1.actions.ListActionTypesResponse.action_types:type_name -> ontoaxis.v1.actions.ActionType
+	29, // 14: ontoaxis.v1.actions.ListActionTypesResponse.page:type_name -> ontoaxis.v1.common.PageResponse
+	25, // 15: ontoaxis.v1.actions.UpdateActionTypeRequest.parameters:type_name -> google.protobuf.Struct
+	25, // 16: ontoaxis.v1.actions.ValidateActionRequest.parameters:type_name -> google.protobuf.Struct
+	25, // 17: ontoaxis.v1.actions.PreviewActionRequest.parameters:type_name -> google.protobuf.Struct
+	25, // 18: ontoaxis.v1.actions.PreviewActionResponse.preview:type_name -> google.protobuf.Struct
+	25, // 19: ontoaxis.v1.actions.RunActionRequest.parameters:type_name -> google.protobuf.Struct
+	28, // 20: ontoaxis.v1.actions.ListActionExecutionsRequest.page:type_name -> ontoaxis.v1.common.PageRequest
+	1,  // 21: ontoaxis.v1.actions.ListActionExecutionsResponse.executions:type_name -> ontoaxis.v1.actions.ActionExecution
+	29, // 22: ontoaxis.v1.actions.ListActionExecutionsResponse.page:type_name -> ontoaxis.v1.common.PageResponse
+	28, // 23: ontoaxis.v1.actions.ListApprovalTasksRequest.page:type_name -> ontoaxis.v1.common.PageRequest
+	3,  // 24: ontoaxis.v1.actions.ListApprovalTasksResponse.approval_tasks:type_name -> ontoaxis.v1.actions.ApprovalTask
+	29, // 25: ontoaxis.v1.actions.ListApprovalTasksResponse.page:type_name -> ontoaxis.v1.common.PageResponse
+	4,  // 26: ontoaxis.v1.actions.ActionService.CreateActionType:input_type -> ontoaxis.v1.actions.CreateActionTypeRequest
+	5,  // 27: ontoaxis.v1.actions.ActionService.GetActionType:input_type -> ontoaxis.v1.actions.GetActionTypeRequest
+	6,  // 28: ontoaxis.v1.actions.ActionService.ListActionTypes:input_type -> ontoaxis.v1.actions.ListActionTypesRequest
+	8,  // 29: ontoaxis.v1.actions.ActionService.UpdateActionType:input_type -> ontoaxis.v1.actions.UpdateActionTypeRequest
+	9,  // 30: ontoaxis.v1.actions.ActionService.DeleteActionType:input_type -> ontoaxis.v1.actions.DeleteActionTypeRequest
+	11, // 31: ontoaxis.v1.actions.ActionService.ValidateAction:input_type -> ontoaxis.v1.actions.ValidateActionRequest
+	13, // 32: ontoaxis.v1.actions.ActionService.PreviewAction:input_type -> ontoaxis.v1.actions.PreviewActionRequest
+	15, // 33: ontoaxis.v1.actions.ActionService.RunAction:input_type -> ontoaxis.v1.actions.RunActionRequest
+	16, // 34: ontoaxis.v1.actions.ActionService.GetActionExecution:input_type -> ontoaxis.v1.actions.GetActionExecutionRequest
+	17, // 35: ontoaxis.v1.actions.ActionService.ListActionExecutions:input_type -> ontoaxis.v1.actions.ListActionExecutionsRequest
+	19, // 36: ontoaxis.v1.actions.ActionService.CancelActionExecution:input_type -> ontoaxis.v1.actions.CancelActionExecutionRequest
+	20, // 37: ontoaxis.v1.actions.ActionService.RetryActionExecution:input_type -> ontoaxis.v1.actions.RetryActionExecutionRequest
+	21, // 38: ontoaxis.v1.actions.ActionService.ListApprovalTasks:input_type -> ontoaxis.v1.actions.ListApprovalTasksRequest
+	23, // 39: ontoaxis.v1.actions.ActionService.GetApprovalTask:input_type -> ontoaxis.v1.actions.GetApprovalTaskRequest
+	24, // 40: ontoaxis.v1.actions.ActionService.DecideApprovalTask:input_type -> ontoaxis.v1.actions.DecideApprovalTaskRequest
+	0,  // 41: ontoaxis.v1.actions.ActionService.CreateActionType:output_type -> ontoaxis.v1.actions.ActionType
+	0,  // 42: ontoaxis.v1.actions.ActionService.GetActionType:output_type -> ontoaxis.v1.actions.ActionType
+	7,  // 43: ontoaxis.v1.actions.ActionService.ListActionTypes:output_type -> ontoaxis.v1.actions.ListActionTypesResponse
+	0,  // 44: ontoaxis.v1.actions.ActionService.UpdateActionType:output_type -> ontoaxis.v1.actions.ActionType
+	10, // 45: ontoaxis.v1.actions.ActionService.DeleteActionType:output_type -> ontoaxis.v1.actions.DeleteActionTypeResponse
+	12, // 46: ontoaxis.v1.actions.ActionService.ValidateAction:output_type -> ontoaxis.v1.actions.ValidateActionResponse
+	14, // 47: ontoaxis.v1.actions.ActionService.PreviewAction:output_type -> ontoaxis.v1.actions.PreviewActionResponse
+	1,  // 48: ontoaxis.v1.actions.ActionService.RunAction:output_type -> ontoaxis.v1.actions.ActionExecution
+	1,  // 49: ontoaxis.v1.actions.ActionService.GetActionExecution:output_type -> ontoaxis.v1.actions.ActionExecution
+	18, // 50: ontoaxis.v1.actions.ActionService.ListActionExecutions:output_type -> ontoaxis.v1.actions.ListActionExecutionsResponse
+	1,  // 51: ontoaxis.v1.actions.ActionService.CancelActionExecution:output_type -> ontoaxis.v1.actions.ActionExecution
+	1,  // 52: ontoaxis.v1.actions.ActionService.RetryActionExecution:output_type -> ontoaxis.v1.actions.ActionExecution
+	22, // 53: ontoaxis.v1.actions.ActionService.ListApprovalTasks:output_type -> ontoaxis.v1.actions.ListApprovalTasksResponse
+	3,  // 54: ontoaxis.v1.actions.ActionService.GetApprovalTask:output_type -> ontoaxis.v1.actions.ApprovalTask
+	3,  // 55: ontoaxis.v1.actions.ActionService.DecideApprovalTask:output_type -> ontoaxis.v1.actions.ApprovalTask
+	41, // [41:56] is the sub-list for method output_type
+	26, // [26:41] is the sub-list for method input_type
+	26, // [26:26] is the sub-list for extension type_name
+	26, // [26:26] is the sub-list for extension extendee
+	0,  // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_ontoaxis_v1_actions_actions_proto_init() }
@@ -1235,7 +1795,7 @@ func file_ontoaxis_v1_actions_actions_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ontoaxis_v1_actions_actions_proto_rawDesc), len(file_ontoaxis_v1_actions_actions_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -1,0 +1,19 @@
+{{- range $name, $c := .Values.components }}
+{{- if and $c.enabled (eq $c.chart $.Chart.Name) }}
+{{- if and $c.pdb $c.pdb.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $c.pdb.name | default (printf "%s-pdb" $name) }}
+  namespace: {{ $c.namespace | default $.Values.global.namespace | default "oa-app" }}
+  labels:
+    {{- include "ontoaxis.labels" (dict "name" $name "root" $) | nindent 4 }}
+spec:
+  minAvailable: {{ $c.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "ontoaxis.selectorLabels" (dict "name" $name "root" $) | nindent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,174 @@
+# Stage 2 baseline
+
+```
+commit: a04ab4c0e7340fd69ecf29c4883bd290ea9f0a47
+branch: main
+git status:
+   M .env.example
+   M ARCHITECTURE.md
+   M cmd/ontoaxis-core/main.go
+   M deploy/README.md
+   M docs/getting-started/local-development.md
+   M docs/stages/stage-2-change-map.md
+   M go.mod
+   M go.sum
+   M internal/app/app.go
+   M internal/app/modules.go
+   M internal/modules/actions/api/handler.go
+   M internal/modules/actions/domain/action.go
+   M internal/modules/actions/module.go
+   M internal/modules/actions/repo/store.go
+   M internal/modules/actions/service/service.go
+   M internal/modules/connectors/api/handler.go
+   M internal/modules/connectors/module.go
+   M internal/modules/connectors/service/service.go
+   M internal/modules/datasets/api/api_test.go
+   M internal/modules/datasets/api/dataset.go
+   M internal/modules/datasets/api/handler.go
+   M internal/modules/datasets/module.go
+   M internal/modules/ingestion/api/handler.go
+   M internal/modules/ingestion/domain/job.go
+   M internal/modules/ingestion/domain/job_test.go
+   M internal/modules/ingestion/migrations/migrations.go
+   M internal/modules/ingestion/migrations/migrations_test.go
+   M internal/modules/ingestion/module.go
+   M internal/modules/ingestion/module_test.go
+   M internal/modules/ingestion/repo/postgres.go
+   M internal/modules/ingestion/service/service.go
+   M internal/modules/objects/api/handler.go
+   M internal/modules/objects/module.go
+   M internal/modules/ontology/api/handler.go
+   M internal/modules/ontology/module.go
+   M internal/modules/pipelines/api/api.go
+   M internal/modules/pipelines/api/handlers_pipeline.go
+   M internal/modules/pipelines/api/handlers_schedule.go
+   M internal/modules/pipelines/domain/models.go
+   M internal/modules/pipelines/kestra/adapter.go
+   M internal/modules/pipelines/kestra/adapter_test.go
+   M internal/modules/pipelines/migrations/migrations.go
+   M internal/modules/pipelines/migrations/migrations_test.go
+   M internal/modules/pipelines/module.go
+   M internal/modules/pipelines/repo/memory.go
+   M internal/modules/pipelines/repo/memory_test.go
+   M internal/modules/pipelines/repo/postgres.go
+   M internal/modules/pipelines/service/pipeline.go
+   M internal/modules/pipelines/service/service.go
+   M internal/modules/query/api/handler.go
+   M internal/modules/query/api/objects.go
+   M internal/modules/query/module.go
+   M internal/modules/tenancy/api.go
+   M internal/modules/tenancy/module.go
+   M internal/platform/config/config.go
+   M internal/platform/config/config_test.go
+   M scripts/observability-smoke.sh
+   M scripts/smoke-foundation.sh
+   M web/src/App.tsx
+   M web/src/api/fixtures.ts
+   M web/src/api/mock-data-provider.ts
+   M web/src/api/types.ts
+   M web/src/components/AppLayout.tsx
+   M web/src/i18n/en.ts
+   M web/src/i18n/zh.ts
+  ?? .env.kind.example
+  ?? .gitleaks.toml
+  ?? cmd/ontoaxis-actions-worker/
+  ?? cmd/ontoaxis-search/
+  ?? deploy/argocd/
+  ?? deploy/compose/action-temporal/
+  ?? deploy/compose/authz/
+  ?? deploy/connector-runtime/
+  ?? deploy/helm/
+  ?? deploy/kind/
+  ?? deploy/releases/
+  ?? deploy/values/
+  ?? docs/architecture/authorization-boundary.md
+  ?? docs/operations/delivery-runbook.md
+  ?? docs/stages/evidence/stage-2-action-temporal.md
+  ?? docs/stages/evidence/stage-2-integration/
+  ?? docs/stages/stage-2-change-batch-review.md
+  ?? internal/app/adapters.go
+  ?? internal/app/runtime.go
+  ?? internal/app/runtime_test.go
+  ?? internal/app/search.go
+  ?? internal/modules/actions/README.md
+  ?? internal/modules/actions/api/approvals.go
+  ?? internal/modules/actions/api/approvals_test.go
+  ?? internal/modules/actions/api/authz_test.go
+  ?? internal/modules/actions/domain/action_test.go
+  ?? internal/modules/actions/domain/definition.go
+  ?? internal/modules/actions/domain/definition_test.go
+  ?? internal/modules/actions/migrations/20261122200000_action_temporal.down.sql
+  ?? internal/modules/actions/migrations/20261122200000_action_temporal.sql
+  ?? internal/modules/actions/repo/runtime.go
+  ?? internal/modules/actions/repo/runtime_test.go
+  ?? internal/modules/actions/service/adapter.go
+  ?? internal/modules/actions/service/temporal_service_test.go
+  ?? internal/modules/actions/temporal/
+  ?? internal/modules/actions/worker/
+  ?? internal/modules/connectors/api/authz.go
+  ?? internal/modules/connectors/api/authz_test.go
+  ?? internal/modules/connectors/preflight_adapter_test.go
+  ?? internal/modules/connectors/runtime/
+  ?? internal/modules/connectors/service/preflight_test.go
+  ?? internal/modules/ingestion/api/authz_test.go
+  ?? internal/modules/ingestion/repo/runtime.go
+  ?? internal/modules/ingestion/runtime/
+  ?? internal/modules/ingestion/service/cancel_test.go
+  ?? internal/modules/objects/api/authz.go
+  ?? internal/modules/objects/api/authz_test.go
+  ?? internal/modules/objects/api/search.go
+  ?? internal/modules/objects/api/search_test.go
+  ?? internal/modules/objects/repo/outbox.go
+  ?? internal/modules/objects/repo/outbox_test.go
+  ?? internal/modules/ontology/api/handler_authz_test.go
+  ?? internal/modules/pipelines/api/authz_test.go
+  ?? internal/modules/pipelines/config.go
+  ?? internal/modules/pipelines/config_test.go
+  ?? internal/modules/pipelines/dbt/
+  ?? internal/modules/pipelines/domain/dag.go
+  ?? internal/modules/pipelines/domain/dag_test.go
+  ?? internal/modules/pipelines/kestra/flow.go
+  ?? internal/modules/pipelines/kestra/flow_test.go
+  ?? internal/modules/pipelines/kestra/http_adapter.go
+  ?? internal/modules/pipelines/kestra/http_adapter_test.go
+  ?? internal/modules/pipelines/migrations/00002_pipeline_execution.sql
+  ?? internal/modules/pipelines/repo/postgres_test.go
+  ?? internal/modules/pipelines/service/runtime_test.go
+  ?? internal/modules/query/api/authz_test.go
+  ?? internal/modules/tenancy/api_authz_test.go
+  ?? internal/platform/authz/
+  ?? internal/platform/search/
+  ?? ontoaxis-actions-worker
+  ?? openspec/changes/action-temporal/
+  ?? openspec/changes/authorization-openfga-cedar/
+  ?? openspec/changes/connector-runtime/
+  ?? openspec/changes/object-search-meilisearch/
+  ?? openspec/changes/pipeline-kestra-dbt/
+  ?? openspec/changes/production-delivery/
+  ?? openspec/changes/stage-2-integration/
+  ?? policies/
+  ?? scripts/actions-temporal-smoke.sh
+  ?? scripts/delivery-diag.sh
+  ?? scripts/delivery-drift-check.sh
+  ?? scripts/delivery-idp-check.sh
+  ?? scripts/delivery-images.sh
+  ?? scripts/delivery-promote.sh
+  ?? scripts/delivery-release-check.sh
+  ?? scripts/delivery-render-check.sh
+  ?? scripts/delivery-restore.sh
+  ?? scripts/delivery-rollback.sh
+  ?? scripts/delivery-secret-scan.sh
+  ?? scripts/delivery-secrets-bootstrap.sh
+  ?? scripts/delivery-smoke.sh
+  ?? scripts/delivery-version-check.sh
+  ?? web/src/features/approvals/
+go: go version go1.26.3 darwin/amd64
+node: v26.13.1
+docker: Docker version 27.0.3, build 7d4bcd8
+compose: 2.28.1-desktop.1
+openspec: 2.1.0
+```
+
+- `openspec validate --all --strict`：20/20。
+- `/healthz` 与 `/readyz` 原始输出见 `../compose-smoke.md` 的 smoke 运行记录（11 项 ready checks）。
+- 容器镜像版本由 `docs/stages/evidence/stage-2-integration/baseline/images.txt` 记录（如本地无栈则为空，起栈后补）。

@@ -17,6 +17,7 @@ import (
 
 	"github.com/klb3713/ontoaxis/internal/modules/connectors/domain"
 	"github.com/klb3713/ontoaxis/internal/modules/connectors/service"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/httperr"
 )
 
@@ -40,12 +41,28 @@ type Service interface {
 
 // Handler serves the /api/v1/connectors routes.
 type Handler struct {
-	svc Service
+	svc   Service
+	guard authz.DecisionGuard
+}
+
+// Option configures optional Handler collaborators.
+type Option func(*Handler)
+
+// WithDecisionGuard installs the platform authorization guard. A nil guard
+// keeps the legacy behavior and performs no authorization decisions.
+func WithDecisionGuard(guard authz.DecisionGuard) Option {
+	return func(h *Handler) { h.guard = guard }
 }
 
 // NewHandler builds a connectors HTTP handler.
-func NewHandler(svc Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc Service, opts ...Option) *Handler {
+	h := &Handler{svc: svc}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(h)
+		}
+	}
+	return h
 }
 
 // Register mounts all connector routes on the supplied chi router.
@@ -145,6 +162,9 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	if !h.requireService(w, r) {
 		return
 	}
+	if !h.authorize(w, r, "connector:create", tenantFact(tenantID)) {
+		return
+	}
 	connector, err := h.svc.CreateConnector(r.Context(), tenantID, service.CreateInput{
 		Name:        req.Name,
 		DisplayName: req.DisplayName,
@@ -175,6 +195,15 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, r, err)
 		return
 	}
+	if h.guard != nil {
+		if connector == nil || connector.TenantID != tenantID {
+			writeServiceError(w, r, domain.ErrNotFound)
+			return
+		}
+		if !h.authorize(w, r, "connector:read", connectorFact(connector)) {
+			return
+		}
+	}
 	writeJSON(w, http.StatusOK, toDTO(connector))
 }
 
@@ -190,6 +219,9 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !h.requireService(w, r) {
+		return
+	}
+	if !h.authorize(w, r, "connector:read", tenantFact(tenantID)) {
 		return
 	}
 	result, err := h.svc.ListConnectors(r.Context(), tenantID, page, perPage)
@@ -230,6 +262,15 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 	if !h.requireService(w, r) {
 		return
 	}
+	if h.guard != nil {
+		current, ok := h.loadConnectorForAuthorization(w, r, tenantID)
+		if !ok {
+			return
+		}
+		if !h.authorize(w, r, "connector:update", connectorFact(current)) {
+			return
+		}
+	}
 	connector, err := h.svc.UpdateConnector(r.Context(), tenantID, chi.URLParam(r, "connectorID"), in)
 	if err != nil {
 		writeServiceError(w, r, err)
@@ -247,6 +288,15 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 	if !h.requireService(w, r) {
 		return
 	}
+	if h.guard != nil {
+		current, ok := h.loadConnectorForAuthorization(w, r, tenantID)
+		if !ok {
+			return
+		}
+		if !h.authorize(w, r, "connector:delete", connectorFact(current)) {
+			return
+		}
+	}
 	if err := h.svc.DeleteConnector(r.Context(), tenantID, chi.URLParam(r, "connectorID")); err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -262,6 +312,15 @@ func (h *Handler) test(w http.ResponseWriter, r *http.Request) {
 	}
 	if !h.requireService(w, r) {
 		return
+	}
+	if h.guard != nil {
+		current, ok := h.loadConnectorForAuthorization(w, r, tenantID)
+		if !ok {
+			return
+		}
+		if !h.authorize(w, r, "connector:test", connectorFact(current)) {
+			return
+		}
 	}
 	result, err := h.svc.TestConnector(r.Context(), tenantID, chi.URLParam(r, "connectorID"))
 	if err != nil {
@@ -280,6 +339,15 @@ func (h *Handler) startSync(w http.ResponseWriter, r *http.Request) {
 	if !h.requireService(w, r) {
 		return
 	}
+	if h.guard != nil {
+		current, ok := h.loadConnectorForAuthorization(w, r, tenantID)
+		if !ok {
+			return
+		}
+		if !h.authorize(w, r, "connector:sync", connectorFact(current)) {
+			return
+		}
+	}
 	jobID, err := h.svc.StartSync(r.Context(), tenantID, chi.URLParam(r, "connectorID"))
 	if err != nil {
 		writeServiceError(w, r, err)
@@ -296,6 +364,15 @@ func (h *Handler) inferSchema(w http.ResponseWriter, r *http.Request) {
 	}
 	if !h.requireService(w, r) {
 		return
+	}
+	if h.guard != nil {
+		current, ok := h.loadConnectorForAuthorization(w, r, tenantID)
+		if !ok {
+			return
+		}
+		if !h.authorize(w, r, "connector:infer_schema", connectorFact(current)) {
+			return
+		}
 	}
 	schema, err := h.svc.InferSchema(r.Context(), tenantID, chi.URLParam(r, "connectorID"))
 	if err != nil {

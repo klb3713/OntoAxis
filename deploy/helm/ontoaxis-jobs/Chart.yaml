@@ -1,0 +1,12 @@
+apiVersion: v2
+name: ontoaxis-jobs
+description: OntoAxis jobs lifecycle chart - PostgreSQL backup CronJob (pg_dump -Fc), PVC, manifest.json, retention.
+type: application
+version: 0.1.0
+appVersion: "stage-2"
+keywords:
+  - ontoaxis
+  - jobs
+  - backup
+maintainers:
+  - name: ontoaxis-platform

@@ -1,8 +1,10 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -42,6 +44,9 @@ func (a *API) handleCreatePipeline(w http.ResponseWriter, r *http.Request) {
 		writeFailure(w, r, "invalid_argument", "invalid request body")
 		return
 	}
+	if !a.authorize(w, r, "pipeline:create", tenantFact(tenantID)) {
+		return
+	}
 	pipeline, err := a.pipelines.CreatePipeline(r.Context(), service.CreatePipelineRequest{
 		TenantID:    tenantID,
 		Name:        request.Name,
@@ -62,9 +67,11 @@ func (a *API) handleGetPipeline(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	pipeline, err := a.pipelines.GetPipeline(r.Context(), tenantID, chi.URLParam(r, "pipelineID"))
-	if err != nil {
-		writeServiceError(w, r, err)
+	pipeline, ok := a.loadPipelineForAuth(w, r, tenantID)
+	if !ok {
+		return
+	}
+	if !a.authorize(w, r, "pipeline:read", pipelineFact(pipeline)) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toPipelineResponse(pipeline))
@@ -83,6 +90,9 @@ func (a *API) handleListPipelines(w http.ResponseWriter, r *http.Request) {
 	perPage, err := queryInt(r, "per_page")
 	if err != nil {
 		writeFailure(w, r, "invalid_argument", "invalid per_page")
+		return
+	}
+	if !a.authorize(w, r, "pipeline:read", tenantFact(tenantID)) {
 		return
 	}
 	result, err := a.pipelines.ListPipelines(r.Context(), service.ListPipelinesRequest{
@@ -113,6 +123,13 @@ func (a *API) handleUpdatePipeline(w http.ResponseWriter, r *http.Request) {
 		writeFailure(w, r, "invalid_argument", "invalid request body")
 		return
 	}
+	current, ok := a.loadPipelineForAuth(w, r, tenantID)
+	if !ok {
+		return
+	}
+	if !a.authorize(w, r, "pipeline:update", pipelineFact(current)) {
+		return
+	}
 	pipeline, err := a.pipelines.UpdatePipeline(r.Context(), service.UpdatePipelineRequest{
 		TenantID:    tenantID,
 		PipelineID:  chi.URLParam(r, "pipelineID"),
@@ -132,6 +149,13 @@ func (a *API) handleDeletePipeline(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	current, ok := a.loadPipelineForAuth(w, r, tenantID)
+	if !ok {
+		return
+	}
+	if !a.authorize(w, r, "pipeline:delete", pipelineFact(current)) {
+		return
+	}
 	if err := a.pipelines.DeletePipeline(r.Context(), tenantID, chi.URLParam(r, "pipelineID")); err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -145,6 +169,11 @@ type publishPipelineResponse struct {
 }
 
 func (a *API) handlePublishPipeline(w http.ResponseWriter, r *http.Request) {
+	key, ok := parseIdempotencyKey(r)
+	if !ok {
+		writeFailure(w, r, "invalid_argument", "invalid Idempotency-Key")
+		return
+	}
 	tenantID, ok := a.requireTenant(w, r)
 	if !ok {
 		return
@@ -152,6 +181,38 @@ func (a *API) handlePublishPipeline(w http.ResponseWriter, r *http.Request) {
 	var request publishPipelineRequest
 	if err := decodeOptionalJSON(w, r, &request); err != nil {
 		writeFailure(w, r, "invalid_argument", "invalid request body")
+		return
+	}
+	requestHash := ""
+	if raw, err := json.Marshal(request); err == nil {
+		requestHash = idempotencyHash(string(raw))
+	}
+	const operation = "pipeline.publish"
+	keyHash := idempotencyHash(key)
+	if key != "" {
+		unlock := lockIdempotency(tenantID + "|" + operation + "|" + keyHash)
+		defer unlock()
+	}
+	if key != "" {
+		record, found, err := a.pipelines.LookupIdempotency(r.Context(), tenantID, operation, keyHash)
+		if err != nil {
+			writeServiceError(w, r, err)
+			return
+		}
+		if found {
+			if record.RequestHash != requestHash {
+				writeFailure(w, r, "already_exists", "idempotency key reused with different request")
+				return
+			}
+			writeRawJSON(w, record.ResponseStatus, record.ResponseBody)
+			return
+		}
+	}
+	current, ok := a.loadPipelineForAuth(w, r, tenantID)
+	if !ok {
+		return
+	}
+	if !a.authorize(w, r, "pipeline:publish", pipelineFact(current)) {
 		return
 	}
 	pipeline, version, err := a.pipelines.PublishPipeline(r.Context(), service.PublishPipelineRequest{
@@ -163,26 +224,115 @@ func (a *API) handlePublishPipeline(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, publishPipelineResponse{
+	const status = http.StatusOK
+	body, _ := json.Marshal(publishPipelineResponse{
 		pipelineResponse:   toPipelineResponse(pipeline),
 		PublishedVersionID: version.ID,
 	})
+	if key != "" {
+		created, saveErr := a.pipelines.SaveIdempotency(r.Context(), service.IdempotencyRecord{
+			TenantID: tenantID, Operation: operation, KeyHash: keyHash, RequestHash: requestHash,
+			ResponseStatus: status, ResponseBody: body, ExpiresAt: time.Now().Add(24 * time.Hour),
+		})
+		if saveErr != nil {
+			writeServiceError(w, r, saveErr)
+			return
+		}
+		if !created {
+			record, found, lookupErr := a.pipelines.LookupIdempotency(r.Context(), tenantID, operation, keyHash)
+			if lookupErr != nil {
+				writeServiceError(w, r, lookupErr)
+				return
+			}
+			if found {
+				if record.RequestHash != requestHash {
+					writeFailure(w, r, "already_exists", "idempotency key reused with different request")
+					return
+				}
+				writeRawJSON(w, record.ResponseStatus, record.ResponseBody)
+				return
+			}
+		}
+	}
+	writeRawJSON(w, status, body)
 }
 
 func (a *API) handleTriggerRun(w http.ResponseWriter, r *http.Request) {
+	key, ok := parseIdempotencyKey(r)
+	if !ok {
+		writeFailure(w, r, "invalid_argument", "invalid Idempotency-Key")
+		return
+	}
 	tenantID, ok := a.requireTenant(w, r)
 	if !ok {
 		return
 	}
+	pipelineID := chi.URLParam(r, "pipelineID")
+	requestHash := idempotencyHash("trigger:" + pipelineID)
+	const operation = "pipeline.trigger"
+	keyHash := idempotencyHash(key)
+	if key != "" {
+		unlock := lockIdempotency(tenantID + "|" + operation + "|" + keyHash)
+		defer unlock()
+	}
+	if key != "" {
+		record, found, err := a.pipelines.LookupIdempotency(r.Context(), tenantID, operation, keyHash)
+		if err != nil {
+			writeServiceError(w, r, err)
+			return
+		}
+		if found {
+			if record.RequestHash != requestHash {
+				writeFailure(w, r, "already_exists", "idempotency key reused with different request")
+				return
+			}
+			writeRawJSON(w, record.ResponseStatus, record.ResponseBody)
+			return
+		}
+	}
+	current, ok := a.loadPipelineForAuth(w, r, tenantID)
+	if !ok {
+		return
+	}
+	if !a.authorize(w, r, "pipeline:invoke", pipelineFact(current)) {
+		return
+	}
 	run, err := a.pipelines.TriggerPipelineRun(r.Context(), service.TriggerPipelineRunRequest{
 		TenantID:   tenantID,
-		PipelineID: chi.URLParam(r, "pipelineID"),
+		PipelineID: pipelineID,
 	})
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusAccepted, toRunResponse(run))
+	const status = http.StatusAccepted
+	body, _ := json.Marshal(toRunResponse(run))
+	if key != "" {
+		created, saveErr := a.pipelines.SaveIdempotency(r.Context(), service.IdempotencyRecord{
+			TenantID: tenantID, Operation: operation, KeyHash: keyHash, RequestHash: requestHash,
+			ResponseStatus: status, ResponseBody: body, ExpiresAt: time.Now().Add(24 * time.Hour),
+		})
+		if saveErr != nil {
+			writeServiceError(w, r, saveErr)
+			return
+		}
+		if !created {
+			record, found, lookupErr := a.pipelines.LookupIdempotency(r.Context(), tenantID, operation, keyHash)
+			if lookupErr != nil {
+				writeServiceError(w, r, lookupErr)
+				return
+			}
+			if found {
+				if record.RequestHash != requestHash {
+					writeFailure(w, r, "already_exists", "idempotency key reused with different request")
+					return
+				}
+				writeRawJSON(w, record.ResponseStatus, record.ResponseBody)
+				return
+			}
+		}
+	}
+	writeRawJSON(w, status, body)
 }
 
 func (a *API) handleGetRun(w http.ResponseWriter, r *http.Request) {
@@ -197,6 +347,9 @@ func (a *API) handleGetRun(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		writeServiceError(w, r, err)
+		return
+	}
+	if !a.authorize(w, r, "pipeline_run:read", pipelineRunFact(run)) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toRunResponse(run))
@@ -215,6 +368,13 @@ func (a *API) handleListRuns(w http.ResponseWriter, r *http.Request) {
 	perPage, err := queryInt(r, "per_page")
 	if err != nil {
 		writeFailure(w, r, "invalid_argument", "invalid per_page")
+		return
+	}
+	current, ok := a.loadPipelineForAuth(w, r, tenantID)
+	if !ok {
+		return
+	}
+	if !a.authorize(w, r, "pipeline_run:read", pipelineFact(current)) {
 		return
 	}
 	result, err := a.pipelines.ListPipelineRuns(r.Context(), service.ListPipelineRunsRequest{

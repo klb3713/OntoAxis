@@ -1,0 +1,194 @@
+# connector-runtime 本地证据 profile 叠加文件（overlay）。
+#
+# 用途：只新增 connector-runtime 相关服务，不重定义 deploy/compose/compose.yaml 中已有服务。
+# 必须与基础 compose 一起使用，且基础文件排在前面（相对路径按第一个 -f 文件所在目录
+# deploy/compose 解析，因此下面的 bind mount 都以 ../connector-runtime/... 开头）：
+#
+#   docker compose \
+#     -f deploy/compose/compose.yaml \
+#     -f deploy/connector-runtime/compose.connector-runtime.yaml \
+#     --profile connector-runtime up -d --build
+#
+# 说明：
+# - 该 profile 是本地/合成数据的证据环境，不是生产部署。
+# - 所有新增服务都带 profiles: ["connector-runtime"]，不加 profile 时不会启动。
+# - 端口默认值可用环境变量覆盖：ONTOAXIS_REDPANDA_HOST_PORT / ONTOAXIS_CONNECT_HOST_PORT /
+#   ONTOAXIS_SOURCE_POSTGRES_HOST_PORT。
+# - 镜像与摘要的核对结果见 README.md 与 connect/README.md；未验证项已明确标注。
+# - 本文件不添加 network，新增服务加入基础 compose 的默认网络（<project>_default），
+#   与 postgres/trino 一致；只有需要 edge 网络时才应显式声明。
+
+name: ontoaxis-local
+
+services:
+  # ---------------------------------------------------------------------------
+  # Redpanda：单节点 KRaft，充当 Kafka 兼容 broker。
+  # 内部 listener redpanda:9092 供 kafka-connect 使用；EXTERNAL listener 通过宿主
+  # 19092 暴露，便于主机侧脚本/工具连接（advertise localhost:19092）。
+  # 注意：从其他容器访问时不要用 localhost:19092，应使用 redpanda:9092。
+  # ---------------------------------------------------------------------------
+  redpanda:
+    profiles: ["connector-runtime"]
+    image: redpandadata/redpanda:v26.3.1@sha256:260532f70fd840bf2159106bd4ef900f199c1f5ca2a23cb362642320513b90f5
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092,EXTERNAL://localhost:19092
+    ports:
+      - "${ONTOAXIS_REDPANDA_HOST_PORT:-19092}:19092"
+    volumes:
+      - ontoaxis_redpanda_data:/var/lib/redpanda/data
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health --exit-when-healthy"]
+      interval: 10s
+      timeout: 20s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Kafka Connect：Debezium Connect 基础镜像 + 构建出的 Iceberg sink 插件。
+  # 镜像名固定为本地 tag；build.args 固定基础镜像 digest、Iceberg 版本与校验和。
+  # 首次 up 需要 --build，构建过程需要访问网络（详见 connect/README.md）。
+  # REST 端口：容器内 8083，宿主 18086。
+  # ---------------------------------------------------------------------------
+  kafka-connect:
+    profiles: ["connector-runtime"]
+    build:
+      context: ../connector-runtime/connect
+      dockerfile: Dockerfile
+      args:
+        DEBEZIUM_IMAGE: "quay.io/debezium/connect:3.6.1.Final@sha256:853c1f75411dea3f092254612152138c75504ab5a9f2588ecc2f9757b1d9039d"
+        ICEBERG_VERSION: "1.12.0"
+        ICEBERG_SOURCE_SHA512: "505b4d92baf9a2b55c3893bfa1b50289a0bf0051109d81f0a92825f406c28be9096be31d5c22ed68a2d7abd39fcfb0888729bb1917216b06ac200ac0fbf11a28"
+        PGJDBC_VERSION: "42.7.7"
+        PGJDBC_SHA256: "157963d60ae66d607e09466e8c0cdf8087e9cb20d0159899ffca96bca2528460"
+    image: ontoaxis/connector-runtime-connect:3.7.1-iceberg1.12.0
+    environment:
+      # Debezium 官方镜像的入口脚本读取这些无 CONNECT_ 前缀的变量并导出为 CONNECT_*。
+      BOOTSTRAP_SERVERS: redpanda:9092
+      ADVERTISED_HOST_NAME: kafka-connect
+      ADVERTISED_PORT: "8083"
+      REST_PORT: "8083"
+      GROUP_ID: oa-connector-runtime
+      CONFIG_STORAGE_TOPIC: oa-connect-configs
+      OFFSET_STORAGE_TOPIC: oa-connect-offsets
+      STATUS_STORAGE_TOPIC: oa-connect-status
+      KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      # 注意：内部 topic 的 converter 保持 JsonConverter 默认（schemas 启用），避免
+      # offsets/configs/status 内部存储格式不兼容；真实 connector 的 converter 由 core
+      # 应用生成的 connector JSON（design D3）决定，本 overlay 只给 worker 默认值。
+      CONNECT_PLUGIN_PATH: /kafka/connect,/kafka/connect/iceberg,/kafka/connect/extra-plugins
+      CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
+      CONNECT_LOG4J_LOGGERS: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR"
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx1g"
+    ports:
+      - "${ONTOAXIS_CONNECT_HOST_PORT:-18086}:8083"
+    volumes:
+      # 与 sink 插件配置的 warehouse 路径保持一致；同一卷也会被可选 Trino overlay 挂载。
+      - ontoaxis_iceberg_warehouse:/warehouse
+      # 可选：把额外插件（例如自建的 Iceberg runtime 解压结果）放进命名卷。
+      - ontoaxis_connect_extra_plugins:/kafka/connect/extra-plugins
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      iceberg-warehouse:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8083/connector-plugins >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # source-postgres：Debezium 源端，仅用于本地合成数据。
+  # 必须开启逻辑复制（wal_level=logical）。init SQL 挂载只会在数据卷首次初始化时执行。
+  # ---------------------------------------------------------------------------
+  source-postgres:
+    profiles: ["connector-runtime"]
+    image: postgres:16-alpine@sha256:f2f98726820d0342055351c6e9d36e705f5bfffb3dd53ff556325114b08afb6d
+    environment:
+      POSTGRES_DB: "${ONTOAXIS_SOURCE_POSTGRES_DB:-ontoaxis_source}"
+      POSTGRES_USER: "${ONTOAXIS_SOURCE_POSTGRES_USER:-ontoaxis_source}"
+      POSTGRES_PASSWORD: "${ONTOAXIS_SOURCE_POSTGRES_PASSWORD:-ontoaxis_source_local}"
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      - -c
+      - max_connections=100
+    ports:
+      - "${ONTOAXIS_SOURCE_POSTGRES_HOST_PORT:-15434}:5432"
+    volumes:
+      - ontoaxis_source_postgres_data:/var/lib/postgresql/data
+      - ../connector-runtime/source-postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # iceberg-warehouse：一次性 init 容器，创建共享 warehouse 目录并放开权限。
+  # 使用 postgres:16-alpine（与 source-postgres 同一镜像，不额外拉取镜像）执行
+  # mkdir/chmod，退出后不再运行；一次性 init 容器不设 healthcheck，
+  # 由 kafka-connect 的 depends_on: service_completed_successfully 等待其成功退出。
+  # 说明：共享“命名卷”用于本地证据；生产应使用对象存储（S3 等）并配置 Iceberg
+  # FileIO，不在本 change 范围内。
+  # ---------------------------------------------------------------------------
+  iceberg-warehouse:
+    profiles: ["connector-runtime"]
+    image: postgres:16-alpine@sha256:f2f98726820d0342055351c6e9d36e705f5bfffb3dd53ff556325114b08afb6d
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["mkdir -p /warehouse && chmod 0777 /warehouse"]
+    volumes:
+      - ontoaxis_iceberg_warehouse:/warehouse
+    restart: "no"
+
+  ontoaxis-core:
+    environment:
+      ONTOAXIS_CONNECT_URL: http://kafka-connect:8083
+      ONTOAXIS_CONNECT_TIMEOUT: 10s
+      ONTOAXIS_CONNECT_RETRY_MAX: "2"
+      ONTOAXIS_ICEBERG_CATALOG_URI: jdbc:postgresql://postgres:5432/ontoaxis
+      ONTOAXIS_ICEBERG_WAREHOUSE: file:///warehouse
+      ONTOAXIS_ICEBERG_NAMESPACE: ontoaxis
+      ONTOAXIS_ICEBERG_CATALOG_USER: ontoaxis
+      ONTOAXIS_SECRET_SOURCEPG: '{"username":"ontoaxis_source","password":"ontoaxis_source_local","iceberg_catalog_password":"ontoaxis"}' 
+    depends_on:
+      kafka-connect:
+        condition: service_healthy
+
+volumes:
+  ontoaxis_redpanda_data:
+  ontoaxis_source_postgres_data:
+  ontoaxis_iceberg_warehouse:
+  ontoaxis_connect_extra_plugins:

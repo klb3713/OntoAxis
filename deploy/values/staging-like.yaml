@@ -1,0 +1,53 @@
+# staging-like — multi-replica rehearsal environment (kind/k3d or a staging
+# cluster). Key components scaled to 2 replicas.
+#
+# IMAGE DIGESTS BELOW ARE PLACEHOLDERS. They are syntactically valid
+# sha256:<64 hex> values so templates render, but they MUST be replaced by the
+# release manifest (the signed bundle of real image digests) before any real
+# deployment. Never ship these placeholder digests to a live environment.
+global:
+  environment: staging-like
+  defaultReplicas: 2
+  defaultResources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  oidc:
+    issuer: https://auth.staging.ontoaxis.example/realms/ontoaxis
+    audience: ontoaxis-api
+    jwksUrl: https://auth.staging.ontoaxis.example/realms/ontoaxis/protocol/openid-connect/certs
+  secretStore:
+    name: ontoaxis-kubernetes-store
+    kind: ClusterSecretStore
+
+components:
+  # Control plane key components double up.
+  keycloak:
+    replicas: 2
+    image:
+      repository: quay.io/keycloak/keycloak
+      digest: sha256:4141bb80f2680f54e6d7b012f489875f09668d6f3f02d54258a50d2efb955663
+  postgres:
+    replicas: 2
+    image:
+      repository: docker.io/library/postgres
+      digest: sha256:c33545010eb5f1b23e8d7a529f5436d93e933b85c999e6d274ce4102dc538106
+  # Application key components double up (placeholder digests, replace via manifest).
+  ontoaxis-core:
+    replicas: 2
+    image:
+      repository: ghcr.io/ontoaxis/ontoaxis-core
+      digest: sha256:7e55f59af53b572be0e41dcb24d820529d3f0b9b730419d8ee9a69451e1f79b8
+  web:
+    replicas: 2
+    image:
+      repository: ghcr.io/ontoaxis/web
+      digest: sha256:a0ed559da443097c2e904f50aa5f76bbdb83298f6ceb0d9b265d90bd6aff68e4
+  prometheus:
+    replicas: 2
+    image:
+      repository: docker.io/prom/prometheus
+      digest: sha256:78b274238b8fb0e4d6313cf833fecc591d1c73478e5eb086763ff34b00a48a44

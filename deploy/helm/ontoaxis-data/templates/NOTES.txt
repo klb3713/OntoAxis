@@ -1,0 +1,14 @@
+ontoaxis-data has been rendered for environment: {{ .Values.global.environment }}
+
+All data components run in namespace oa-data (created by ontoaxis-platform).
+
+Component summary (replicas / image):
+{{- range $name, $c := .Values.components }}
+{{- if and $c.enabled (eq $c.chart $.Chart.Name) }}
+  - {{ $name }} replicas={{ $c.replicas | default $.Values.global.defaultReplicas }} image={{ $c.image.repository }}@{{ $c.image.digest }}
+{{- end }}
+{{- end }}
+
+Datastores (Kafka, Temporal, Trino, Nessie) use TCP probes; HTTP control planes
+(Debezium, Apicurio, Kestra) use /healthz and /readyz. Values reference Secret
+names/keys only; no literal credentials are stored here.

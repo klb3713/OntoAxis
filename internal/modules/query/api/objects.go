@@ -23,6 +23,15 @@ func (h *Handler) queryObjects(w http.ResponseWriter, r *http.Request) {
 		objectTypeID = id
 	}
 	page, perPage := pagination(r)
+	// v1 authorizes the object list at tenant level, filtered or not:
+	// query/api has no tenant-scoped ObjectType reader (the query service only
+	// exposes QueryObjects), and synthesizing a fact from the client-supplied
+	// object_type_id would authorize a resource the handler never loaded.
+	// A future change can narrow the filtered form to an ObjectType fact once
+	// such a tenant-scoped reader exists.
+	if !h.authorize(w, r, objectRead, tenantFact(tc.TenantID)) {
+		return
+	}
 	items, total, err := h.service.QueryObjects(r.Context(), tc.TenantID, objectTypeID, perPage, (page-1)*perPage)
 	if err != nil {
 		writeServiceError(w, r, err)

@@ -1,0 +1,231 @@
+# ontoaxis-data default values.
+# Image digests are deterministic PLACEHOLDERS and must be replaced by the
+# release manifest before real deployment. See deploy/helm/README.md.
+
+global:
+  environment: kind
+  defaultReplicas: 1
+  imagePullPolicy: IfNotPresent
+  defaultResources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  oidc:
+    issuer: http://localhost:18083/realms/ontoaxis
+    audience: ontoaxis-api
+    jwksUrl: ""
+  secretStore:
+    name: ontoaxis-kubernetes-store
+    kind: ClusterSecretStore
+
+components:
+  kafka:
+    chart: ontoaxis-data
+    enabled: true
+    namespace: oa-data
+    image:
+      repository: docker.io/apache/kafka
+      digest: sha256:6e923e447b1c00a2be6f83331a5e3cf1d684b445eb428e1ebe7e4c3ad63ac04b
+    ports:
+      - name: broker
+        containerPort: 9092
+      - name: controller
+        containerPort: 9093
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: broker
+          port: 9092
+          targetPort: broker
+    probes:
+      mode: tcp
+      port: broker
+    terminationGracePeriodSeconds: 60
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  debezium:
+    chart: ontoaxis-data
+    enabled: true
+    namespace: oa-data
+    image:
+      repository: quay.io/debezium/connect
+      digest: sha256:fbbe5bba8fe10db80de38abfe481d8511303432b64ee536f76f8c30683000921
+    ports:
+      - name: http
+        containerPort: 8083
+    env:
+      - name: BOOTSTRAP_SERVERS
+        value: kafka:9092
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 8083
+          targetPort: http
+    probes:
+      mode: http
+      path: /healthz
+      readyPath: /readyz
+      port: http
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  apicurio:
+    chart: ontoaxis-data
+    enabled: true
+    namespace: oa-data
+    image:
+      repository: quay.io/apicurio/apicurio-registry
+      digest: sha256:501f4f4208f2a6b3b095721e4ffe9e04d945530eaf081285307cb1293e62b9ce
+    ports:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    probes:
+      mode: http
+      path: /healthz
+      readyPath: /readyz
+      port: http
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  kestra:
+    chart: ontoaxis-data
+    enabled: true
+    namespace: oa-data
+    image:
+      repository: docker.io/kestra/kestra
+      digest: sha256:6d9a89ab3cc93562ea8326457d216e2f89793d45c709f331e2d2975ebfeb9d13
+    ports:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    probes:
+      mode: http
+      path: /healthz
+      readyPath: /readyz
+      port: http
+    terminationGracePeriodSeconds: 45
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  temporal:
+    chart: ontoaxis-data
+    enabled: true
+    namespace: oa-data
+    image:
+      repository: docker.io/temporalio/auto-setup
+      digest: sha256:927f928df7b161304f349df32fbc12ba0571288b86d9da3774134abdb23ad598
+    ports:
+      - name: grpc
+        containerPort: 7233
+    env:
+      - name: DB
+        value: postgres12
+      - name: DB_PORT
+        value: "5432"
+    secretRefs:
+      - name: POSTGRES_PWD
+        secretName: ontoaxis-data-secrets
+        key: postgres-password
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: grpc
+          port: 7233
+          targetPort: grpc
+    probes:
+      mode: tcp
+      port: grpc
+    terminationGracePeriodSeconds: 60
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  trino:
+    chart: ontoaxis-data
+    enabled: true
+    namespace: oa-data
+    image:
+      repository: docker.io/trinodb/trino
+      digest: sha256:6912bc29e4819090423dcfb5eab8a1176aebb045f64b270acc417c7a6a4fee5e
+    ports:
+      - name: http
+        containerPort: 8080
+    secretRefs:
+      - name: TRINO_CREDENTIALS
+        secretName: ontoaxis-data-secrets
+        key: trino-credentials
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    probes:
+      mode: tcp
+      port: http
+    terminationGracePeriodSeconds: 45
+    pdb:
+      enabled: true
+      minAvailable: 1
+    externalSecret:
+      enabled: true
+      name: ontoaxis-data-trino-external-secret
+      targetName: ontoaxis-data-secrets
+      data:
+        - secretKey: trino-credentials
+          remoteRef:
+            key: data/trino-credentials
+            property: value
+
+  nessie:
+    chart: ontoaxis-data
+    enabled: true
+    namespace: oa-data
+    image:
+      repository: docker.io/projectnessie/nessie
+      digest: sha256:502350d16c4925efaa6433bf37c5f4d15d74da0effb49c2624d4d956103482bf
+    ports:
+      - name: http
+        containerPort: 19120
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 19120
+          targetPort: http
+    probes:
+      mode: tcp
+      port: http
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1

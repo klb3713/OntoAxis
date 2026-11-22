@@ -1,0 +1,170 @@
+# ontoaxis-app default values.
+# Image digests are deterministic PLACEHOLDERS and must be replaced by the
+# release manifest before real deployment. See deploy/helm/README.md.
+
+global:
+  environment: kind
+  defaultReplicas: 1
+  imagePullPolicy: IfNotPresent
+  defaultResources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  oidc:
+    issuer: http://localhost:18083/realms/ontoaxis
+    audience: ontoaxis-api
+    jwksUrl: ""
+  secretStore:
+    name: ontoaxis-kubernetes-store
+    kind: ClusterSecretStore
+
+components:
+  ontoaxis-core:
+    chart: ontoaxis-app
+    enabled: true
+    namespace: oa-app
+    strategy: Recreate
+    image:
+      repository: ghcr.io/ontoaxis/core
+      digest: sha256:7e55f59af53b572be0e41dcb24d820529d3f0b9b730419d8ee9a69451e1f79b8
+    ports:
+      - name: http
+        containerPort: 8080
+      - name: metrics
+        containerPort: 9090
+    env:
+      - name: ONTOAXIS_HTTP_ADDR
+        value: ":8080"
+      - name: ONTOAXIS_METRICS_ADDR
+        value: ":9090"
+      - name: ONTOAXIS_LOG_LEVEL
+        value: info
+      - name: ONTOAXIS_TRINO_URL
+        value: http://trino:8080
+    secretRefs:
+      - name: ONTOAXIS_DATABASE_URL
+        secretName: ontoaxis-core-secrets
+        key: database-url
+    oidcEnv: true
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+        - name: metrics
+          port: 9090
+          targetPort: metrics
+    probes:
+      mode: http
+      path: /healthz
+      readyPath: /readyz
+      port: http
+    terminationGracePeriodSeconds: 30
+    preStop:
+      sleepSeconds: 5
+    pdb:
+      enabled: true
+      minAvailable: 1
+    externalSecret:
+      enabled: true
+      name: ontoaxis-core-external-secret
+      targetName: ontoaxis-core-secrets
+      data:
+        - secretKey: database-url
+          remoteRef:
+            key: core/database-url
+            property: url
+        - secretKey: meilisearch-master-key
+          remoteRef:
+            key: core/meilisearch-master-key
+            property: key
+        - secretKey: trino-credentials
+          remoteRef:
+            key: core/trino-credentials
+            property: value
+
+  web:
+    chart: ontoaxis-app
+    enabled: true
+    namespace: oa-app
+    image:
+      repository: ghcr.io/ontoaxis/web
+      digest: sha256:a0ed559da443097c2e904f50aa5f76bbdb83298f6ceb0d9b265d90bd6aff68e4
+    ports:
+      - name: http
+        containerPort: 80
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 80
+          targetPort: http
+    probes:
+      mode: http
+      path: /healthz
+      readyPath: /readyz
+      port: http
+    terminationGracePeriodSeconds: 20
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  meilisearch:
+    chart: ontoaxis-app
+    enabled: true
+    namespace: oa-app
+    image:
+      repository: docker.io/getmeili/meilisearch
+      digest: sha256:4d3af8ce1b917315c9d05a15649047e66120018e3f0bef8da11c0216b27f8940
+    ports:
+      - name: http
+        containerPort: 7700
+    secretRefs:
+      - name: MEILI_MASTER_KEY
+        secretName: ontoaxis-core-secrets
+        key: meilisearch-master-key
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 7700
+          targetPort: http
+    probes:
+      mode: http
+      path: /health
+      readyPath: /health
+      port: http
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  ontoaxis-search:
+    chart: ontoaxis-app
+    enabled: true
+    namespace: oa-app
+    image:
+      repository: ghcr.io/ontoaxis/search-worker
+      digest: sha256:2f4dfcfe647f881892063592065b97045168701e46a80bedaf1bb062545fedbe
+    ports:
+      - name: http
+        containerPort: 8080
+    env:
+      - name: ONTOAXIS_MEILISEARCH_URL
+        value: http://meilisearch:7700
+    probes:
+      mode: http
+      path: /healthz
+      readyPath: /readyz
+      port: http
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1

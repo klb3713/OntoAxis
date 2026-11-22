@@ -1,0 +1,11 @@
+# digest: sha256:276a36001b683464910460cedc04628cc6b469484474ee071b23800b2e9b586c
+# source: deploy/observability/alertmanager/alertmanager.yaml
+route:
+  receiver: default
+  group_by: [alertname, severity]
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 4h
+
+receivers:
+  - name: default

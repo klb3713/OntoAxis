@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="${ROOT}/deploy/compose/compose.yaml"
+AUTHZ_FILE="${ROOT}/deploy/compose/authz/compose.authz.yaml"
 CORE_URL="${CORE_URL:-http://127.0.0.1:18080}"
 PROM_URL="${PROM_URL:-http://127.0.0.1:19091}"
 JAEGER_URL="${JAEGER_URL:-http://127.0.0.1:16686}"
@@ -20,7 +21,7 @@ fi
 export ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT="${ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}"
 
 echo "starting observability profile"
-docker compose -f "${COMPOSE_FILE}" --profile observability up -d --build postgres otel-collector jaeger prometheus alertmanager perses ontoaxis-core
+docker compose -f "${COMPOSE_FILE}" -f "${AUTHZ_FILE}" --profile observability up -d --build postgres otel-collector jaeger prometheus alertmanager perses ontoaxis-core
 
 wait_http() {
   local url="$1"
@@ -32,7 +33,7 @@ wait_http() {
     sleep 2
   done
   echo "timed out waiting for ${name}: ${url}" >&2
-  docker compose -f "${COMPOSE_FILE}" --profile observability logs --tail=80 ontoaxis-core otel-collector jaeger prometheus >&2 || true
+  docker compose -f "${COMPOSE_FILE}" -f "${AUTHZ_FILE}" --profile observability logs --tail=80 ontoaxis-core otel-collector jaeger prometheus >&2 || true
   return 1
 }
 

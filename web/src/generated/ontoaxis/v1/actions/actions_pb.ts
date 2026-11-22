@@ -4,7 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import { file_google_protobuf_struct } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_struct, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { PageRequest, PageResponse, Timestamps } from "../common/types_pb";
 import { file_ontoaxis_v1_common_types } from "../common/types_pb";
 import type { JsonObject, Message } from "@bufbuild/protobuf";
@@ -13,7 +14,7 @@ import type { JsonObject, Message } from "@bufbuild/protobuf";
  * Describes the file ontoaxis/v1/actions/actions.proto.
  */
 export const file_ontoaxis_v1_actions_actions: GenFile = /*@__PURE__*/
-  fileDesc("CiFvbnRvYXhpcy92MS9hY3Rpb25zL2FjdGlvbnMucHJvdG8SE29udG9heGlzLnYxLmFjdGlvbnMisgEKCkFjdGlvblR5cGUSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIUCgxkaXNwbGF5X25hbWUYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSKwoKcGFyYW1ldGVycxgFIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSMgoKdGltZXN0YW1wcxgGIAEoCzIeLm9udG9heGlzLnYxLmNvbW1vbi5UaW1lc3RhbXBzIt4BCg9BY3Rpb25FeGVjdXRpb24SCgoCaWQYASABKAkSFgoOYWN0aW9uX3R5cGVfaWQYAiABKAkSDgoGc3RhdHVzGAMgASgJEisKCnBhcmFtZXRlcnMYBCABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EicKBnJlc3VsdBgFIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSDQoFZXJyb3IYBiABKAkSMgoKdGltZXN0YW1wcxgHIAEoCzIeLm9udG9heGlzLnYxLmNvbW1vbi5UaW1lc3RhbXBzIn8KF0NyZWF0ZUFjdGlvblR5cGVSZXF1ZXN0EgwKBG5hbWUYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEisKCnBhcmFtZXRlcnMYBCABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IiIKFEdldEFjdGlvblR5cGVSZXF1ZXN0EgoKAmlkGAEgASgJIkcKFkxpc3RBY3Rpb25UeXBlc1JlcXVlc3QSLQoEcGFnZRgBIAEoCzIfLm9udG9heGlzLnYxLmNvbW1vbi5QYWdlUmVxdWVzdCKAAQoXTGlzdEFjdGlvblR5cGVzUmVzcG9uc2USNQoMYWN0aW9uX3R5cGVzGAEgAygLMh8ub250b2F4aXMudjEuYWN0aW9ucy5BY3Rpb25UeXBlEi4KBHBhZ2UYAiABKAsyIC5vbnRvYXhpcy52MS5jb21tb24uUGFnZVJlc3BvbnNlImgKF1VwZGF0ZUFjdGlvblR5cGVSZXF1ZXN0EgoKAmlkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIrCgpwYXJhbWV0ZXJzGAMgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCIlChdEZWxldGVBY3Rpb25UeXBlUmVxdWVzdBIKCgJpZBgBIAEoCSIaChhEZWxldGVBY3Rpb25UeXBlUmVzcG9uc2UiXAoVVmFsaWRhdGVBY3Rpb25SZXF1ZXN0EhYKDmFjdGlvbl90eXBlX2lkGAEgASgJEisKCnBhcmFtZXRlcnMYAiABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IjcKFlZhbGlkYXRlQWN0aW9uUmVzcG9uc2USDQoFdmFsaWQYASABKAgSDgoGZXJyb3JzGAIgAygJIlsKFFByZXZpZXdBY3Rpb25SZXF1ZXN0EhYKDmFjdGlvbl90eXBlX2lkGAEgASgJEisKCnBhcmFtZXRlcnMYAiABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IkEKFVByZXZpZXdBY3Rpb25SZXNwb25zZRIoCgdwcmV2aWV3GAEgASgLMhcuZ29vZ2xlLnByb3RvYnVmLlN0cnVjdCJXChBSdW5BY3Rpb25SZXF1ZXN0EhYKDmFjdGlvbl90eXBlX2lkGAEgASgJEisKCnBhcmFtZXRlcnMYAiABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IicKGUdldEFjdGlvbkV4ZWN1dGlvblJlcXVlc3QSCgoCaWQYASABKAkiZAobTGlzdEFjdGlvbkV4ZWN1dGlvbnNSZXF1ZXN0EhYKDmFjdGlvbl90eXBlX2lkGAEgASgJEi0KBHBhZ2UYAiABKAsyHy5vbnRvYXhpcy52MS5jb21tb24uUGFnZVJlcXVlc3QiiAEKHExpc3RBY3Rpb25FeGVjdXRpb25zUmVzcG9uc2USOAoKZXhlY3V0aW9ucxgBIAMoCzIkLm9udG9heGlzLnYxLmFjdGlvbnMuQWN0aW9uRXhlY3V0aW9uEi4KBHBhZ2UYAiABKAsyIC5vbnRvYXhpcy52MS5jb21tb24uUGFnZVJlc3BvbnNlIioKHENhbmNlbEFjdGlvbkV4ZWN1dGlvblJlcXVlc3QSCgoCaWQYASABKAkiKQobUmV0cnlBY3Rpb25FeGVjdXRpb25SZXF1ZXN0EgoKAmlkGAEgASgJMokKCg1BY3Rpb25TZXJ2aWNlEmEKEENyZWF0ZUFjdGlvblR5cGUSLC5vbnRvYXhpcy52MS5hY3Rpb25zLkNyZWF0ZUFjdGlvblR5cGVSZXF1ZXN0Gh8ub250b2F4aXMudjEuYWN0aW9ucy5BY3Rpb25UeXBlElsKDUdldEFjdGlvblR5cGUSKS5vbnRvYXhpcy52MS5hY3Rpb25zLkdldEFjdGlvblR5cGVSZXF1ZXN0Gh8ub250b2F4aXMudjEuYWN0aW9ucy5BY3Rpb25UeXBlEmwKD0xpc3RBY3Rpb25UeXBlcxIrLm9udG9heGlzLnYxLmFjdGlvbnMuTGlzdEFjdGlvblR5cGVzUmVxdWVzdBosLm9udG9heGlzLnYxLmFjdGlvbnMuTGlzdEFjdGlvblR5cGVzUmVzcG9uc2USYQoQVXBkYXRlQWN0aW9uVHlwZRIsLm9udG9heGlzLnYxLmFjdGlvbnMuVXBkYXRlQWN0aW9uVHlwZVJlcXVlc3QaHy5vbnRvYXhpcy52MS5hY3Rpb25zLkFjdGlvblR5cGUSbwoQRGVsZXRlQWN0aW9uVHlwZRIsLm9udG9heGlzLnYxLmFjdGlvbnMuRGVsZXRlQWN0aW9uVHlwZVJlcXVlc3QaLS5vbnRvYXhpcy52MS5hY3Rpb25zLkRlbGV0ZUFjdGlvblR5cGVSZXNwb25zZRJpCg5WYWxpZGF0ZUFjdGlvbhIqLm9udG9heGlzLnYxLmFjdGlvbnMuVmFsaWRhdGVBY3Rpb25SZXF1ZXN0Gisub250b2F4aXMudjEuYWN0aW9ucy5WYWxpZGF0ZUFjdGlvblJlc3BvbnNlEmYKDVByZXZpZXdBY3Rpb24SKS5vbnRvYXhpcy52MS5hY3Rpb25zLlByZXZpZXdBY3Rpb25SZXF1ZXN0Gioub250b2F4aXMudjEuYWN0aW9ucy5QcmV2aWV3QWN0aW9uUmVzcG9uc2USWAoJUnVuQWN0aW9uEiUub250b2F4aXMudjEuYWN0aW9ucy5SdW5BY3Rpb25SZXF1ZXN0GiQub250b2F4aXMudjEuYWN0aW9ucy5BY3Rpb25FeGVjdXRpb24SagoSR2V0QWN0aW9uRXhlY3V0aW9uEi4ub250b2F4aXMudjEuYWN0aW9ucy5HZXRBY3Rpb25FeGVjdXRpb25SZXF1ZXN0GiQub250b2F4aXMudjEuYWN0aW9ucy5BY3Rpb25FeGVjdXRpb24SewoUTGlzdEFjdGlvbkV4ZWN1dGlvbnMSMC5vbnRvYXhpcy52MS5hY3Rpb25zLkxpc3RBY3Rpb25FeGVjdXRpb25zUmVxdWVzdBoxLm9udG9heGlzLnYxLmFjdGlvbnMuTGlzdEFjdGlvbkV4ZWN1dGlvbnNSZXNwb25zZRJwChVDYW5jZWxBY3Rpb25FeGVjdXRpb24SMS5vbnRvYXhpcy52MS5hY3Rpb25zLkNhbmNlbEFjdGlvbkV4ZWN1dGlvblJlcXVlc3QaJC5vbnRvYXhpcy52MS5hY3Rpb25zLkFjdGlvbkV4ZWN1dGlvbhJuChRSZXRyeUFjdGlvbkV4ZWN1dGlvbhIwLm9udG9heGlzLnYxLmFjdGlvbnMuUmV0cnlBY3Rpb25FeGVjdXRpb25SZXF1ZXN0GiQub250b2F4aXMudjEuYWN0aW9ucy5BY3Rpb25FeGVjdXRpb25CygEKF2NvbS5vbnRvYXhpcy52MS5hY3Rpb25zQgxBY3Rpb25zUHJvdG9QAVozZ2l0aHViLmNvbS9rbGIzNzEzL29udG9heGlzL2dlbi9vbnRvYXhpcy92MS9hY3Rpb25zogIDT1ZBqgITT250b2F4aXMuVjEuQWN0aW9uc8oCE09udG9heGlzXFYxXEFjdGlvbnPiAh9PbnRvYXhpc1xWMVxBY3Rpb25zXEdQQk1ldGFkYXRh6gIVT250b2F4aXM6OlYxOjpBY3Rpb25zYgZwcm90bzM", [file_google_protobuf_struct, file_ontoaxis_v1_common_types]);
+  fileDesc("CiFvbnRvYXhpcy92MS9hY3Rpb25zL2FjdGlvbnMucHJvdG8SE29udG9heGlzLnYxLmFjdGlvbnMisgEKCkFjdGlvblR5cGUSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRIUCgxkaXNwbGF5X25hbWUYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSKwoKcGFyYW1ldGVycxgFIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSMgoKdGltZXN0YW1wcxgGIAEoCzIeLm9udG9heGlzLnYxLmNvbW1vbi5UaW1lc3RhbXBzIuYDCg9BY3Rpb25FeGVjdXRpb24SCgoCaWQYASABKAkSFgoOYWN0aW9uX3R5cGVfaWQYAiABKAkSDgoGc3RhdHVzGAMgASgJEisKCnBhcmFtZXRlcnMYBCABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0EicKBnJlc3VsdBgFIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QSDQoFZXJyb3IYBiABKAkSMgoKdGltZXN0YW1wcxgHIAEoCzIeLm9udG9heGlzLnYxLmNvbW1vbi5UaW1lc3RhbXBzEhEKCW9iamVjdF9pZBgIIAEoCRIPCgdhdHRlbXB0GAkgASgFEhoKEmN1cnJlbnRfc3RlcF9pbmRleBgKIAEoBRITCgt3b3JrZmxvd19pZBgLIAEoCRIXCg93b3JrZmxvd19ydW5faWQYDCABKAkSFgoOYXBwcm92YWxfc3RhdGUYDSABKAkSFAoMZmFpbHVyZV9jb2RlGA4gASgJEjcKE2NhbmNlbF9yZXF1ZXN0ZWRfYXQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKBXN0ZXBzGBAgAygLMiIub250b2F4aXMudjEuYWN0aW9ucy5FeGVjdXRpb25TdGVwItcBCg1FeGVjdXRpb25TdGVwEgoKAmlkGAEgASgJEhIKCnN0ZXBfaW5kZXgYAiABKAUSFQoNYWN0aXZpdHlfdHlwZRgDIAEoCRIOCgZzdGF0dXMYBCABKAkSDwoHYXR0ZW1wdBgFIAEoBRINCgVlcnJvchgGIAEoCRIuCgpzdGFydGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtmaW5pc2hlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAi7QEKDEFwcHJvdmFsVGFzaxIKCgJpZBgBIAEoCRIUCgxleGVjdXRpb25faWQYAiABKAkSFgoOYWN0aW9uX3R5cGVfaWQYAyABKAkSDwoHc3RlcF9pZBgEIAEoCRIOCgZzdGF0dXMYBSABKAkSMAoMcmVxdWVzdGVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpkZWNpZGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBISCgpkZWNpZGVkX2J5GAggASgJEgwKBG5vdGUYCSABKAkifwoXQ3JlYXRlQWN0aW9uVHlwZVJlcXVlc3QSDAoEbmFtZRgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSKwoKcGFyYW1ldGVycxgEIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiIgoUR2V0QWN0aW9uVHlwZVJlcXVlc3QSCgoCaWQYASABKAkiRwoWTGlzdEFjdGlvblR5cGVzUmVxdWVzdBItCgRwYWdlGAEgASgLMh8ub250b2F4aXMudjEuY29tbW9uLlBhZ2VSZXF1ZXN0IoABChdMaXN0QWN0aW9uVHlwZXNSZXNwb25zZRI1CgxhY3Rpb25fdHlwZXMYASADKAsyHy5vbnRvYXhpcy52MS5hY3Rpb25zLkFjdGlvblR5cGUSLgoEcGFnZRgCIAEoCzIgLm9udG9heGlzLnYxLmNvbW1vbi5QYWdlUmVzcG9uc2UiaAoXVXBkYXRlQWN0aW9uVHlwZVJlcXVlc3QSCgoCaWQYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEisKCnBhcmFtZXRlcnMYAyABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IiUKF0RlbGV0ZUFjdGlvblR5cGVSZXF1ZXN0EgoKAmlkGAEgASgJIhoKGERlbGV0ZUFjdGlvblR5cGVSZXNwb25zZSJcChVWYWxpZGF0ZUFjdGlvblJlcXVlc3QSFgoOYWN0aW9uX3R5cGVfaWQYASABKAkSKwoKcGFyYW1ldGVycxgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiNwoWVmFsaWRhdGVBY3Rpb25SZXNwb25zZRINCgV2YWxpZBgBIAEoCBIOCgZlcnJvcnMYAiADKAkiWwoUUHJldmlld0FjdGlvblJlcXVlc3QSFgoOYWN0aW9uX3R5cGVfaWQYASABKAkSKwoKcGFyYW1ldGVycxgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiQQoVUHJldmlld0FjdGlvblJlc3BvbnNlEigKB3ByZXZpZXcYASABKAsyFy5nb29nbGUucHJvdG9idWYuU3RydWN0IlcKEFJ1bkFjdGlvblJlcXVlc3QSFgoOYWN0aW9uX3R5cGVfaWQYASABKAkSKwoKcGFyYW1ldGVycxgCIAEoCzIXLmdvb2dsZS5wcm90b2J1Zi5TdHJ1Y3QiJwoZR2V0QWN0aW9uRXhlY3V0aW9uUmVxdWVzdBIKCgJpZBgBIAEoCSJkChtMaXN0QWN0aW9uRXhlY3V0aW9uc1JlcXVlc3QSFgoOYWN0aW9uX3R5cGVfaWQYASABKAkSLQoEcGFnZRgCIAEoCzIfLm9udG9heGlzLnYxLmNvbW1vbi5QYWdlUmVxdWVzdCKIAQocTGlzdEFjdGlvbkV4ZWN1dGlvbnNSZXNwb25zZRI4CgpleGVjdXRpb25zGAEgAygLMiQub250b2F4aXMudjEuYWN0aW9ucy5BY3Rpb25FeGVjdXRpb24SLgoEcGFnZRgCIAEoCzIgLm9udG9heGlzLnYxLmNvbW1vbi5QYWdlUmVzcG9uc2UiKgocQ2FuY2VsQWN0aW9uRXhlY3V0aW9uUmVxdWVzdBIKCgJpZBgBIAEoCSIpChtSZXRyeUFjdGlvbkV4ZWN1dGlvblJlcXVlc3QSCgoCaWQYASABKAkiWQoYTGlzdEFwcHJvdmFsVGFza3NSZXF1ZXN0Eg4KBnN0YXR1cxgBIAEoCRItCgRwYWdlGAIgASgLMh8ub250b2F4aXMudjEuY29tbW9uLlBhZ2VSZXF1ZXN0IoYBChlMaXN0QXBwcm92YWxUYXNrc1Jlc3BvbnNlEjkKDmFwcHJvdmFsX3Rhc2tzGAEgAygLMiEub250b2F4aXMudjEuYWN0aW9ucy5BcHByb3ZhbFRhc2sSLgoEcGFnZRgCIAEoCzIgLm9udG9heGlzLnYxLmNvbW1vbi5QYWdlUmVzcG9uc2UiJAoWR2V0QXBwcm92YWxUYXNrUmVxdWVzdBIKCgJpZBgBIAEoCSJHChlEZWNpZGVBcHByb3ZhbFRhc2tSZXF1ZXN0EgoKAmlkGAEgASgJEhAKCGRlY2lzaW9uGAIgASgJEgwKBG5vdGUYAyABKAkyyQwKDUFjdGlvblNlcnZpY2USYQoQQ3JlYXRlQWN0aW9uVHlwZRIsLm9udG9heGlzLnYxLmFjdGlvbnMuQ3JlYXRlQWN0aW9uVHlwZVJlcXVlc3QaHy5vbnRvYXhpcy52MS5hY3Rpb25zLkFjdGlvblR5cGUSWwoNR2V0QWN0aW9uVHlwZRIpLm9udG9heGlzLnYxLmFjdGlvbnMuR2V0QWN0aW9uVHlwZVJlcXVlc3QaHy5vbnRvYXhpcy52MS5hY3Rpb25zLkFjdGlvblR5cGUSbAoPTGlzdEFjdGlvblR5cGVzEisub250b2F4aXMudjEuYWN0aW9ucy5MaXN0QWN0aW9uVHlwZXNSZXF1ZXN0Giwub250b2F4aXMudjEuYWN0aW9ucy5MaXN0QWN0aW9uVHlwZXNSZXNwb25zZRJhChBVcGRhdGVBY3Rpb25UeXBlEiwub250b2F4aXMudjEuYWN0aW9ucy5VcGRhdGVBY3Rpb25UeXBlUmVxdWVzdBofLm9udG9heGlzLnYxLmFjdGlvbnMuQWN0aW9uVHlwZRJvChBEZWxldGVBY3Rpb25UeXBlEiwub250b2F4aXMudjEuYWN0aW9ucy5EZWxldGVBY3Rpb25UeXBlUmVxdWVzdBotLm9udG9heGlzLnYxLmFjdGlvbnMuRGVsZXRlQWN0aW9uVHlwZVJlc3BvbnNlEmkKDlZhbGlkYXRlQWN0aW9uEioub250b2F4aXMudjEuYWN0aW9ucy5WYWxpZGF0ZUFjdGlvblJlcXVlc3QaKy5vbnRvYXhpcy52MS5hY3Rpb25zLlZhbGlkYXRlQWN0aW9uUmVzcG9uc2USZgoNUHJldmlld0FjdGlvbhIpLm9udG9heGlzLnYxLmFjdGlvbnMuUHJldmlld0FjdGlvblJlcXVlc3QaKi5vbnRvYXhpcy52MS5hY3Rpb25zLlByZXZpZXdBY3Rpb25SZXNwb25zZRJYCglSdW5BY3Rpb24SJS5vbnRvYXhpcy52MS5hY3Rpb25zLlJ1bkFjdGlvblJlcXVlc3QaJC5vbnRvYXhpcy52MS5hY3Rpb25zLkFjdGlvbkV4ZWN1dGlvbhJqChJHZXRBY3Rpb25FeGVjdXRpb24SLi5vbnRvYXhpcy52MS5hY3Rpb25zLkdldEFjdGlvbkV4ZWN1dGlvblJlcXVlc3QaJC5vbnRvYXhpcy52MS5hY3Rpb25zLkFjdGlvbkV4ZWN1dGlvbhJ7ChRMaXN0QWN0aW9uRXhlY3V0aW9ucxIwLm9udG9heGlzLnYxLmFjdGlvbnMuTGlzdEFjdGlvbkV4ZWN1dGlvbnNSZXF1ZXN0GjEub250b2F4aXMudjEuYWN0aW9ucy5MaXN0QWN0aW9uRXhlY3V0aW9uc1Jlc3BvbnNlEnAKFUNhbmNlbEFjdGlvbkV4ZWN1dGlvbhIxLm9udG9heGlzLnYxLmFjdGlvbnMuQ2FuY2VsQWN0aW9uRXhlY3V0aW9uUmVxdWVzdBokLm9udG9heGlzLnYxLmFjdGlvbnMuQWN0aW9uRXhlY3V0aW9uEm4KFFJldHJ5QWN0aW9uRXhlY3V0aW9uEjAub250b2F4aXMudjEuYWN0aW9ucy5SZXRyeUFjdGlvbkV4ZWN1dGlvblJlcXVlc3QaJC5vbnRvYXhpcy52MS5hY3Rpb25zLkFjdGlvbkV4ZWN1dGlvbhJyChFMaXN0QXBwcm92YWxUYXNrcxItLm9udG9heGlzLnYxLmFjdGlvbnMuTGlzdEFwcHJvdmFsVGFza3NSZXF1ZXN0Gi4ub250b2F4aXMudjEuYWN0aW9ucy5MaXN0QXBwcm92YWxUYXNrc1Jlc3BvbnNlEmEKD0dldEFwcHJvdmFsVGFzaxIrLm9udG9heGlzLnYxLmFjdGlvbnMuR2V0QXBwcm92YWxUYXNrUmVxdWVzdBohLm9udG9heGlzLnYxLmFjdGlvbnMuQXBwcm92YWxUYXNrEmcKEkRlY2lkZUFwcHJvdmFsVGFzaxIuLm9udG9heGlzLnYxLmFjdGlvbnMuRGVjaWRlQXBwcm92YWxUYXNrUmVxdWVzdBohLm9udG9heGlzLnYxLmFjdGlvbnMuQXBwcm92YWxUYXNrQsoBChdjb20ub250b2F4aXMudjEuYWN0aW9uc0IMQWN0aW9uc1Byb3RvUAFaM2dpdGh1Yi5jb20va2xiMzcxMy9vbnRvYXhpcy9nZW4vb250b2F4aXMvdjEvYWN0aW9uc6ICA09WQaoCE09udG9heGlzLlYxLkFjdGlvbnPKAhNPbnRvYXhpc1xWMVxBY3Rpb25z4gIfT250b2F4aXNcVjFcQWN0aW9uc1xHUEJNZXRhZGF0YeoCFU9udG9heGlzOjpWMTo6QWN0aW9uc2IGcHJvdG8z", [file_google_protobuf_struct, file_google_protobuf_timestamp, file_ontoaxis_v1_common_types]);
 
 /**
  * @generated from message ontoaxis.v1.actions.ActionType
@@ -95,6 +96,51 @@ export type ActionExecution = Message<"ontoaxis.v1.actions.ActionExecution"> & {
    * @generated from field: ontoaxis.v1.common.Timestamps timestamps = 7;
    */
   timestamps?: Timestamps | undefined;
+
+  /**
+   * @generated from field: string object_id = 8;
+   */
+  objectId: string;
+
+  /**
+   * @generated from field: int32 attempt = 9;
+   */
+  attempt: number;
+
+  /**
+   * @generated from field: int32 current_step_index = 10;
+   */
+  currentStepIndex: number;
+
+  /**
+   * @generated from field: string workflow_id = 11;
+   */
+  workflowId: string;
+
+  /**
+   * @generated from field: string workflow_run_id = 12;
+   */
+  workflowRunId: string;
+
+  /**
+   * @generated from field: string approval_state = 13;
+   */
+  approvalState: string;
+
+  /**
+   * @generated from field: string failure_code = 14;
+   */
+  failureCode: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp cancel_requested_at = 15;
+   */
+  cancelRequestedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: repeated ontoaxis.v1.actions.ExecutionStep steps = 16;
+   */
+  steps: ExecutionStep[];
 };
 
 /**
@@ -103,6 +149,115 @@ export type ActionExecution = Message<"ontoaxis.v1.actions.ActionExecution"> & {
  */
 export const ActionExecutionSchema: GenMessage<ActionExecution> = /*@__PURE__*/
   messageDesc(file_ontoaxis_v1_actions_actions, 1);
+
+/**
+ * @generated from message ontoaxis.v1.actions.ExecutionStep
+ */
+export type ExecutionStep = Message<"ontoaxis.v1.actions.ExecutionStep"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: int32 step_index = 2;
+   */
+  stepIndex: number;
+
+  /**
+   * @generated from field: string activity_type = 3;
+   */
+  activityType: string;
+
+  /**
+   * @generated from field: string status = 4;
+   */
+  status: string;
+
+  /**
+   * @generated from field: int32 attempt = 5;
+   */
+  attempt: number;
+
+  /**
+   * @generated from field: string error = 6;
+   */
+  error: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp started_at = 7;
+   */
+  startedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp finished_at = 8;
+   */
+  finishedAt?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message ontoaxis.v1.actions.ExecutionStep.
+ * Use `create(ExecutionStepSchema)` to create a new message.
+ */
+export const ExecutionStepSchema: GenMessage<ExecutionStep> = /*@__PURE__*/
+  messageDesc(file_ontoaxis_v1_actions_actions, 2);
+
+/**
+ * @generated from message ontoaxis.v1.actions.ApprovalTask
+ */
+export type ApprovalTask = Message<"ontoaxis.v1.actions.ApprovalTask"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string execution_id = 2;
+   */
+  executionId: string;
+
+  /**
+   * @generated from field: string action_type_id = 3;
+   */
+  actionTypeId: string;
+
+  /**
+   * @generated from field: string step_id = 4;
+   */
+  stepId: string;
+
+  /**
+   * @generated from field: string status = 5;
+   */
+  status: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp requested_at = 6;
+   */
+  requestedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp decided_at = 7;
+   */
+  decidedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string decided_by = 8;
+   */
+  decidedBy: string;
+
+  /**
+   * @generated from field: string note = 9;
+   */
+  note: string;
+};
+
+/**
+ * Describes the message ontoaxis.v1.actions.ApprovalTask.
+ * Use `create(ApprovalTaskSchema)` to create a new message.
+ */
+export const ApprovalTaskSchema: GenMessage<ApprovalTask> = /*@__PURE__*/
+  messageDesc(file_ontoaxis_v1_actions_actions, 3);
 
 /**
  * @generated from message ontoaxis.v1.actions.CreateActionTypeRequest
@@ -134,7 +289,7 @@ export type CreateActionTypeRequest = Message<"ontoaxis.v1.actions.CreateActionT
  * Use `create(CreateActionTypeRequestSchema)` to create a new message.
  */
 export const CreateActionTypeRequestSchema: GenMessage<CreateActionTypeRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 2);
+  messageDesc(file_ontoaxis_v1_actions_actions, 4);
 
 /**
  * @generated from message ontoaxis.v1.actions.GetActionTypeRequest
@@ -151,7 +306,7 @@ export type GetActionTypeRequest = Message<"ontoaxis.v1.actions.GetActionTypeReq
  * Use `create(GetActionTypeRequestSchema)` to create a new message.
  */
 export const GetActionTypeRequestSchema: GenMessage<GetActionTypeRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 3);
+  messageDesc(file_ontoaxis_v1_actions_actions, 5);
 
 /**
  * @generated from message ontoaxis.v1.actions.ListActionTypesRequest
@@ -168,7 +323,7 @@ export type ListActionTypesRequest = Message<"ontoaxis.v1.actions.ListActionType
  * Use `create(ListActionTypesRequestSchema)` to create a new message.
  */
 export const ListActionTypesRequestSchema: GenMessage<ListActionTypesRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 4);
+  messageDesc(file_ontoaxis_v1_actions_actions, 6);
 
 /**
  * @generated from message ontoaxis.v1.actions.ListActionTypesResponse
@@ -190,7 +345,7 @@ export type ListActionTypesResponse = Message<"ontoaxis.v1.actions.ListActionTyp
  * Use `create(ListActionTypesResponseSchema)` to create a new message.
  */
 export const ListActionTypesResponseSchema: GenMessage<ListActionTypesResponse> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 5);
+  messageDesc(file_ontoaxis_v1_actions_actions, 7);
 
 /**
  * @generated from message ontoaxis.v1.actions.UpdateActionTypeRequest
@@ -217,7 +372,7 @@ export type UpdateActionTypeRequest = Message<"ontoaxis.v1.actions.UpdateActionT
  * Use `create(UpdateActionTypeRequestSchema)` to create a new message.
  */
 export const UpdateActionTypeRequestSchema: GenMessage<UpdateActionTypeRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 6);
+  messageDesc(file_ontoaxis_v1_actions_actions, 8);
 
 /**
  * @generated from message ontoaxis.v1.actions.DeleteActionTypeRequest
@@ -234,7 +389,7 @@ export type DeleteActionTypeRequest = Message<"ontoaxis.v1.actions.DeleteActionT
  * Use `create(DeleteActionTypeRequestSchema)` to create a new message.
  */
 export const DeleteActionTypeRequestSchema: GenMessage<DeleteActionTypeRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 7);
+  messageDesc(file_ontoaxis_v1_actions_actions, 9);
 
 /**
  * @generated from message ontoaxis.v1.actions.DeleteActionTypeResponse
@@ -247,7 +402,7 @@ export type DeleteActionTypeResponse = Message<"ontoaxis.v1.actions.DeleteAction
  * Use `create(DeleteActionTypeResponseSchema)` to create a new message.
  */
 export const DeleteActionTypeResponseSchema: GenMessage<DeleteActionTypeResponse> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 8);
+  messageDesc(file_ontoaxis_v1_actions_actions, 10);
 
 /**
  * @generated from message ontoaxis.v1.actions.ValidateActionRequest
@@ -269,7 +424,7 @@ export type ValidateActionRequest = Message<"ontoaxis.v1.actions.ValidateActionR
  * Use `create(ValidateActionRequestSchema)` to create a new message.
  */
 export const ValidateActionRequestSchema: GenMessage<ValidateActionRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 9);
+  messageDesc(file_ontoaxis_v1_actions_actions, 11);
 
 /**
  * @generated from message ontoaxis.v1.actions.ValidateActionResponse
@@ -291,7 +446,7 @@ export type ValidateActionResponse = Message<"ontoaxis.v1.actions.ValidateAction
  * Use `create(ValidateActionResponseSchema)` to create a new message.
  */
 export const ValidateActionResponseSchema: GenMessage<ValidateActionResponse> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 10);
+  messageDesc(file_ontoaxis_v1_actions_actions, 12);
 
 /**
  * @generated from message ontoaxis.v1.actions.PreviewActionRequest
@@ -313,7 +468,7 @@ export type PreviewActionRequest = Message<"ontoaxis.v1.actions.PreviewActionReq
  * Use `create(PreviewActionRequestSchema)` to create a new message.
  */
 export const PreviewActionRequestSchema: GenMessage<PreviewActionRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 11);
+  messageDesc(file_ontoaxis_v1_actions_actions, 13);
 
 /**
  * @generated from message ontoaxis.v1.actions.PreviewActionResponse
@@ -330,7 +485,7 @@ export type PreviewActionResponse = Message<"ontoaxis.v1.actions.PreviewActionRe
  * Use `create(PreviewActionResponseSchema)` to create a new message.
  */
 export const PreviewActionResponseSchema: GenMessage<PreviewActionResponse> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 12);
+  messageDesc(file_ontoaxis_v1_actions_actions, 14);
 
 /**
  * @generated from message ontoaxis.v1.actions.RunActionRequest
@@ -352,7 +507,7 @@ export type RunActionRequest = Message<"ontoaxis.v1.actions.RunActionRequest"> &
  * Use `create(RunActionRequestSchema)` to create a new message.
  */
 export const RunActionRequestSchema: GenMessage<RunActionRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 13);
+  messageDesc(file_ontoaxis_v1_actions_actions, 15);
 
 /**
  * @generated from message ontoaxis.v1.actions.GetActionExecutionRequest
@@ -369,7 +524,7 @@ export type GetActionExecutionRequest = Message<"ontoaxis.v1.actions.GetActionEx
  * Use `create(GetActionExecutionRequestSchema)` to create a new message.
  */
 export const GetActionExecutionRequestSchema: GenMessage<GetActionExecutionRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 14);
+  messageDesc(file_ontoaxis_v1_actions_actions, 16);
 
 /**
  * @generated from message ontoaxis.v1.actions.ListActionExecutionsRequest
@@ -391,7 +546,7 @@ export type ListActionExecutionsRequest = Message<"ontoaxis.v1.actions.ListActio
  * Use `create(ListActionExecutionsRequestSchema)` to create a new message.
  */
 export const ListActionExecutionsRequestSchema: GenMessage<ListActionExecutionsRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 15);
+  messageDesc(file_ontoaxis_v1_actions_actions, 17);
 
 /**
  * @generated from message ontoaxis.v1.actions.ListActionExecutionsResponse
@@ -413,7 +568,7 @@ export type ListActionExecutionsResponse = Message<"ontoaxis.v1.actions.ListActi
  * Use `create(ListActionExecutionsResponseSchema)` to create a new message.
  */
 export const ListActionExecutionsResponseSchema: GenMessage<ListActionExecutionsResponse> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 16);
+  messageDesc(file_ontoaxis_v1_actions_actions, 18);
 
 /**
  * @generated from message ontoaxis.v1.actions.CancelActionExecutionRequest
@@ -430,7 +585,7 @@ export type CancelActionExecutionRequest = Message<"ontoaxis.v1.actions.CancelAc
  * Use `create(CancelActionExecutionRequestSchema)` to create a new message.
  */
 export const CancelActionExecutionRequestSchema: GenMessage<CancelActionExecutionRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 17);
+  messageDesc(file_ontoaxis_v1_actions_actions, 19);
 
 /**
  * @generated from message ontoaxis.v1.actions.RetryActionExecutionRequest
@@ -447,7 +602,95 @@ export type RetryActionExecutionRequest = Message<"ontoaxis.v1.actions.RetryActi
  * Use `create(RetryActionExecutionRequestSchema)` to create a new message.
  */
 export const RetryActionExecutionRequestSchema: GenMessage<RetryActionExecutionRequest> = /*@__PURE__*/
-  messageDesc(file_ontoaxis_v1_actions_actions, 18);
+  messageDesc(file_ontoaxis_v1_actions_actions, 20);
+
+/**
+ * @generated from message ontoaxis.v1.actions.ListApprovalTasksRequest
+ */
+export type ListApprovalTasksRequest = Message<"ontoaxis.v1.actions.ListApprovalTasksRequest"> & {
+  /**
+   * @generated from field: string status = 1;
+   */
+  status: string;
+
+  /**
+   * @generated from field: ontoaxis.v1.common.PageRequest page = 2;
+   */
+  page?: PageRequest | undefined;
+};
+
+/**
+ * Describes the message ontoaxis.v1.actions.ListApprovalTasksRequest.
+ * Use `create(ListApprovalTasksRequestSchema)` to create a new message.
+ */
+export const ListApprovalTasksRequestSchema: GenMessage<ListApprovalTasksRequest> = /*@__PURE__*/
+  messageDesc(file_ontoaxis_v1_actions_actions, 21);
+
+/**
+ * @generated from message ontoaxis.v1.actions.ListApprovalTasksResponse
+ */
+export type ListApprovalTasksResponse = Message<"ontoaxis.v1.actions.ListApprovalTasksResponse"> & {
+  /**
+   * @generated from field: repeated ontoaxis.v1.actions.ApprovalTask approval_tasks = 1;
+   */
+  approvalTasks: ApprovalTask[];
+
+  /**
+   * @generated from field: ontoaxis.v1.common.PageResponse page = 2;
+   */
+  page?: PageResponse | undefined;
+};
+
+/**
+ * Describes the message ontoaxis.v1.actions.ListApprovalTasksResponse.
+ * Use `create(ListApprovalTasksResponseSchema)` to create a new message.
+ */
+export const ListApprovalTasksResponseSchema: GenMessage<ListApprovalTasksResponse> = /*@__PURE__*/
+  messageDesc(file_ontoaxis_v1_actions_actions, 22);
+
+/**
+ * @generated from message ontoaxis.v1.actions.GetApprovalTaskRequest
+ */
+export type GetApprovalTaskRequest = Message<"ontoaxis.v1.actions.GetApprovalTaskRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message ontoaxis.v1.actions.GetApprovalTaskRequest.
+ * Use `create(GetApprovalTaskRequestSchema)` to create a new message.
+ */
+export const GetApprovalTaskRequestSchema: GenMessage<GetApprovalTaskRequest> = /*@__PURE__*/
+  messageDesc(file_ontoaxis_v1_actions_actions, 23);
+
+/**
+ * @generated from message ontoaxis.v1.actions.DecideApprovalTaskRequest
+ */
+export type DecideApprovalTaskRequest = Message<"ontoaxis.v1.actions.DecideApprovalTaskRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string decision = 2;
+   */
+  decision: string;
+
+  /**
+   * @generated from field: string note = 3;
+   */
+  note: string;
+};
+
+/**
+ * Describes the message ontoaxis.v1.actions.DecideApprovalTaskRequest.
+ * Use `create(DecideApprovalTaskRequestSchema)` to create a new message.
+ */
+export const DecideApprovalTaskRequestSchema: GenMessage<DecideApprovalTaskRequest> = /*@__PURE__*/
+  messageDesc(file_ontoaxis_v1_actions_actions, 24);
 
 /**
  * @generated from service ontoaxis.v1.actions.ActionService
@@ -548,6 +791,30 @@ export const ActionService: GenService<{
     methodKind: "unary";
     input: typeof RetryActionExecutionRequestSchema;
     output: typeof ActionExecutionSchema;
+  },
+  /**
+   * @generated from rpc ontoaxis.v1.actions.ActionService.ListApprovalTasks
+   */
+  listApprovalTasks: {
+    methodKind: "unary";
+    input: typeof ListApprovalTasksRequestSchema;
+    output: typeof ListApprovalTasksResponseSchema;
+  },
+  /**
+   * @generated from rpc ontoaxis.v1.actions.ActionService.GetApprovalTask
+   */
+  getApprovalTask: {
+    methodKind: "unary";
+    input: typeof GetApprovalTaskRequestSchema;
+    output: typeof ApprovalTaskSchema;
+  },
+  /**
+   * @generated from rpc ontoaxis.v1.actions.ActionService.DecideApprovalTask
+   */
+  decideApprovalTask: {
+    methodKind: "unary";
+    input: typeof DecideApprovalTaskRequestSchema;
+    output: typeof ApprovalTaskSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_ontoaxis_v1_actions_actions, 0);

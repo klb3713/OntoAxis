@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -14,6 +15,8 @@ import (
 	"github.com/klb3713/ontoaxis/internal/modules/datasets/api"
 	"github.com/klb3713/ontoaxis/internal/modules/datasets/repo"
 	"github.com/klb3713/ontoaxis/internal/modules/datasets/service"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
+	"github.com/klb3713/ontoaxis/internal/platform/httperr"
 )
 
 type apiFixture struct {
@@ -339,5 +342,91 @@ func TestInvalidTenantHeaderReturns401(t *testing.T) {
 	}
 	if payload.Error.Code != "unauthorized" {
 		t.Fatalf("invalid tenant error code = %q, want unauthorized", payload.Error.Code)
+	}
+}
+
+type fakeDecisionGuard struct {
+	allow     bool
+	actions   []string
+	resources []string
+}
+
+func (f *fakeDecisionGuard) Require(_ context.Context, action authz.Action, resource authz.ResourceFact) (authz.Decision, error) {
+	f.actions = append(f.actions, string(action))
+	f.resources = append(f.resources, resource.Type+":"+resource.ID)
+	if f.allow {
+		return authz.Decision{Allow: true, DecisionID: "decision-test", Action: action, Resource: resource}, nil
+	}
+	return authz.Decision{DecisionID: "decision-test", Action: action, Resource: resource}, &authz.Error{Reason: authz.ReasonRoleNotPermitted, Engine: "test"}
+}
+
+func (f *fakeDecisionGuard) WriteHTTP(w http.ResponseWriter, r *http.Request, _ error) {
+	httperr.Write(w, r, httperr.Forbidden("permission denied"))
+}
+
+func (f *fakeDecisionGuard) SetDecisionHeader(w http.ResponseWriter, decision authz.Decision) {
+	w.Header().Set(authz.DecisionHeader, decision.DecisionID)
+}
+
+func newAuthorizedFixture(t *testing.T, allow bool) (*apiFixture, *fakeDecisionGuard) {
+	t.Helper()
+	svc := service.New(repo.NewMemoryStore())
+	guard := &fakeDecisionGuard{allow: allow}
+	router := chi.NewRouter()
+	api.NewHandler(svc, api.GatewayTenantResolver{}, api.WithDecisionGuard(guard)).RegisterRoutes(router)
+	return &apiFixture{router: router, tenantID: testUUID(t)}, guard
+}
+
+func TestDatasetAuthorizationSeam(t *testing.T) {
+	fixture, guard := newAuthorizedFixture(t, true)
+	id := createDatasetHTTP(t, fixture, "orders")
+	recorder := fixture.request(t, http.MethodGet, "/api/v1/datasets/"+id, nil, fixture.tenantID)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("GET status = %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	if got := recorder.Header().Get(authz.DecisionHeader); got != "decision-test" {
+		t.Fatalf("decision header = %q", got)
+	}
+	if len(guard.actions) != 2 || guard.actions[0] != "dataset:create" || guard.actions[1] != "dataset:read" {
+		t.Fatalf("unexpected authorization actions: %v", guard.actions)
+	}
+	if guard.resources[0] != "tenant:"+fixture.tenantID {
+		t.Fatalf("create must authorize tenant scope, got %q", guard.resources[0])
+	}
+}
+
+func TestDatasetAuthorizationDeny(t *testing.T) {
+	fixture, _ := newAuthorizedFixture(t, false)
+	recorder := fixture.request(t, http.MethodPost, "/api/v1/datasets", map[string]any{"name": "orders", "format": "iceberg"}, fixture.tenantID)
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("denied create status = %d body=%s", recorder.Code, recorder.Body.String())
+	}
+}
+
+func TestDatasetCrossTenantIsNotFoundBeforeAuthorization(t *testing.T) {
+	fixture, guard := newAuthorizedFixture(t, true)
+	id := createDatasetHTTP(t, fixture, "orders")
+	recorder := fixture.request(t, http.MethodGet, "/api/v1/datasets/"+id, nil, testUUID(t))
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("cross-tenant GET status = %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	for _, action := range guard.actions {
+		if action == "dataset:read" {
+			t.Fatal("cross-tenant lookup must not reach authorization")
+		}
+	}
+}
+
+func TestDatasetListProducesSingleDecision(t *testing.T) {
+	fixture, guard := newAuthorizedFixture(t, true)
+	recorder := fixture.request(t, http.MethodGet, "/api/v1/datasets", nil, fixture.tenantID)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("GET list status = %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	if len(guard.actions) != 1 || guard.actions[0] != "dataset:read" {
+		t.Fatalf("list authorization actions = %v, want one dataset:read", guard.actions)
+	}
+	if guard.resources[0] != "tenant:"+fixture.tenantID {
+		t.Fatalf("list must authorize tenant scope, got %q", guard.resources[0])
 	}
 }

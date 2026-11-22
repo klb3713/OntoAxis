@@ -1,0 +1,13 @@
+{{- if and .Values.backup.enabled .Values.backup.manualJob.enabled }}
+# Optional declarative one-off backup Job. Prefer the imperative trigger:
+#   kubectl create job --from=cronjob/{{ .Values.backup.name }} -n {{ .Values.backup.namespace }} <name>
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: {{ .Values.backup.manualJob.name | default "ontoaxis-backup-manual" }}-
+  namespace: {{ .Values.backup.namespace }}
+  labels:
+    {{- include "ontoaxis.labels" (dict "name" "backup" "root" $) | nindent 4 }}
+spec:
+  {{- include "ontoaxis.backup.jobSpec" . | nindent 2 }}
+{{- end }}

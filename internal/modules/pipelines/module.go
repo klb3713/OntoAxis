@@ -7,6 +7,7 @@ package pipelines
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,6 +17,7 @@ import (
 	"github.com/klb3713/ontoaxis/internal/modules/pipelines/migrations"
 	"github.com/klb3713/ontoaxis/internal/modules/pipelines/repo"
 	"github.com/klb3713/ontoaxis/internal/modules/pipelines/service"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	platformmodule "github.com/klb3713/ontoaxis/internal/platform/module"
 )
 
@@ -28,11 +30,13 @@ type ScheduleService = service.ScheduleService
 
 // Module implements platform Module for the pipelines domain.
 type Module struct {
+	guard     authz.DecisionGuard
 	pool      *pgxpool.Pool
 	store     service.Repository
 	pipelines service.Service
 	schedules service.ScheduleService
 	api       *api.API
+	configErr error
 }
 
 // Option customises module wiring. Production passes only a pool and obtains
@@ -44,6 +48,7 @@ type options struct {
 	adapter         kestra.Adapter
 	datasetResolver service.DatasetResolver
 	tenantResolver  api.TenantResolver
+	runtime         *RuntimeConfig
 }
 
 // WithStore overrides the repository (used by tests and integration harnesses).
@@ -66,6 +71,12 @@ func WithTenantResolver(resolver api.TenantResolver) Option {
 	return func(o *options) { o.tenantResolver = resolver }
 }
 
+// WithRuntimeConfig injects the pipeline runtime settings. When KestraURL is
+// non-empty and no adapter was supplied, a fail-closed HTTP adapter is built.
+func WithRuntimeConfig(cfg RuntimeConfig) Option {
+	return func(o *options) { copied := cfg; o.runtime = &copied }
+}
+
 // New constructs the module. It does not open connections; the app owns the
 // shared pool.
 func New(pool *pgxpool.Pool, opts ...Option) *Module {
@@ -78,26 +89,64 @@ func New(pool *pgxpool.Pool, opts ...Option) *Module {
 	if o.store == nil && pool != nil {
 		o.store = repo.NewPostgresStore(pool)
 	}
-	if o.adapter == nil {
-		o.adapter = kestra.NewMemoryAdapter()
-	}
+	// No Kestra adapter means publish/trigger fail closed with 503 (design
+	// D12/D15). The memory adapter exists for tests and explicit local use via
+	// WithKestraAdapter, never as a silent production fallback.
 	if o.tenantResolver == nil {
 		o.tenantResolver = api.RejectAllTenantResolver{}
 	}
-	manager := service.New(o.store,
+	var configErr error
+	if o.adapter == nil && o.runtime != nil {
+		if o.runtime.KestraURL != "" {
+			adapter, adapterErr := kestra.NewHTTPAdapter(kestra.HTTPConfig{
+				BaseURL:     o.runtime.KestraURL,
+				Timeout:     o.runtime.KestraTimeout,
+				APIToken:    o.runtime.KestraAPIToken,
+				Environment: o.runtime.Environment,
+				MaxAttempts: o.runtime.RetryMaxAttempts,
+				BaseDelay:   100 * time.Millisecond,
+				HTTPClient:  nil,
+				Metrics:     o.runtime.Metrics,
+			})
+			if adapterErr != nil {
+				configErr = fmt.Errorf("pipeline kestra adapter: %w", adapterErr)
+			} else {
+				o.adapter = adapter
+			}
+		}
+	}
+	serviceOpts := []service.Option{
 		service.WithKestraAdapter(o.adapter),
 		service.WithDatasetResolver(o.datasetResolver),
-	)
+	}
+	if o.runtime != nil {
+		serviceOpts = append(serviceOpts,
+			service.WithDBTCatalog(o.runtime.DBTCatalog),
+			service.WithEnvironment(o.runtime.Environment),
+			service.WithReconcileThrottle(o.runtime.ReconcileThrottle),
+			service.WithRecoveryTimeout(o.runtime.RunRecoveryTimeout),
+			service.WithMetrics(o.runtime.Metrics),
+		)
+	}
+	manager := service.New(o.store, serviceOpts...)
 	return &Module{
 		pool:      pool,
 		store:     o.store,
 		pipelines: manager,
 		schedules: manager,
 		api:       api.New(manager, manager, o.tenantResolver),
+		configErr: configErr,
 	}
 }
 
 // Name returns the module name.
+func (m *Module) SetDecisionGuard(guard authz.DecisionGuard) {
+	m.guard = guard
+	if m.api != nil {
+		m.api.SetDecisionGuard(guard)
+	}
+}
+
 func (m *Module) Name() string { return "pipelines" }
 
 // Dependencies declares the public dataset service dependency.
@@ -121,6 +170,9 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 
 // Ready checks repository connectivity.
 func (m *Module) Ready(ctx context.Context) error {
+	if m.configErr != nil {
+		return m.configErr
+	}
 	if m.store == nil {
 		return fmt.Errorf("pipelines: repository is not configured")
 	}

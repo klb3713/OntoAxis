@@ -17,6 +17,7 @@ import (
 	"github.com/klb3713/ontoaxis/internal/modules/datasets/migrations"
 	"github.com/klb3713/ontoaxis/internal/modules/datasets/repo"
 	"github.com/klb3713/ontoaxis/internal/modules/datasets/service"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/db"
 	"github.com/klb3713/ontoaxis/internal/platform/module"
 )
@@ -46,6 +47,7 @@ type Module struct {
 	repository     service.Repository
 	tenantResolver api.TenantResolver
 	service        service.Service
+	guard          authz.DecisionGuard
 }
 
 // New builds a dataset catalog module. Dependencies are injected by the
@@ -86,12 +88,17 @@ func (m *Module) Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
+// SetDecisionGuard injects the authorization guard used by the HTTP layer.
+func (m *Module) SetDecisionGuard(guard authz.DecisionGuard) {
+	m.guard = guard
+}
+
 // RegisterRoutes mounts the dataset catalog HTTP API.
 func (m *Module) RegisterRoutes(r chi.Router) {
 	if m.service == nil {
 		m.service = service.New(m.repository)
 	}
-	handler := api.NewHandler(m.service, m.tenantResolver)
+	handler := api.NewHandler(m.service, m.tenantResolver, api.WithDecisionGuard(m.guard))
 	handler.RegisterRoutes(r)
 }
 

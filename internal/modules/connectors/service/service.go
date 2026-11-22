@@ -50,6 +50,13 @@ type SyncStarter interface {
 	StartSync(ctx context.Context, tenantID, connectorID string) (jobID string, err error)
 }
 
+// SyncPreflight is the adapter port for validating the CDC runtime before an
+// ingestion job is created. Implementations must not submit runtime connectors or
+// create jobs; they only validate configuration, credentials, and reachability.
+type SyncPreflight interface {
+	Preflight(ctx context.Context, tenantID string, connector *domain.Connector) error
+}
+
 // Options configures optional service dependencies and test seams.
 type Option func(*serviceImpl)
 
@@ -77,6 +84,11 @@ func WithSyncStarter(starter SyncStarter) Option {
 	return func(s *serviceImpl) { s.syncStarter = starter }
 }
 
+// WithSyncPreflight injects the CDC runtime preflight adapter.
+func WithSyncPreflight(preflight SyncPreflight) Option {
+	return func(s *serviceImpl) { s.preflight = preflight }
+}
+
 // Service is the public connector management use case interface.
 type Service interface {
 	CreateConnector(ctx context.Context, tenantID string, in CreateInput) (*domain.Connector, error)
@@ -96,6 +108,7 @@ type serviceImpl struct {
 	tester      ConnectorTester
 	inferrer    SchemaInferrer
 	syncStarter SyncStarter
+	preflight   SyncPreflight
 }
 
 // NewService builds a connectors service. A nil store is allowed for route
@@ -333,7 +346,8 @@ func (s *serviceImpl) InferSchema(ctx context.Context, tenantID, id string) (map
 	return schema, nil
 }
 
-// StartSync asks the ingestion adapter to create a sync job for an active connector.
+// StartSync preflights the CDC runtime, then asks the ingestion adapter to create
+// a sync job for an active connector. Preflight failures never create a job.
 func (s *serviceImpl) StartSync(ctx context.Context, tenantID, connectorID string) (string, error) {
 	connector, err := s.GetConnector(ctx, tenantID, connectorID)
 	if err != nil {
@@ -345,6 +359,11 @@ func (s *serviceImpl) StartSync(ctx context.Context, tenantID, connectorID strin
 	if s.syncStarter == nil {
 		return "", fmt.Errorf("%w: sync starter is not configured", ErrUnavailable)
 	}
+	if s.preflight != nil {
+		if err := s.preflight.Preflight(ctx, tenantID, connector); err != nil {
+			return "", classifyPreflightError(err)
+		}
+	}
 	jobID, err := s.syncStarter.StartSync(ctx, tenantID, connectorID)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrUnavailable, err)
@@ -353,6 +372,15 @@ func (s *serviceImpl) StartSync(ctx context.Context, tenantID, connectorID strin
 		return "", fmt.Errorf("%w: sync starter returned an empty job id", ErrUnavailable)
 	}
 	return jobID, nil
+}
+
+// classifyPreflightError keeps parameter and conflict errors distinguishable for
+// the transport layer and reports every other preflight failure as unavailable.
+func classifyPreflightError(err error) error {
+	if errors.Is(err, ErrInvalidInput) || errors.Is(err, domain.ErrConflict) {
+		return err
+	}
+	return fmt.Errorf("%w: %v", ErrUnavailable, err)
 }
 
 func (s *serviceImpl) ready() error {

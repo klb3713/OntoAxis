@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/db"
 	"github.com/klb3713/ontoaxis/internal/platform/module"
 )
@@ -28,22 +29,43 @@ const (
 type Module struct {
 	pool    *pgxpool.Pool
 	service Service
+	guard   authz.DecisionGuard
+}
+
+// ModuleOption configures optional module dependencies. Options are additive so
+// existing call sites keep compiling unchanged.
+type ModuleOption func(*Module)
+
+// WithGuard injects the authorization decision guard used by the module HTTP
+// API. It exists so tests and embedders can wire the guard without changing
+// application wiring; a nil guard preserves the legacy allow-all behavior.
+func WithGuard(guard authz.DecisionGuard) ModuleOption {
+	return func(m *Module) { m.guard = guard }
 }
 
 // New creates the tenancy module using a shared pgx pool.
-func New(pool *pgxpool.Pool) *Module {
+func New(pool *pgxpool.Pool, opts ...ModuleOption) *Module {
 	m := &Module{pool: pool}
 	if pool != nil {
 		m.service = NewService(NewPostgresStore(pool))
 	}
+	for _, opt := range opts {
+		opt(m)
+	}
 	return m
 }
 
-func newModuleWithService(pool *pgxpool.Pool, svc Service) *Module {
-	return &Module{pool: pool, service: svc}
+func newModuleWithService(pool *pgxpool.Pool, svc Service, opts ...ModuleOption) *Module {
+	m := &Module{pool: pool, service: svc}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
 }
 
 // Name returns the stable module name used by the registry.
+func (m *Module) SetDecisionGuard(guard authz.DecisionGuard) { m.guard = guard }
+
 func (m *Module) Name() string { return moduleName }
 
 // Dependencies returns no business-module dependencies. Tenancy is the root of
@@ -71,7 +93,7 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 	if r == nil || m.service == nil {
 		return
 	}
-	a := &api{service: m.service}
+	a := newAPI(m.service, WithDecisionGuard(m.guard))
 	r.Route("/api/v1/tenancy", a.register)
 }
 

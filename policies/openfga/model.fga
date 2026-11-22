@@ -1,0 +1,140 @@
+model
+  schema 1.1
+
+# 主体类型。v1 只以 user 作为请求主体；group/service_account 仅为未来扩展预留，
+# 不会由 v1 写入或展开（边界文档 §4.3、§12.5）。
+type user
+
+type group
+  relations
+    define member: [user]
+
+type service_account
+
+# 租户是唯一根作用域。tenant.member 由上下文元组从已验证 JWT 声明注入，
+# 不写入持久元组（边界文档 §4.2）。
+type tenant
+  relations
+    define member: [user, group#member, service_account]
+    define can_read: member
+    define can_write: member
+    define can_invoke: member
+
+# organization/workspace/project 层级用于租户端点与未来项目级收窄。
+# v1 中 member 继承 tenant.member，保持 Stage 1 租户内可见性；
+# admin 关系仅预留，v1 不写入（边界文档 §4.3）。
+type organization
+  relations
+    define tenant: [tenant]
+    define member: [user, group#member, service_account] or member from tenant
+    define admin: [user]
+    define can_read: member
+    define can_write: member
+    define can_invoke: member
+
+type workspace
+  relations
+    define organization: [organization]
+    define member: [user, group#member, service_account] or member from organization
+    define admin: [user] or admin from organization
+    define can_read: member
+    define can_write: member
+    define can_invoke: member
+
+type project
+  relations
+    define workspace: [workspace]
+    define member: [user, group#member, service_account] or member from workspace
+    define editor: [user, group#member, service_account] or member from workspace
+    define admin: [user] or admin from workspace
+    define can_read: member
+    define can_write: editor
+    define can_invoke: editor
+
+type dataset
+  relations
+    define tenant: [tenant]
+    define project: [project]
+    define can_read: member from tenant or can_read from project
+    define can_write: member from tenant or can_write from project
+    define can_invoke: member from tenant or can_write from project
+
+type object_type
+  relations
+    define tenant: [tenant]
+    define project: [project]
+    define can_read: member from tenant or can_read from project
+    define can_write: member from tenant or can_write from project
+    define can_invoke: member from tenant or can_write from project
+
+type object
+  relations
+    define object_type: [object_type]
+    define can_read: can_read from object_type
+    define can_write: can_write from object_type
+    define can_invoke: can_invoke from object_type
+
+type connector
+  relations
+    define tenant: [tenant]
+    define workspace: [workspace]
+    define can_read: member from tenant or member from workspace
+    define can_write: member from tenant or member from workspace
+    define can_invoke: member from tenant or member from workspace
+
+type ingest_job
+  relations
+    define connector: [connector]
+    define can_read: can_read from connector
+    define can_invoke: can_invoke from connector
+
+type pipeline
+  relations
+    define tenant: [tenant]
+    define project: [project]
+    define can_read: member from tenant or can_read from project
+    define can_write: member from tenant or can_write from project
+    define can_invoke: member from tenant or can_write from project
+
+type pipeline_run
+  relations
+    define pipeline: [pipeline]
+    define can_read: can_read from pipeline
+
+type pipeline_schedule
+  relations
+    define pipeline: [pipeline]
+    define can_read: can_read from pipeline
+    define can_write: can_write from pipeline
+
+type action_type
+  relations
+    define tenant: [tenant]
+    define project: [project]
+    define can_read: member from tenant or can_read from project
+    define can_write: member from tenant or can_write from project
+    define can_invoke: member from tenant or can_write from project
+
+type action_execution
+  relations
+    define action_type: [action_type]
+    define can_read: can_read from action_type
+    define can_invoke: can_invoke from action_type
+    define can_write: can_write from action_type
+
+type saved_query
+  relations
+    define tenant: [tenant]
+    define owner: [user, service_account]
+    define can_read: member from tenant
+    define can_write: owner
+
+type audit_event
+  relations
+    define tenant: [tenant]
+    define can_read: member from tenant
+
+type operation
+  relations
+    define tenant: [tenant]
+    define can_read: member from tenant

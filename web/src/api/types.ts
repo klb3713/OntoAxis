@@ -108,6 +108,36 @@ export type SavedQuery = Timestamps & {
   ownerId: string;
 };
 
+/** 人工审批任务状态（与 action-temporal 审批 REST 契约一致）。 */
+export type ApprovalStatus = "pending" | "approved" | "rejected" | "expired";
+
+/** 审批列表筛选值：具体状态或 all。 */
+export type ApprovalStatusFilter = ApprovalStatus | "all";
+
+/**
+ * `GET /api/v1/actions/approvals/{id}` 返回的审批任务。
+ * 执行摘要字段可能缺省，页面不得臆造；决定相关字段在未决定时可能缺省或为 null。
+ */
+export type ApprovalTask = {
+  id: string;
+  tenantId: string;
+  executionId: string;
+  stepIndex: number;
+  status: ApprovalStatus;
+  requestedAt: string;
+  deadlineAt: string;
+  decidedAt?: string | null;
+  decidedBy?: string | null;
+  comment?: string;
+  reasonCode?: string;
+};
+
+/** 审批列表载荷：`{ items, total }`，不使用通用分页元数据。 */
+export type ApprovalListPayload = {
+  items: ApprovalTask[];
+  total: number;
+};
+
 /**
  * 传输层列表形态。后端可能返回 `data`/`items`/<resource> 等多种键，
  * 统一在 `normalize.ts` 适配，页面只消费 `ListPayload`。

@@ -1,0 +1,19 @@
+# kind — single-node local cluster (kind or k3d). Smallest footprint:
+# one replica per component, tight resource requests/limits.
+global:
+  environment: kind
+  defaultReplicas: 1
+  defaultResources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  oidc:
+    issuer: http://localhost:18083/realms/ontoaxis
+    audience: ontoaxis-api
+    jwksUrl: ""
+  secretStore:
+    name: ontoaxis-kubernetes-store
+    kind: ClusterSecretStore

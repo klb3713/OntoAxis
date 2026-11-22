@@ -40,6 +40,13 @@ type ConnectorReader interface {
 	GetConnector(ctx context.Context, tenantID, id string) (*connectordomain.Connector, error)
 }
 
+// RuntimeStopper stops a connector runtime resource owned by a sync job. The
+// connector runtime client implements it; cancellation requires a confirmed
+// stop before a submitted job may be reported cancelled.
+type RuntimeStopper interface {
+	Stop(ctx context.Context, tenantID, runtimeRef string) error
+}
+
 // Option configures the ingestion service.
 type Option func(*serviceImpl)
 
@@ -55,6 +62,12 @@ func WithClock(clock func() time.Time) Option {
 // WithConnectorReader injects the connectors service dependency.
 func WithConnectorReader(reader ConnectorReader) Option {
 	return func(s *serviceImpl) { s.connectors = reader }
+}
+
+// WithRuntimeStopper injects the connector runtime stop dependency used to
+// confirm cancellation of submitted sync jobs.
+func WithRuntimeStopper(stopper RuntimeStopper) Option {
+	return func(s *serviceImpl) { s.stopper = stopper }
 }
 
 // WithWatchInterval overrides the polling interval used by Watch.
@@ -85,6 +98,7 @@ type Service interface {
 type serviceImpl struct {
 	store         Store
 	connectors    ConnectorReader
+	stopper       RuntimeStopper
 	clock         func() time.Time
 	watchInterval time.Duration
 }
@@ -201,9 +215,57 @@ func (s *serviceImpl) ListJobs(ctx context.Context, tenantID, connectorID string
 	return &ListResult{Jobs: items, Page: page, PerPage: perPage, Total: total, TotalPages: totalPages}, nil
 }
 
-// CancelJob moves a queued or running job to cancelled.
+// CancelJob moves a queued or running job to cancelled. When the job already
+// holds a runtime reference the connector runtime must confirm the stop before
+// the cancellation is written: an unconfirmed stop leaves the job running and
+// reports ErrUnavailable, because a runtime that is still running must never be
+// reported as cancelled.
 func (s *serviceImpl) CancelJob(ctx context.Context, tenantID, id string) (*domain.SyncJob, error) {
-	return s.transition(ctx, tenantID, id, domain.StatusCancelled, "", nil)
+	job, err := s.GetJob(ctx, tenantID, id)
+	if err != nil {
+		return nil, err
+	}
+	if job.Status.Terminal() {
+		return nil, fmt.Errorf("%w: %w", domain.ErrConflict, domain.ValidateTransition(job.Status, domain.StatusCancelled))
+	}
+	stoppedRef, err := s.stopRuntimeForCancel(ctx, tenantID, job.RuntimeRef)
+	if err != nil {
+		return nil, err
+	}
+	run, err := s.store.GetLatestRun(ctx, tenantID, id)
+	if err != nil {
+		return nil, err
+	}
+	latest, err := s.store.GetJob(ctx, tenantID, id)
+	if err != nil {
+		return nil, err
+	}
+	if latest.Status.Terminal() {
+		return nil, fmt.Errorf("%w: sync job %s is already %s", domain.ErrConflict, id, latest.Status)
+	}
+	// A submit may have attached a runtime reference after the first read. Stop
+	// it as well so cancellation never leaves a running resource behind.
+	if latest.RuntimeRef != "" && latest.RuntimeRef != stoppedRef {
+		if _, err := s.stopRuntimeForCancel(ctx, tenantID, latest.RuntimeRef); err != nil {
+			return nil, err
+		}
+	}
+	return s.applyTransition(ctx, latest, run, domain.StatusCancelled, "", nil)
+}
+
+// stopRuntimeForCancel confirms the stop of one runtime reference. An empty
+// reference means the job was never submitted, so there is nothing to stop.
+func (s *serviceImpl) stopRuntimeForCancel(ctx context.Context, tenantID, runtimeRef string) (string, error) {
+	if runtimeRef == "" {
+		return "", nil
+	}
+	if s.stopper == nil {
+		return "", fmt.Errorf("%w: connector runtime stopper is not configured", ErrUnavailable)
+	}
+	if err := s.stopper.Stop(ctx, tenantID, runtimeRef); err != nil {
+		return "", fmt.Errorf("%w: stop connector runtime %s: %w", ErrUnavailable, runtimeRef, err)
+	}
+	return runtimeRef, nil
 }
 
 // MarkRunning moves a queued job to running and projects the run start time.
@@ -302,13 +364,22 @@ func (s *serviceImpl) transition(ctx context.Context, tenantID, id string, targe
 	if err != nil {
 		return nil, err
 	}
-	expected := job.Status
-	if err := domain.ValidateTransition(expected, target); err != nil {
+	if err := domain.ValidateTransition(job.Status, target); err != nil {
 		return nil, fmt.Errorf("%w: %w", domain.ErrConflict, err)
 	}
 	run, err := s.store.GetLatestRun(ctx, tenantID, id)
 	if err != nil {
 		return nil, err
+	}
+	return s.applyTransition(ctx, job, run, target, message, stats)
+}
+
+// applyTransition validates target against the job's loaded status, stamps the
+// transition and persists the job with its run projection in one guarded write.
+func (s *serviceImpl) applyTransition(ctx context.Context, job *domain.SyncJob, run *domain.SyncRun, target domain.JobStatus, message string, stats map[string]any) (*domain.SyncJob, error) {
+	expected := job.Status
+	if err := domain.ValidateTransition(expected, target); err != nil {
+		return nil, fmt.Errorf("%w: %w", domain.ErrConflict, err)
 	}
 	now := s.clock().UTC()
 	job.Status = target
@@ -318,6 +389,11 @@ func (s *serviceImpl) transition(ctx context.Context, tenantID, id string, targe
 	}
 	if target == domain.StatusRunning && job.StartedAt == nil {
 		job.StartedAt = timePtr(now)
+	}
+	if target != domain.StatusQueued {
+		// A lease only exists while a job is queued; leaving that state clears it.
+		job.LeaseOwner = ""
+		job.LeaseUntil = nil
 	}
 	if target.Terminal() {
 		job.FinishedAt = timePtr(now)

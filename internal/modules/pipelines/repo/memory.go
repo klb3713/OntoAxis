@@ -16,20 +16,26 @@ import (
 // enforces the same tenant, uniqueness and soft-delete rules as PostgresStore
 // but keeps everything in process memory.
 type MemoryStore struct {
-	mu        sync.RWMutex
-	pipelines map[string]domain.Pipeline
-	versions  map[string][]domain.PipelineVersion
-	runs      map[string]domain.PipelineRun
-	schedules map[string]domain.Schedule
+	mu          sync.RWMutex
+	pipelines   map[string]domain.Pipeline
+	versions    map[string][]domain.PipelineVersion
+	runs        map[string]domain.PipelineRun
+	runInputs   map[string][]domain.PipelineRunInput
+	runOutputs  map[string][]domain.PipelineRunOutput
+	schedules   map[string]domain.Schedule
+	idempotency map[string]service.IdempotencyRecord
 }
 
 // NewMemoryStore creates an empty in-memory repository.
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		pipelines: make(map[string]domain.Pipeline),
-		versions:  make(map[string][]domain.PipelineVersion),
-		runs:      make(map[string]domain.PipelineRun),
-		schedules: make(map[string]domain.Schedule),
+		pipelines:   make(map[string]domain.Pipeline),
+		versions:    make(map[string][]domain.PipelineVersion),
+		runs:        make(map[string]domain.PipelineRun),
+		runInputs:   make(map[string][]domain.PipelineRunInput),
+		runOutputs:  make(map[string][]domain.PipelineRunOutput),
+		schedules:   make(map[string]domain.Schedule),
+		idempotency: make(map[string]service.IdempotencyRecord),
 	}
 }
 
@@ -199,6 +205,138 @@ func (s *MemoryStore) ListRuns(_ context.Context, filter service.RunFilter) ([]d
 	return paginate(matched, filter.Page, filter.PerPage), len(matched), nil
 }
 
+// UpdateRunConditional applies the same forward-only compare-and-set semantics
+// as PostgresStore: only queued or running runs may transition, and nullable
+// references plus the attempt counter merge monotonically.
+func (s *MemoryStore) UpdateRunConditional(_ context.Context, update domain.PipelineRun) (domain.PipelineRun, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	existing, ok := s.runs[update.ID]
+	if !ok || existing.TenantID != update.TenantID {
+		return domain.PipelineRun{}, fmt.Errorf("%w: pipeline run %s", domain.ErrNotFound, update.ID)
+	}
+	if existing.Status != domain.PipelineRunStatusQueued && existing.Status != domain.PipelineRunStatusRunning {
+		return domain.PipelineRun{}, fmt.Errorf("%w: pipeline run %s is not queued or running", domain.ErrInvalidState, update.ID)
+	}
+	existing.Status = update.Status
+	if update.ExecutionID != "" {
+		existing.ExecutionID = update.ExecutionID
+	}
+	if update.FailureCode != "" {
+		existing.FailureCode = update.FailureCode
+	}
+	if update.AttemptCount > existing.AttemptCount {
+		existing.AttemptCount = update.AttemptCount
+	}
+	if update.LastReconciledAt != nil {
+		existing.LastReconciledAt = timePointer(*update.LastReconciledAt)
+	}
+	if existing.StartedAt == nil && update.StartedAt != nil {
+		existing.StartedAt = timePointer(*update.StartedAt)
+	}
+	if existing.FinishedAt == nil && update.FinishedAt != nil {
+		existing.FinishedAt = timePointer(*update.FinishedAt)
+	}
+	if update.Error != "" {
+		existing.Error = update.Error
+	}
+	existing.UpdatedAt = update.UpdatedAt
+	s.runs[update.ID] = existing
+	return cloneRun(existing), nil
+}
+
+// CreateRunInputs records the declared input datasets of a run. The write is
+// idempotent per (run_id, dataset_id) and rejects runs that do not exist or
+// belong to another tenant, mirroring the Postgres foreign key and RLS rules.
+func (s *MemoryStore) CreateRunInputs(_ context.Context, inputs []domain.PipelineRunInput) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, input := range inputs {
+		run, ok := s.runs[input.PipelineRunID]
+		if !ok || run.TenantID != input.TenantID {
+			return fmt.Errorf("%w: pipeline run %s", domain.ErrNotFound, input.PipelineRunID)
+		}
+	}
+	for _, input := range inputs {
+		if s.hasRunInputLocked(input.PipelineRunID, input.DatasetID) {
+			continue
+		}
+		s.runInputs[input.PipelineRunID] = append(s.runInputs[input.PipelineRunID], input)
+	}
+	return nil
+}
+
+// CreateRunOutputs records the dataset outputs of a succeeded run. The write is
+// idempotent per (run_id, dataset_id) so terminal callback replays cannot
+// duplicate outputs.
+func (s *MemoryStore) CreateRunOutputs(_ context.Context, outputs []domain.PipelineRunOutput) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, output := range outputs {
+		run, ok := s.runs[output.PipelineRunID]
+		if !ok || run.TenantID != output.TenantID {
+			return fmt.Errorf("%w: pipeline run %s", domain.ErrNotFound, output.PipelineRunID)
+		}
+	}
+	for _, output := range outputs {
+		if s.hasRunOutputLocked(output.PipelineRunID, output.DatasetID) {
+			continue
+		}
+		s.runOutputs[output.PipelineRunID] = append(s.runOutputs[output.PipelineRunID], output)
+	}
+	return nil
+}
+
+// RunInputs returns the stored input lineage for one run as a copy. It is a
+// test and local-integration inspection helper, not part of the Repository
+// contract.
+func (s *MemoryStore) RunInputs(tenantID, runID string) []domain.PipelineRunInput {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	run, ok := s.runs[runID]
+	if !ok || run.TenantID != tenantID {
+		return []domain.PipelineRunInput{}
+	}
+	stored := s.runInputs[runID]
+	out := make([]domain.PipelineRunInput, 0, len(stored))
+	out = append(out, stored...)
+	return out
+}
+
+// RunOutputs returns the stored output lineage for one run as a copy. It is a
+// test and local-integration inspection helper, not part of the Repository
+// contract.
+func (s *MemoryStore) RunOutputs(tenantID, runID string) []domain.PipelineRunOutput {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	run, ok := s.runs[runID]
+	if !ok || run.TenantID != tenantID {
+		return []domain.PipelineRunOutput{}
+	}
+	stored := s.runOutputs[runID]
+	out := make([]domain.PipelineRunOutput, 0, len(stored))
+	out = append(out, stored...)
+	return out
+}
+
+func (s *MemoryStore) hasRunInputLocked(runID, datasetID string) bool {
+	for _, existing := range s.runInputs[runID] {
+		if existing.DatasetID == datasetID {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *MemoryStore) hasRunOutputLocked(runID, datasetID string) bool {
+	for _, existing := range s.runOutputs[runID] {
+		if existing.DatasetID == datasetID {
+			return true
+		}
+	}
+	return false
+}
+
 // CreateSchedule stores a schedule, enforcing tenant/pipeline/cron uniqueness.
 func (s *MemoryStore) CreateSchedule(_ context.Context, schedule domain.Schedule) (domain.Schedule, error) {
 	s.mu.Lock()
@@ -327,6 +465,9 @@ func cloneRun(run domain.PipelineRun) domain.PipelineRun {
 	if run.FinishedAt != nil {
 		run.FinishedAt = timePointer(*run.FinishedAt)
 	}
+	if run.LastReconciledAt != nil {
+		run.LastReconciledAt = timePointer(*run.LastReconciledAt)
+	}
 	return run
 }
 
@@ -335,4 +476,77 @@ func cloneSchedule(schedule domain.Schedule) domain.Schedule {
 		schedule.NextRunAt = timePointer(*schedule.NextRunAt)
 	}
 	return schedule
+}
+
+// LookupIdempotency returns a non-expired record for tenant/operation/key.
+func (s *MemoryStore) LookupIdempotency(_ context.Context, tenantID, operation, keyHash string) (service.IdempotencyRecord, bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	record, ok := s.idempotency[tenantID+"|"+operation+"|"+keyHash]
+	if !ok || !record.ExpiresAt.After(time.Now()) {
+		return service.IdempotencyRecord{}, false, nil
+	}
+	return record, true, nil
+}
+
+// SaveIdempotency stores the first record for a key; false means it already exists.
+func (s *MemoryStore) SaveIdempotency(_ context.Context, record service.IdempotencyRecord) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	key := record.TenantID + "|" + record.Operation + "|" + record.KeyHash
+	if existing, ok := s.idempotency[key]; ok && existing.ExpiresAt.After(time.Now()) {
+		return false, nil
+	}
+	s.idempotency[key] = record
+	return true, nil
+}
+
+// MarkSucceededWithOutputs applies the terminal CAS and appends outputs under
+// one lock, so a failed lineage write cannot leave a terminal success.
+func (s *MemoryStore) MarkSucceededWithOutputs(_ context.Context, update domain.PipelineRun, outputs []domain.PipelineRunOutput) (domain.PipelineRun, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	existing, ok := s.runs[update.ID]
+	if !ok || existing.TenantID != update.TenantID {
+		return domain.PipelineRun{}, fmt.Errorf("%w: pipeline run %s", domain.ErrNotFound, update.ID)
+	}
+	if existing.Status != domain.PipelineRunStatusQueued && existing.Status != domain.PipelineRunStatusRunning {
+		return domain.PipelineRun{}, fmt.Errorf("%w: pipeline run %s is not queued or running", domain.ErrInvalidState, update.ID)
+	}
+	for _, output := range outputs {
+		if output.TenantID != update.TenantID {
+			return domain.PipelineRun{}, fmt.Errorf("%w: output tenant mismatch", domain.ErrInvalidArgument)
+		}
+	}
+	existing.Status = update.Status
+	if update.ExecutionID != "" {
+		existing.ExecutionID = update.ExecutionID
+	}
+	if update.FailureCode != "" {
+		existing.FailureCode = update.FailureCode
+	}
+	if update.AttemptCount > existing.AttemptCount {
+		existing.AttemptCount = update.AttemptCount
+	}
+	if update.LastReconciledAt != nil {
+		existing.LastReconciledAt = timePointer(*update.LastReconciledAt)
+	}
+	if existing.StartedAt == nil && update.StartedAt != nil {
+		existing.StartedAt = timePointer(*update.StartedAt)
+	}
+	if existing.FinishedAt == nil && update.FinishedAt != nil {
+		existing.FinishedAt = timePointer(*update.FinishedAt)
+	}
+	if update.Error != "" {
+		existing.Error = update.Error
+	}
+	existing.UpdatedAt = update.UpdatedAt
+	s.runs[update.ID] = existing
+	for _, output := range outputs {
+		if s.hasRunOutputLocked(output.PipelineRunID, output.DatasetID) {
+			continue
+		}
+		s.runOutputs[output.PipelineRunID] = append(s.runOutputs[output.PipelineRunID], output)
+	}
+	return cloneRun(existing), nil
 }

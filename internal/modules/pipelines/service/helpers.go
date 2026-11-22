@@ -90,7 +90,7 @@ func (m *Manager) requireRepository() error {
 // validateDatasetReferences fails closed when the DAG references datasets but
 // the datasets module adapter is missing. It never reads dataset tables.
 func (m *Manager) validateDatasetReferences(ctx context.Context, tenantID string, dag json.RawMessage) error {
-	references := domain.DatasetIDsFromDAG(dag)
+	references := append(domain.DatasetIDsFromDAG(dag), domain.OutputDatasetIDsFromDAG(dag)...)
 	if len(references) == 0 {
 		return nil
 	}

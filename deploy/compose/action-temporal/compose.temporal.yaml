@@ -1,0 +1,82 @@
+# Local Temporal profile for action execution. Merge with:
+#   - deploy/compose/compose.yaml
+#   - deploy/compose/authz/compose.authz.yaml
+#   - deploy/compose/action-temporal/compose.temporal.yaml
+# This file is a local E2E profile; production deployment is owned by production-delivery.
+services:
+  temporal:
+    image: temporalio/auto-setup:1.26.2
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_USER: ontoaxis
+      POSTGRES_PWD: ontoaxis
+      POSTGRES_SEEDS: postgres
+      DBNAME: temporal
+      SKIP_DB_CREATE: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "tctl --address $(hostname -i):7233 cluster health"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  temporal-init:
+    image: temporalio/admin-tools:1.26.2
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["temporal operator namespace create --namespace ontoaxis --address temporal:7233 || true"]
+    depends_on:
+      temporal:
+        condition: service_healthy
+    restart: "no"
+
+  temporal-ui:
+    image: temporalio/ui:2.31.2
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: "http://localhost:18088"
+    ports:
+      - "${ONTOAXIS_TEMPORAL_UI_PORT:-18088}:8080"
+    depends_on:
+      temporal:
+        condition: service_healthy
+
+  ontoaxis-actions-worker:
+    build:
+      context: ../..
+      dockerfile: deploy/compose/action-temporal/Dockerfile
+    environment:
+      ONTOAXIS_DATABASE_URL: "postgres://ontoaxis:ontoaxis@postgres:5432/ontoaxis?sslmode=disable"
+      ONTOAXIS_ACTIONS_WORKER_HTTP_ADDR: ":18087"
+      ONTOAXIS_ACTIONS_EXECUTION_MODE: "temporal"
+      ONTOAXIS_TEMPORAL_HOST_PORT: "temporal:7233"
+      ONTOAXIS_TEMPORAL_NAMESPACE: "ontoaxis"
+      ONTOAXIS_TEMPORAL_TASK_QUEUE: "ontoaxis-actions"
+      ONTOAXIS_ENVIRONMENT: "local"
+      ONTOAXIS_ACTIONS_TEST_HOOKS: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+      temporal-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:18087/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ontoaxis-core:
+    environment:
+      ONTOAXIS_ACTIONS_EXECUTION_MODE: "temporal"
+      ONTOAXIS_TEMPORAL_HOST_PORT: "temporal:7233"
+      ONTOAXIS_TEMPORAL_NAMESPACE: "ontoaxis"
+      ONTOAXIS_TEMPORAL_TASK_QUEUE: "ontoaxis-actions"
+    depends_on:
+      temporal:
+        condition: service_healthy
+      ontoaxis-actions-worker:
+        condition: service_healthy

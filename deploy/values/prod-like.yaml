@@ -1,0 +1,36 @@
+# prod-like — RENDER-ONLY overlay used to exercise production-shaped manifests
+# (replica counts, resources, PDBs). It is NEVER applied to a real cluster from
+# this repository without a signed release manifest and an authorized change.
+#
+# Image digests remain chart placeholders; they must be replaced by the release
+# manifest before any real deployment. Do not use real cloud credentials,
+# production secrets or customer data with this overlay.
+global:
+  environment: prod-like
+  defaultReplicas: 3
+  defaultResources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  oidc:
+    issuer: https://auth.prod.ontoaxis.example/realms/ontoaxis
+    audience: ontoaxis-api
+    jwksUrl: https://auth.prod.ontoaxis.example/realms/ontoaxis/protocol/openid-connect/certs
+  secretStore:
+    name: ontoaxis-kubernetes-store
+    kind: ClusterSecretStore
+
+components:
+  postgres:
+    replicas: 3
+  keycloak:
+    replicas: 3
+  ontoaxis-core:
+    replicas: 3
+  web:
+    replicas: 3
+  prometheus:
+    replicas: 2

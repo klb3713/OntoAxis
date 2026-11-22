@@ -19,6 +19,8 @@ func TestStatementsCoverSchema(t *testing.T) {
 		"sync_jobs_status_check",
 		"sync_runs_status_check",
 		"sync_jobs_tenant_connector_created_idx",
+		"sync_jobs_dispatch_idx",
+		"sync_jobs_tenant_connector_status_idx",
 		"sync_runs_tenant_job_started_idx",
 		"ENABLE ROW LEVEL SECURITY",
 		"FORCE ROW LEVEL SECURITY",
@@ -45,5 +47,43 @@ func TestDownStatementsOrder(t *testing.T) {
 	}
 	if !strings.Contains(migrations.DownStatements[2], "SCHEMA") {
 		t.Fatalf("last down statement must drop schema: %q", migrations.DownStatements[2])
+	}
+}
+
+func TestRuntimeColumnsAreAdditive(t *testing.T) {
+	t.Parallel()
+	joined := strings.Join(migrations.Statements, "\n")
+	for _, fragment := range []string{
+		"ALTER TABLE ingestion.sync_jobs ADD COLUMN IF NOT EXISTS runtime_ref text",
+		"ALTER TABLE ingestion.sync_jobs ADD COLUMN IF NOT EXISTS attempt int NOT NULL DEFAULT 0",
+		"ALTER TABLE ingestion.sync_jobs ADD COLUMN IF NOT EXISTS lease_owner text",
+		"ALTER TABLE ingestion.sync_jobs ADD COLUMN IF NOT EXISTS lease_until timestamptz",
+	} {
+		if !strings.Contains(joined, fragment) {
+			t.Errorf("ingestion migrations missing additive statement %q", fragment)
+		}
+	}
+	if strings.Contains(joined, "DROP COLUMN") || strings.Contains(joined, "DROP TABLE") {
+		t.Fatal("up migrations must stay additive: no DROP COLUMN or DROP TABLE allowed")
+	}
+}
+
+func TestRuntimeColumnsFollowBaseTable(t *testing.T) {
+	t.Parallel()
+	createTable, firstAlter := -1, -1
+	for i, statement := range migrations.Statements {
+		normalized := strings.Join(strings.Fields(statement), " ")
+		if strings.HasPrefix(normalized, "CREATE TABLE IF NOT EXISTS ingestion.sync_jobs") {
+			createTable = i
+		}
+		if strings.HasPrefix(normalized, "ALTER TABLE ingestion.sync_jobs ADD COLUMN IF NOT EXISTS runtime_ref") {
+			firstAlter = i
+		}
+	}
+	if createTable < 0 || firstAlter < 0 {
+		t.Fatalf("base table or additive runtime column statement missing (create=%d alter=%d)", createTable, firstAlter)
+	}
+	if firstAlter < createTable {
+		t.Fatalf("runtime column statements must run after the base table: create=%d alter=%d", createTable, firstAlter)
 	}
 }

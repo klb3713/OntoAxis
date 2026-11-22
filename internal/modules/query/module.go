@@ -15,6 +15,7 @@ import (
 	"github.com/klb3713/ontoaxis/internal/modules/query/repo"
 	"github.com/klb3713/ontoaxis/internal/modules/query/service"
 	"github.com/klb3713/ontoaxis/internal/modules/query/trino"
+	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/db"
 	"github.com/klb3713/ontoaxis/internal/platform/module"
 )
@@ -33,6 +34,7 @@ type Module struct {
 	pool     *pgxpool.Pool
 	service  service.Service
 	executor service.Executor
+	guard    authz.DecisionGuard
 }
 
 // New constructs the query module. An empty trinoURL keeps the saved-query API
@@ -66,11 +68,13 @@ func (m *Module) Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
+func (m *Module) SetDecisionGuard(guard authz.DecisionGuard) { m.guard = guard }
+
 func (m *Module) RegisterRoutes(r chi.Router) {
 	if r == nil || m.service == nil {
 		return
 	}
-	r.Route("/api/v1/query", api.NewHandler(m.service).Register)
+	r.Route("/api/v1/query", api.NewHandler(m.service, api.WithDecisionGuard(m.guard)).Register)
 }
 
 func (m *Module) Ready(ctx context.Context) error {

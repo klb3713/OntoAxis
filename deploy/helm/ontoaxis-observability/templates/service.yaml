@@ -1,0 +1,25 @@
+{{- range $name, $c := .Values.components }}
+{{- if and $c.enabled (eq $c.chart $.Chart.Name) }}
+{{- if and $c.service $c.service.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $c.service.name | default $name }}
+  namespace: {{ $c.namespace | default $.Values.global.namespace | default "oa-app" }}
+  labels:
+    {{- include "ontoaxis.labels" (dict "name" $name "root" $) | nindent 4 }}
+spec:
+  type: {{ $c.service.type | default "ClusterIP" }}
+  selector:
+    {{- include "ontoaxis.selectorLabels" (dict "name" $name "root" $) | nindent 4 }}
+  ports:
+    {{- range $c.service.ports }}
+    - name: {{ .name }}
+      port: {{ .port }}
+      targetPort: {{ .targetPort | default .name }}
+      protocol: {{ .protocol | default "TCP" }}
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

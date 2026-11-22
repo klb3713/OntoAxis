@@ -1,0 +1,30 @@
+# gitleaks configuration for OntoAxis.
+#
+# The delivery manifests reference secrets by name only (secretKeyRef / remoteRef /
+# valueFrom) and never carry values. Allow those reference shapes so the secret
+# scanner does not flag them, while still flagging real plaintext credentials.
+title = "OntoAxis gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow ESO/Kubernetes secret reference paths and template placeholders"
+paths = [
+  # Reference-only YAML: keys are names, not values.
+  '''deploy/argocd/secrets/.*\.yaml$''',
+  # Env template with keys only (no values).
+  '''\.env\..*\.example$''',
+  # Documentation.
+  '''docs/.*\.md$''',
+]
+regexes = [
+  # secretKeyRef / remoteRef / valueFrom references are names, not secrets.
+  '''(?i)(secretKeyRef|remoteRef|valueFrom)''',
+  # Explicit placeholders.
+  '''REPLACE_ME''',
+  # All-zero / template sha256 digests.
+  '''sha256:0{64}''',
+  # Shell/env variable indirection, never a literal.
+  '''\$\{[A-Za-z_][A-Za-z0-9_]*\}''',
+]

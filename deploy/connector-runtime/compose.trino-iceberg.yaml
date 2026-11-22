@@ -1,0 +1,42 @@
+# 可选 overlay：让基础 compose 的 trino 服务读取 Iceberg 表。
+#
+# 使用方式（第三个 -f 文件，显式叠加；否则不会生效）：
+#   # 0) 先准备 JDBC 驱动（二选一）：
+#   ./deploy/connector-runtime/trino/fetch-plugin.sh
+#   # 或手工：curl -fL -o deploy/connector-runtime/trino/plugins/postgresql-42.7.7.jar \
+#   #   https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.7/postgresql-42.7.7.jar
+#   #   echo "157963d60ae66d607e09466e8c0cdf8087e9cb20d0159899ffca96bca2528460  <jar>" | shasum -a 256 -c -
+#
+#   # 1) 创建 Iceberg JDBC catalog 的 schema（核心 postgres，ops 前置；本 change 不写迁移）
+#   docker compose -f deploy/compose/compose.yaml exec postgres \
+#     psql -U ontoaxis -d ontoaxis -c 'CREATE SCHEMA IF NOT EXISTS iceberg_catalog'
+#
+#   # 2) 带第三个文件启动
+#   docker compose \
+#     -f deploy/compose/compose.yaml \
+#     -f deploy/connector-runtime/compose.connector-runtime.yaml \
+#     -f deploy/connector-runtime/compose.trino-iceberg.yaml \
+#     --profile connector-runtime up -d --build
+#
+# 说明：
+# - 这里故意不给 trino 增加 profiles。给已有服务追加 profile 会改变基础 compose 的默认行为
+#   （设置 profiles 后，该服务在不指定该 profile 时不再启动），属于破坏性重定义。
+#   本文件只通过“显式第三个 -f 文件”来选择是否启用，满足“不改基础 compose”的约束。
+# - 文件中的相对路径以第一个 -f 文件所在目录（deploy/compose）为基准。
+# - 该读取路径只做了配置层核对，未做端到端查询验证；见 trino/README.md 的验证状态。
+# - 若 core 应用后续集成 connector-runtime（design D2 允许的另一次改动），可直接把
+#   ONTOAXIS_CONNECT_URL 指向内网 http://kafka-connect:8083；本文件不修改 ontoaxis-core。
+
+name: ontoaxis-local
+
+services:
+  trino:
+    volumes:
+      - ../connector-runtime/trino/iceberg.properties:/etc/trino/catalog/iceberg.properties:ro
+      # PostgreSQL JDBC driver 不在 stock trinodb/trino 镜像的 iceberg 插件目录中，需挂载。
+      - ../connector-runtime/trino/plugins/postgresql-42.7.7.jar:/usr/lib/trino/plugin/iceberg/postgresql-42.7.7.jar:ro
+      # 与 kafka-connect 共享同一个 warehouse 卷（同一挂载点 /warehouse）。
+      - ontoaxis_iceberg_warehouse:/warehouse
+
+volumes:
+  ontoaxis_iceberg_warehouse:

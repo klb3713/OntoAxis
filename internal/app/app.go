@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel/trace"
 
 	ontologyapi "github.com/klb3713/ontoaxis/internal/modules/ontology/api"
 	"github.com/klb3713/ontoaxis/internal/modules/tenancy"
@@ -21,21 +22,26 @@ import (
 	"github.com/klb3713/ontoaxis/internal/platform/observability"
 )
 
-// ModuleFactory builds the process modules once the shared pool exists.
-type ModuleFactory func(*pgxpool.Pool) []module.Module
+// AssemblyFactory builds the runtime composition once the shared pool, tracing
+// and logger exist. It returns the modules to register plus the post-migration
+// background runtimes and shutdown closers the App must own.
+type AssemblyFactory func(ctx context.Context, pool *pgxpool.Pool, tracer trace.Tracer, logger *slog.Logger) (RuntimeAssembly, error)
 
 type App struct {
-	cfg       config.Config
-	logger    *slog.Logger
-	pool      *pgxpool.Pool
-	server    *httpserver.Server
-	telemetry *observability.Telemetry
+	cfg        config.Config
+	logger     *slog.Logger
+	pool       *pgxpool.Pool
+	server     *httpserver.Server
+	telemetry  *observability.Telemetry
+	background []BackgroundRuntime
+	closers    []func()
 }
 
 // New constructs the platform, verifies module dependencies, runs migrations in
-// deterministic order, and builds the HTTP server. It never registers business
-// routes itself; modules own their own route registration.
-func New(ctx context.Context, cfg config.Config, logger *slog.Logger, factory ModuleFactory) (*App, error) {
+// deterministic order, runs post-migration runtime builders, and builds the HTTP
+// server. It never registers business routes itself; modules own their own route
+// registration.
+func New(ctx context.Context, cfg config.Config, logger *slog.Logger, factory AssemblyFactory) (*App, error) {
 	telemetry, err := observability.SetupTelemetry(ctx, observability.TelemetryConfig{
 		ServiceName:    "ontoaxis-core",
 		ServiceVersion: "0.1.0",
@@ -58,31 +64,50 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, factory Mo
 		_ = telemetry.Shutdown(context.Background())
 		return nil, err
 	}
-	var modules []module.Module
-	if factory != nil {
-		modules = factory(pool)
-	}
-	reg := module.NewRegistry()
-	for _, m := range modules {
-		if err := reg.Register(m); err != nil {
-			pool.Close()
-			_ = telemetry.Shutdown(context.Background())
-			return nil, err
-		}
-	}
-	ordered, err := reg.Ordered()
-	if err != nil {
+
+	// fail unwinds everything acquired so far, including the runtime assembly
+	// closers and post-migration background runtimes, then releases the pool.
+	var assembly RuntimeAssembly
+	fail := func(err error) (*App, error) {
+		assembly.closeAll()
 		pool.Close()
 		_ = telemetry.Shutdown(context.Background())
 		return nil, err
 	}
-	for _, m := range ordered {
-		if err := m.Migrate(ctx, pool); err != nil {
-			pool.Close()
-			_ = telemetry.Shutdown(context.Background())
-			return nil, fmt.Errorf("migrate module %s: %w", m.Name(), err)
+
+	if factory != nil {
+		assembly, err = factory(ctx, pool, telemetry.Tracer(), logger)
+		if err != nil {
+			return fail(err)
 		}
 	}
+
+	reg := module.NewRegistry()
+	for _, m := range assembly.Modules {
+		if err := reg.Register(m); err != nil {
+			return fail(err)
+		}
+	}
+	ordered, err := reg.Ordered()
+	if err != nil {
+		return fail(err)
+	}
+	for _, m := range ordered {
+		if err := m.Migrate(ctx, pool); err != nil {
+			return fail(fmt.Errorf("migrate module %s: %w", m.Name(), err))
+		}
+	}
+
+	// Post-migration builders construct runtimes that depend on migrated stores
+	// (the ingestion dispatcher/reconciler). They are started in Run.
+	if assembly.PostMigrate != nil {
+		background, err := assembly.PostMigrate(ctx)
+		if err != nil {
+			return fail(err)
+		}
+		assembly.Background = append(assembly.Background, background...)
+	}
+
 	var verifier authn.Verifier
 	if cfg.OIDCJWKSURL != "" {
 		verifier = authn.NewJWKSVerifier(cfg.OIDCIssuer, cfg.OIDCAudience, authn.NewRemoteKeySource(cfg.OIDCJWKSURL))
@@ -121,14 +146,59 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, factory Mo
 		Tracer:          telemetry.Tracer(),
 		Commit:          cfg.Commit,
 	})
-	return &App{cfg: cfg, logger: logger, pool: pool, server: srv, telemetry: telemetry}, nil
+	return &App{
+		cfg:        cfg,
+		logger:     logger,
+		pool:       pool,
+		server:     srv,
+		telemetry:  telemetry,
+		background: assembly.Background,
+		closers:    assembly.Closers,
+	}, nil
 }
 
+// Run starts the background runtimes, serves until ctx is cancelled, then stops
+// the background runtimes, runs shutdown closers, flushes telemetry and closes
+// the pool in that order.
 func (a *App) Run(ctx context.Context) error {
-	defer a.pool.Close()
-	defer func() { _ = a.telemetry.Shutdown(context.Background()) }()
+	started := make([]BackgroundRuntime, 0, len(a.background))
+	for _, bg := range a.background {
+		if err := bg.Start(ctx); err != nil {
+			a.stopBackground(started)
+			a.shutdown()
+			return fmt.Errorf("start background runtime: %w", err)
+		}
+		started = append(started, bg)
+	}
+	defer func() {
+		a.stopBackground(started)
+		a.shutdown()
+	}()
 	a.logger.Info("ontoaxis-core starting", "http_addr", a.cfg.HTTPAddr, "metrics_addr", a.cfg.MetricsAddr)
 	return a.server.Run(ctx)
+}
+
+// stopBackground signals every started background runtime in reverse order and
+// waits for those that expose Wait so workers exit before the pool closes.
+func (a *App) stopBackground(started []BackgroundRuntime) {
+	for i := len(started) - 1; i >= 0; i-- {
+		started[i].Stop()
+		if waiter, ok := started[i].(interface{ Wait() }); ok {
+			waiter.Wait()
+		}
+	}
+}
+
+// shutdown runs the assembly closers in reverse order, flushes telemetry and
+// closes the pool.
+func (a *App) shutdown() {
+	for i := len(a.closers) - 1; i >= 0; i-- {
+		if a.closers[i] != nil {
+			a.closers[i]()
+		}
+	}
+	_ = a.telemetry.Shutdown(context.Background())
+	a.pool.Close()
 }
 
 // Server exposes the HTTP server for tests.

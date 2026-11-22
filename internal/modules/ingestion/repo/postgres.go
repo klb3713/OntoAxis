@@ -15,7 +15,8 @@ import (
 	"github.com/klb3713/ontoaxis/internal/modules/ingestion/domain"
 )
 
-const jobColumns = `id, tenant_id, connector_id, mode, status, config, created_at, updated_at, started_at, finished_at`
+const jobColumns = `id, tenant_id, connector_id, mode, status, config, created_at, updated_at, started_at, finished_at, ` +
+	`COALESCE(runtime_ref, ''), attempt, COALESCE(lease_owner, ''), lease_until`
 const runColumns = `id, tenant_id, job_id, status, stats, error, created_at, updated_at, started_at, finished_at`
 
 // PostgresStore persists sync jobs and runs.
@@ -46,9 +47,11 @@ func (s *PostgresStore) CreateJob(ctx context.Context, job *domain.SyncJob, run 
 		return err
 	}
 	if _, err := tx.Exec(ctx, `INSERT INTO ingestion.sync_jobs
-		(id, tenant_id, connector_id, mode, status, config, created_at, updated_at, started_at, finished_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-		job.ID, job.TenantID, job.ConnectorID, job.Mode, job.Status, config, job.CreatedAt, job.UpdatedAt, job.StartedAt, job.FinishedAt); err != nil {
+		(id, tenant_id, connector_id, mode, status, config, created_at, updated_at, started_at, finished_at,
+		 runtime_ref, attempt, lease_owner, lease_until)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+		job.ID, job.TenantID, job.ConnectorID, job.Mode, job.Status, config, job.CreatedAt, job.UpdatedAt, job.StartedAt, job.FinishedAt,
+		nullIfEmpty(job.RuntimeRef), job.Attempt, nullIfEmpty(job.LeaseOwner), job.LeaseUntil); err != nil {
 		return fmt.Errorf("insert sync job: %w", err)
 	}
 	stats, err := marshalMap(run.Stats)
@@ -138,9 +141,13 @@ func (s *PostgresStore) UpdateJobAndRun(ctx context.Context, job *domain.SyncJob
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	tag, err := tx.Exec(ctx, `UPDATE ingestion.sync_jobs
-		SET status = $3, started_at = $4, finished_at = $5, updated_at = $6
+		SET status = $3, started_at = $4, finished_at = $5, updated_at = $6,
+			runtime_ref = NULLIF($8, ''), attempt = $9,
+			lease_owner = CASE WHEN $3 = 'queued' THEN NULLIF($10, '') ELSE NULL END,
+			lease_until = CASE WHEN $3 = 'queued' THEN $11 ELSE NULL END
 		WHERE tenant_id = $1 AND id = $2 AND status = $7`,
-		job.TenantID, job.ID, job.Status, job.StartedAt, job.FinishedAt, job.UpdatedAt, expectedStatus)
+		job.TenantID, job.ID, job.Status, job.StartedAt, job.FinishedAt, job.UpdatedAt,
+		expectedStatus, job.RuntimeRef, job.Attempt, job.LeaseOwner, job.LeaseUntil)
 	if err != nil {
 		return fmt.Errorf("update sync job: %w", err)
 	}
@@ -193,7 +200,8 @@ func scanJob(row rowScanner) (*domain.SyncJob, error) {
 	var job domain.SyncJob
 	var config []byte
 	if err := row.Scan(&job.ID, &job.TenantID, &job.ConnectorID, &job.Mode, &job.Status, &config,
-		&job.CreatedAt, &job.UpdatedAt, &job.StartedAt, &job.FinishedAt); err != nil {
+		&job.CreatedAt, &job.UpdatedAt, &job.StartedAt, &job.FinishedAt,
+		&job.RuntimeRef, &job.Attempt, &job.LeaseOwner, &job.LeaseUntil); err != nil {
 		return nil, err
 	}
 	job.Config = unmarshalMap(config)
@@ -235,4 +243,12 @@ func unmarshalMap(value []byte) map[string]any {
 		return map[string]any{}
 	}
 	return out
+}
+
+// nullIfEmpty maps an empty Go string to SQL NULL, useful for nullable text.
+func nullIfEmpty(value string) any {
+	if value == "" {
+		return nil
+	}
+	return value
 }

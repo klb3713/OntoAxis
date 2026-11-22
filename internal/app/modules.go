@@ -77,32 +77,80 @@ func (l objectTypeLookup) ObjectTypeExists(ctx context.Context, tenantID, object
 	return true, nil
 }
 
-// BuildModules is the process composition root. Module order is advisory; the
-// registry topologically sorts by Dependencies.
-func BuildModules(pool *pgxpool.Pool, cfg config.Config) []module.Module {
+// businessModules keeps typed references to the nine core business modules so
+// the runtime composition root can wire cross-module seams (authorization
+// guards, resource readers, search, ingestion runtime) before the module
+// instances are handed to the registry. The order of list() is the stable
+// business module order; authorization is deliberately not part of it.
+type businessModules struct {
+	tenancy    *tenancy.Module
+	connectors *connectors.Module
+	ingestion  *ingestion.Module
+	datasets   *datasets.Module
+	pipelines  *pipelines.Module
+	ontology   *ontology.Module
+	objects    *objects.Module
+	query      *query.Module
+	actions    *actions.Module
+}
+
+// list returns the nine business modules in their fixed order.
+func (b *businessModules) list() []module.Module {
+	return []module.Module{
+		b.tenancy,
+		b.connectors,
+		b.ingestion,
+		b.datasets,
+		b.pipelines,
+		b.ontology,
+		b.objects,
+		b.query,
+		b.actions,
+	}
+}
+
+// buildBusinessModules constructs the nine core business modules. pipelineOpts
+// are forwarded to the pipelines module so the runtime assembly can inject the
+// pipeline execution configuration while the test-oriented BuildModules stays
+// free of environment coupling.
+func buildBusinessModules(pool *pgxpool.Pool, cfg config.Config, pipelineOpts ...pipelines.Option) *businessModules {
 	tenancyModule := tenancy.New(pool)
 	connectorsModule := connectors.New()
 	ingestionModule := ingestion.New()
 	datasetsModule := datasets.New(datasets.WithTenantResolver(requestTenantResolver{}))
-	pipelinesModule := pipelines.New(pool,
+
+	pipelineOptions := make([]pipelines.Option, 0, len(pipelineOpts)+2)
+	pipelineOptions = append(pipelineOptions,
 		pipelines.WithTenantResolver(requestTenantResolver{}),
 		pipelines.WithDatasetResolver(datasetLookup{module: datasetsModule}),
 	)
+	pipelineOptions = append(pipelineOptions, pipelineOpts...)
+	pipelinesModule := pipelines.New(pool, pipelineOptions...)
+
 	ontologyModule := ontology.New()
 	objectTypes := objectTypeLookup{module: ontologyModule}
 	objectsModule := objects.New(pool, objectsservice.WithObjectTypeValidator(objectTypes))
 	queryModule := query.New(pool, cfg.TrinoURL, cfg.TrinoUser, cfg.TrinoTimeout, objectsModule.Service())
 	actionsModule := actions.New(pool, actionsservice.WithObjectTypeValidator(objectTypes))
 
-	return []module.Module{
-		tenancyModule,
-		connectorsModule,
-		ingestionModule,
-		datasetsModule,
-		pipelinesModule,
-		ontologyModule,
-		objectsModule,
-		queryModule,
-		actionsModule,
+	return &businessModules{
+		tenancy:    tenancyModule,
+		connectors: connectorsModule,
+		ingestion:  ingestionModule,
+		datasets:   datasetsModule,
+		pipelines:  pipelinesModule,
+		ontology:   ontologyModule,
+		objects:    objectsModule,
+		query:      queryModule,
+		actions:    actionsModule,
 	}
+}
+
+// BuildModules is the environment-free process composition used by unit tests.
+// It constructs the nine core business modules but performs no authorization,
+// search, pipeline or connector runtime wiring; production assembly lives in
+// BuildRuntimeAssembly. Module order is advisory; the registry topologically
+// sorts by Dependencies.
+func BuildModules(pool *pgxpool.Pool, cfg config.Config) []module.Module {
+	return buildBusinessModules(pool, cfg).list()
 }

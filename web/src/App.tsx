@@ -17,6 +17,9 @@ const ObjectExplorerPage = lazy(() =>
 );
 const DatasetsPage = lazy(() => import("./features/datasets/DatasetsPage").then((module) => ({ default: module.DatasetsPage })));
 const QueriesPage = lazy(() => import("./features/queries/QueriesPage").then((module) => ({ default: module.QueriesPage })));
+const ApprovalsPage = lazy(() =>
+  import("./features/approvals/ApprovalsPage").then((module) => ({ default: module.ApprovalsPage })),
+);
 
 const RESOURCES: ResourceProps[] = [
   { name: "projects", list: "/projects" },
@@ -25,6 +28,7 @@ const RESOURCES: ResourceProps[] = [
   { name: "objects", list: "/object-explorer" },
   { name: "datasets", list: "/datasets" },
   { name: "saved-queries", list: "/queries" },
+  { name: "approvals", list: "/approvals" },
 ];
 
 function RouteFallback() {
@@ -68,6 +72,7 @@ export function App({ runtime }: AppProps) {
                   <Route path="object-explorer" element={<ObjectExplorerPage />} />
                   <Route path="datasets" element={<DatasetsPage />} />
                   <Route path="queries" element={<QueriesPage />} />
+                  <Route path="approvals" element={<ApprovalsPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>
               </Route>

@@ -1,0 +1,40 @@
+# App-of-apps root for prod-like (render-only / manual sync) environments.
+#
+# Identical to root-app.yaml except that there is NO automated sync policy: a
+# new commit leaves Applications OutOfSync until an operator runs an explicit
+# `argocd app sync`. This is the documented prod-like change-control boundary.
+#
+# NOTE: replace the repoURL placeholder with the real GitOps repository URL.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-root-prod-like
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: root
+    ontoaxis.io/environment: prod-like
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  source:
+    repoURL: https://github.com/ontoaxis/ontoaxis.git
+    targetRevision: main
+    path: deploy/argocd/apps-prod-like
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  # No syncPolicy.automated on purpose: prod-like requires manual sync.
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 2
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m

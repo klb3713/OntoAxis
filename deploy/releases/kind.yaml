@@ -1,0 +1,49 @@
+# OntoAxis release manifest for the "kind" environment.
+#
+# TEMPLATE: every component digest below is the all-zero sha256 placeholder and
+# every commit is REPLACE_ME. `scripts/delivery-release-check.sh` intentionally
+# FAILS until these are replaced by real digests (e.g. via delivery-images.sh +
+# delivery-promote.sh). This is honest by design — a template must never look
+# like a verified release.
+#
+# Logical install order matches the ArgoCD sync waves: platform (0) -> data (1)
+# -> app (2) -> edge (3) -> observability (4) -> jobs (5).
+environment: kind
+created_at: "2026-11-22T20:57:23Z"
+operator: "local"
+components:
+  - component: ontoaxis-platform
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"
+  - component: ontoaxis-data
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"
+  - component: ontoaxis-core
+    repository: localhost:5055/ontoaxis-core
+    digest: sha256:a6485178874d5be55089bae0386133077827575ad9ddd04bc8372fc5008c6f34
+    commit: a04ab4c0e7340fd69ecf29c4883bd290ea9f0a47
+    chartVersion: ""
+  - component: ontoaxis-web
+    repository: localhost:5055/ontoaxis-web
+    digest: sha256:9c1a30ccacca04176e7529cc1e693dd019f23c3673276830d5d57a0e34da6dbb
+    commit: a04ab4c0e7340fd69ecf29c4883bd290ea9f0a47
+    chartVersion: ""
+  - component: ontoaxis-edge
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"
+  - component: ontoaxis-observability
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"
+  - component: ontoaxis-jobs
+    repository: https://github.com/ontoaxis/ontoaxis.git
+    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    commit: "REPLACE_ME"
+    chartVersion: "0.1.0"

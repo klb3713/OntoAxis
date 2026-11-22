@@ -1,0 +1,67 @@
+$ go test ./internal/platform/authz/ -run TestNegativeMatrix24 -v
+=== RUN   TestNegativeMatrix24
+=== RUN   TestNegativeMatrix24/无_JWT
+=== RUN   TestNegativeMatrix24/JWT_无_tenant_id
+=== RUN   TestNegativeMatrix24/租户头与_JWT_不一致_GET
+=== RUN   TestNegativeMatrix24/跨租户_PATCH
+=== RUN   TestNegativeMatrix24/跨租户_DELETE
+=== RUN   TestNegativeMatrix24/viewer_POST
+=== RUN   TestNegativeMatrix24/viewer_PATCH
+=== RUN   TestNegativeMatrix24/viewer_DELETE
+=== RUN   TestNegativeMatrix24/member_组织管理
+=== RUN   TestNegativeMatrix24/member_成员管理
+=== RUN   TestNegativeMatrix24/workspace-admin_组织创建
+=== RUN   TestNegativeMatrix24/workspace-admin_组织更新
+=== RUN   TestNegativeMatrix24/tenant-admin_审计读取
+=== RUN   TestNegativeMatrix24/workspace-admin_审计读取
+=== RUN   TestNegativeMatrix24/非_owner_删除_SavedQuery
+=== RUN   TestNegativeMatrix24/viewer_owner_删除_SavedQuery
+=== RUN   TestNegativeMatrix24/owner_member_删除_SavedQuery
+=== RUN   TestNegativeMatrix24/archived_Pipeline_触发
+=== RUN   TestNegativeMatrix24/archived_Pipeline_更新
+=== RUN   TestNegativeMatrix24/draft_Pipeline_触发
+=== RUN   TestNegativeMatrix24/disabled_ActionType_运行
+=== RUN   TestNegativeMatrix24/paused_Connector_同步
+=== RUN   TestNegativeMatrix24/queued_Execution_重试
+=== RUN   TestNegativeMatrix24/succeeded_Execution_取消
+=== RUN   TestNegativeMatrix24/组主体/未知角色
+=== RUN   TestNegativeMatrix24/未登记动作
+=== RUN   TestNegativeMatrix24/OpenFGA_超时
+=== RUN   TestNegativeMatrix24/Cedar_错误
+=== RUN   TestNegativeMatrix24/审计失败
+=== RUN   TestNegativeMatrix24/空策略集启动失败
+=== RUN   TestNegativeMatrix24/OpenFGA_store_有元组启动失败
+--- PASS: TestNegativeMatrix24 (0.27s)
+    --- PASS: TestNegativeMatrix24/无_JWT (0.00s)
+    --- PASS: TestNegativeMatrix24/JWT_无_tenant_id (0.00s)
+    --- PASS: TestNegativeMatrix24/租户头与_JWT_不一致_GET (0.00s)
+    --- PASS: TestNegativeMatrix24/跨租户_PATCH (0.00s)
+    --- PASS: TestNegativeMatrix24/跨租户_DELETE (0.00s)
+    --- PASS: TestNegativeMatrix24/viewer_POST (0.00s)
+    --- PASS: TestNegativeMatrix24/viewer_PATCH (0.00s)
+    --- PASS: TestNegativeMatrix24/viewer_DELETE (0.00s)
+    --- PASS: TestNegativeMatrix24/member_组织管理 (0.00s)
+    --- PASS: TestNegativeMatrix24/member_成员管理 (0.00s)
+    --- PASS: TestNegativeMatrix24/workspace-admin_组织创建 (0.00s)
+    --- PASS: TestNegativeMatrix24/workspace-admin_组织更新 (0.00s)
+    --- PASS: TestNegativeMatrix24/tenant-admin_审计读取 (0.00s)
+    --- PASS: TestNegativeMatrix24/workspace-admin_审计读取 (0.00s)
+    --- PASS: TestNegativeMatrix24/非_owner_删除_SavedQuery (0.00s)
+    --- PASS: TestNegativeMatrix24/viewer_owner_删除_SavedQuery (0.00s)
+    --- PASS: TestNegativeMatrix24/owner_member_删除_SavedQuery (0.00s)
+    --- PASS: TestNegativeMatrix24/archived_Pipeline_触发 (0.00s)
+    --- PASS: TestNegativeMatrix24/archived_Pipeline_更新 (0.00s)
+    --- PASS: TestNegativeMatrix24/draft_Pipeline_触发 (0.00s)
+    --- PASS: TestNegativeMatrix24/disabled_ActionType_运行 (0.00s)
+    --- PASS: TestNegativeMatrix24/paused_Connector_同步 (0.00s)
+    --- PASS: TestNegativeMatrix24/queued_Execution_重试 (0.00s)
+    --- PASS: TestNegativeMatrix24/succeeded_Execution_取消 (0.00s)
+    --- PASS: TestNegativeMatrix24/组主体/未知角色 (0.00s)
+    --- PASS: TestNegativeMatrix24/未登记动作 (0.00s)
+    --- PASS: TestNegativeMatrix24/OpenFGA_超时 (0.00s)
+    --- PASS: TestNegativeMatrix24/Cedar_错误 (0.00s)
+    --- PASS: TestNegativeMatrix24/审计失败 (0.00s)
+    --- PASS: TestNegativeMatrix24/空策略集启动失败 (0.00s)
+    --- PASS: TestNegativeMatrix24/OpenFGA_store_有元组启动失败 (0.20s)
+PASS
+ok  	github.com/klb3713/ontoaxis/internal/platform/authz	(cached)

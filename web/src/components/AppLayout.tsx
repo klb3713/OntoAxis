@@ -75,6 +75,16 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
+  {
+    to: "/approvals",
+    labelKey: "nav.approvals",
+    icon: (
+      <svg {...iconProps}>
+        <path d="M12 3.5 19 6v5.2c0 4.3-2.9 7.6-7 8.8-4.1-1.2-7-4.5-7-8.8V6z" />
+        <path d="m8.8 11.8 2.2 2.2 4.2-4.4" />
+      </svg>
+    ),
+  },
 ];
 
 function BrandMark() {

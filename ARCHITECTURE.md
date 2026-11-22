@@ -73,9 +73,7 @@ Browser ────────────────▶│ Envoy Gateway / T
 
 ### 3.2 仓库目录组织
 
-OntoAxis 采用单二进制模块化单体；目录按职责分层，不设 `services/` 与 `libs/` 平行目录，也不保留按服务拆分的模板。
-
-推荐目录：
+OntoAxis 采用单二进制模块化单体；目录按职责分层，不设 `services/` 与 `libs/` 平行目录，也不保留按服务拆分的模板。下图为推荐布局：已实现部分按当前代码更新，尚未实现的保留为推荐，由对应 change 落地。
 
 ```text
 ontoaxis/
@@ -83,57 +81,74 @@ ontoaxis/
 │   └── ontoaxis-core/
 │       └── main.go                 # 唯一进程入口，只做装配
 ├── internal/
-│   ├── app/                       # 模块注册、启动顺序、生命周期、依赖装配
-│   ├── platform/                  # 跨模块基础设施
-│   │   ├── config/                # koanf + env
-│   │   ├── db/                    # pgxpool、goose、transaction helper
-│   │   ├── authn/                 # Keycloak JWT/JWKS 校验
-│   │   ├── authz/                 # OpenFGA + Cedar 客户端
-│   │   ├── eventing/              # outbox、Kafka、幂等消费
-│   │   ├── observability/         # slog、OTel、Prometheus
-│   │   ├── httpserver/            # Connect/HTTP 中间件、健康检查
-│   │   ├── module/                # Module 接口与 registry
-│   │   └── testutil/              # testcontainers、fixture helper
+│   ├── app/                        # 模块注册、启动顺序、生命周期、依赖装配
+│   ├── platform/                   # 跨模块基础设施
+│   │   ├── authn/                  # Keycloak JWT/JWKS、claims、租户上下文
+│   │   ├── authz/                  # OpenFGA + Cedar 授权（authorization-openfga-cedar）
+│   │   ├── config/                 # koanf + env
+│   │   ├── db/                     # pgxpool、goose、事务 helper、jobs schema 迁移
+│   │   ├── eventing/               # outbox、Kafka、幂等消费（按需）
+│   │   ├── httperr/                # 统一错误响应
+│   │   ├── httpserver/             # Connect/HTTP 中间件、健康检查
+│   │   ├── module/                 # Module 接口与 registry
+│   │   ├── observability/          # slog、OTel、Prometheus
+│   │   └── testutil/               # testcontainers、fixture helper（按需）
 │   └── modules/
-│       ├── tenancy/               # organization/workspace/membership/project
-│       ├── connectors/            # connector catalog + Meltano/Kafka Connect
-│       ├── ingestion/             # sync job / CDC 状态
-│       ├── datasets/              # dataset metadata + Nessie/Iceberg
-│       ├── pipelines/             # pipeline authoring + Kestra adapter
-│       ├── query/                 # saved query + Trino/Flight SQL adapter
-│       ├── ontology/              # object type/property/link + dataset binding
-│       ├── objects/               # object/link instance + Meilisearch
-│       └── actions/               # action type + Temporal
+│       ├── _template/              # 新模块脚手架，不注册
+│       ├── tenancy/                # organization/workspace/membership/project
+│       ├── connectors/             # connector catalog + Meltano/Kafka Connect
+│       ├── ingestion/              # sync job / CDC 状态
+│       ├── datasets/               # dataset metadata + Nessie/Iceberg
+│       ├── pipelines/              # pipeline authoring + Kestra adapter
+│       ├── query/                  # saved query + Trino/Flight SQL adapter
+│       ├── ontology/               # object type/property/link + dataset binding
+│       ├── objects/                # object/link instance + Meilisearch
+│       └── actions/                # action type + Temporal
 ├── proto/
-│   └── ontoaxis/v1/               # 仅存 .proto 源文件
-├── gen/                           # buf generate 生成的 Go/Connect 代码，不手改
-├── openapi/                       # 从 proto 生成的 OpenAPI
-├── web/                           # React 19 + Refine + shadcn/ui
+│   └── ontoaxis/v1/                # 仅存 .proto 源文件
+├── gen/                            # buf generate 生成的 Go/Connect 代码，不手改
+├── openapi/                        # 从 proto 生成的 OpenAPI
+├── policies/                       # 授权策略（OpenFGA/Cedar）
+│   ├── openfga/                    # OpenFGA 关系模型
+│   └── platform/                   # Cedar 策略与 schema
+├── config/
+│   └── edge/                       # oa-edge 路由真源：routes.yaml + schema
+├── tools/
+│   └── edgegen/                    # 由路由表生成 Envoy/Traefik 配置
+├── web/                            # React 19 + Refine + shadcn/ui
+│   ├── e2e/                        # Playwright E2E
 │   └── src/
-│       ├── app/                   # router、Provider、AppShell
-│       ├── features/              # 按业务域组织页面与 hooks
-│       ├── components/            # 跨 feature 的 UI
-│       ├── lib/                   # API client、auth、i18n
-│       └── generated/             # orval 生成的 API hooks/types
+│       ├── app/                    # 应用运行时装配
+│       ├── api/                    # Refine data provider、HTTP client、错误归一化
+│       ├── auth/                   # OIDC、会话与权限上下文
+│       ├── components/             # 布局与通用 UI
+│       ├── config/                 # 运行时配置
+│       ├── features/               # 按业务域组织页面与 hooks
+│       ├── generated/              # orval 生成的 API hooks/types
+│       ├── i18n/                   # en/zh 文案
+│       └── lib/                    # 格式化、防抖等通用工具
 ├── deploy/
-│   ├── compose/                   # 本地 14 容器栈
-│   ├── helm/                      # Kubernetes charts
-│   ├── argocd/                    # dev/staging/prod
-│   └── observability/             # dashboards、alerts、OTel config
-├── scripts/                       # 开发、生成、检查脚本
-├── tests/
-│   ├── integration/               # testcontainers
-│   ├── e2e/                       # Playwright
+│   ├── compose/                    # 本地 Compose 栈与 Keycloak 初始化
+│   ├── edge/                       # 生成物、kind 清单与 Traefik 静态配置
+│   ├── helm/                       # Kubernetes charts（production-delivery）
+│   ├── argocd/                     # dev/staging/prod（production-delivery）
+│   └── observability/              # Prometheus、Alertmanager、Perses、OTel 配置
+├── scripts/                        # 开发、生成、检查与 smoke 脚本
+├── tests/                          # 跨模块集成与共享 fixture（按需）
+│   ├── integration/               # 跨模块 testcontainers 场景
 │   └── fixtures/                  # golden JSON / seed data
-├── benchmarks/                    # 性能基准
-├── docs/                          # 面向使用者的中文文档
-├── openspec/                      # Stage/change 治理
+├── benchmarks/                     # 性能与负载基线（按需）
+├── docs/                           # 架构、API、运维、参考与 Stage 文档
+├── openspec/                       # Stage/change 治理
 ├── Makefile
+├── Dockerfile
 ├── go.mod
-└── .github/workflows/
+└── .github/workflows/              # CI
 ```
 
-每个模块内部统一为：
+本图描述推荐布局，不表示全部目录已落地；当前完成度以 `docs/stages/`、`openspec/specs/` 为准。
+
+业务模块内部按层组织；外部系统适配器作为模块内独立子包，不放进 `service`：
 
 ```text
 internal/modules/<domain>/
@@ -141,10 +156,13 @@ internal/modules/<domain>/
 ├── api/                           # Connect handler + DTO 映射
 ├── domain/                        # 纯业务类型与状态机
 ├── service/                       # 用例编排
-├── repo/                          # sqlc 查询 + pgx 实现
-│   └── migrations/                # goose SQL，模块自己拥有
-└── events/                        # 该模块的 outbox/consumer（可选）
+├── repo/                          # pgx 查询与存储实现
+├── migrations/                    # goose SQL，模块自己拥有
+├── events/                        # 可选：模块 outbox 生产/消费
+└── <adapter>/                     # 可选：pipelines/kestra、query/trino 等
 ```
+
+`tenancy` 的逻辑分层与其他模块一致，但当前仍放在同一个 Go 包内（`api.go`、`service.go`、`repo.go`）；其余 8 个模块使用上述子包布局。Go 测试与被测包同目录，浏览器 E2E 位于 `web/e2e/`；`tests/` 只用于跨模块场景和共享 fixture。
 
 ### 3.3 目录约束
 
@@ -152,7 +170,7 @@ internal/modules/<domain>/
 - `internal/` 禁止外部模块 import；对外的 Go 包只放 `gen/`；
 - 每个模块只能访问自己的 `repo/` 和 schema，跨模块调用必须走 `service` 接口；
 - 不设全局 `utils/`/`common/` 大包；通用能力按职责放 `internal/platform/*`；
-- 生成物（`gen/`、`web/src/generated/`、`openapi/`）由 `make generate` 重建，禁止手改；
+- 生成物（`gen/`、`openapi/`、`web/src/generated/`）由 `make generate` 重建，`deploy/edge/generated/` 由 `make edge-generate` 重建，均禁止手改；
 - 迁移文件必须归属模块，禁止出现 shared `migrations/` 目录。
 
 ### 3.4 模块契约与依赖（P0 定稿）
@@ -1287,8 +1305,8 @@ kafka, debezium, kestra, trino, nessie, seaweedfs, meilisearch
 Stage 2 **不需要**先完成 15.2 中的功能实现，但以下设计输入必须在对应 Wave 开始前定稿：
 
 1. **oa-edge 路由契约（已实现并验证，2026-11-22）**：`config/edge/routes.yaml`、`config/edge/routes.schema.json`、`config/edge/README.md` 定义 schema、最长前缀匹配顺序、公开/受保护路由、JWT/header 边界与确定性生成规则；`tools/edgegen` 生成 `deploy/edge/generated/` 的 Envoy/Traefik 产物，`make edge-generate-check` 校验，`scripts/edge-smoke.sh` 与 `scripts/edge-smoke-envoy.sh` 覆盖 200/401/403/404/405/429 与 fail-closed（Traefik 500、Envoy 403）。Envoy Gateway 与 Traefik 只消费同一份生成结果，不再另立路由真源；Envoy 已在 kind v1.37 上验证 Gateway Programmed 与运行态 smoke。
-2. **授权边界**：OpenFGA 关系模型、Cedar 策略集、默认拒绝与审计事件字段，必须在 `authorization-openfga-cedar` change 开始前定稿；不得在实现中临时扩大或重叠职责。
-3. **可观测基线**：服务名、指标命名、trace 传播和 SLO 目标，必须在 `runtime-observability` change 开始前定稿，后续 change 直接复用。
-4. **治理前置**：Stage 2 brief 获负责人批准，并创建对应 OpenSpec change；未批准前不实施。
+2. **授权边界（已定稿并进入实施，2026-11-22）**：`docs/architecture/authorization-boundary.md` 已覆盖 OpenFGA 关系模型、Cedar 策略集、默认拒绝与审计事件字段；负责人已确认安全评审通过并授权 `authorization-openfga-cedar` 实施。核心 `internal/platform/authz/`、`policies/` 与 9 个模块接缝已实现；`internal/app`/`cmd` 接线与证据归档仍待 `stage-2-integration` 收口，未归档前不得视为 Stage 2 验收完成。实现中不得临时扩大或重叠职责。
+3. **可观测基线（已定稿并实现，2026-11-22）**：`docs/architecture/observability-baseline.md` 定义服务名、指标命名、trace 传播和 SLO；`runtime-observability` 已归档，后续 change 直接复用。
+4. **治理前置（已完成）**：Stage 2 brief 已获负责人批准（2026-11-22）；剩余 7 个 change 已一次性创建规划产物并通过评审，见 `docs/stages/stage-2-change-batch-review.md`；负责人同日授权按 change-map 顺序实施，从 `authorization-openfga-cedar` 开始。
 
 完成状态以 `openspec/specs/`、`docs/stages/stage-1-exit-report.md` 和后续 Stage brief 为准。

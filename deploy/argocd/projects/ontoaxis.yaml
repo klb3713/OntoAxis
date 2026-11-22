@@ -1,0 +1,65 @@
+# AppProject for the OntoAxis delivery manifests.
+#
+# Security posture: the project only allows the single GitOps repository to be a
+# source and only the four runtime namespaces as destinations. Cluster-scoped
+# resources are restricted to the small set the platform genuinely needs; every
+# other cluster-scoped kind is rejected by ArgoCD.
+#
+# NOTE: replace the sourceRepos entry below with the real GitOps repository URL
+# before installing. The placeholder must match the repoURL used by the
+# Applications in deploy/argocd/apps/ and deploy/argocd/root-app.yaml.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ontoaxis
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: delivery
+  annotations:
+    # Keep the project alive even when no Application references it yet.
+    argocd.argoproj.io/sync-options: Delete=false
+spec:
+  description: OntoAxis production delivery (platform/data/app/edge/observability)
+  sourceRepos:
+    - https://github.com/ontoaxis/ontoaxis.git
+  destinations:
+    - namespace: oa-system
+      server: https://kubernetes.default.svc
+    - namespace: oa-app
+      server: https://kubernetes.default.svc
+    - namespace: oa-data
+      server: https://kubernetes.default.svc
+    - namespace: oa-observability
+      server: https://kubernetes.default.svc
+    # app-of-apps root Application and child Application CRs live here; they do
+    # not deploy workloads into argocd, only Application/AppProject objects.
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+  # Cluster-scoped kinds the platform is allowed to create. GatewayClass and
+  # Envoy Gateway control plane are installed by bootstrap, but keeping
+  # GatewayClass here documents the boundary; CRDs are kept for the jobs/chart
+  # path. Nothing else may be cluster-scoped.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: external-secrets.io
+      kind: ClusterSecretStore
+    - group: gateway.networking.k8s.io
+      kind: GatewayClass
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+  # Secrets are produced by External Secrets Operator, never committed to Git;
+  # the raw Event stream is noise. Both are blocked from ArgoCD management.
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: Secret
+    - group: events.k8s.io
+      kind: Event
+  roles:
+    - name: read-only
+      description: Read-only project role for auditors
+      policies:
+        - p, proj:ontoaxis:read-only, applications, get, ontoaxis/*, allow
+      groups:
+        - ontoaxis-auditors

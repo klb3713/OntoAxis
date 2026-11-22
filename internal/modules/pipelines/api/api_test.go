@@ -3,10 +3,12 @@ package api_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -402,4 +404,96 @@ type fakeResolver struct {
 
 func (f fakeResolver) DatasetExists(context.Context, string, string) (bool, error) {
 	return f.exists["33333333-3333-4333-8333-333333333333"], nil
+}
+
+func TestIdempotencyKeyValidation(t *testing.T) {
+	server := newTestServer(t)
+	pipelineID := "11111111-1111-4111-8111-111111111111"
+	longKey := ""
+	for i := 0; i < 256; i++ {
+		longKey += "a"
+	}
+	status, body := server.do(t, http.MethodPost, "/api/v1/pipelines/"+pipelineID+"/publish", "11111111-1111-4111-8111-111111111111", `{}`, "Idempotency-Key", longKey)
+	if status != http.StatusBadRequest {
+		t.Fatalf("publish status=%d body=%v", status, body)
+	}
+	status, body = server.do(t, http.MethodPost, "/api/v1/pipelines/"+pipelineID+"/runs", "11111111-1111-4111-8111-111111111111", "", "Idempotency-Key", "bad key")
+	if status != http.StatusBadRequest {
+		t.Fatalf("trigger status=%d body=%v", status, body)
+	}
+}
+
+func TestIdempotentPublishAndTriggerReplay(t *testing.T) {
+	server := newTestServer(t)
+	status, payload := server.do(t, http.MethodPost, "/api/v1/pipelines", tenantA, createBody("idem"))
+	if status != http.StatusCreated {
+		t.Fatalf("create = %d %+v", status, payload)
+	}
+	id := payload["id"].(string)
+
+	firstStatus, first := server.do(t, http.MethodPost, "/api/v1/pipelines/"+id+"/publish", tenantA, `{"published_by":"tester"}`, "Idempotency-Key", "pub-1")
+	if firstStatus != http.StatusOK {
+		t.Fatalf("publish = %d %+v", firstStatus, first)
+	}
+	secondStatus, second := server.do(t, http.MethodPost, "/api/v1/pipelines/"+id+"/publish", tenantA, `{"published_by":"tester"}`, "Idempotency-Key", "pub-1")
+	if secondStatus != http.StatusOK || second["published_version_id"] != first["published_version_id"] {
+		t.Fatalf("replay publish = %d %+v want version %v", secondStatus, second, first["published_version_id"])
+	}
+	status, conflict := server.do(t, http.MethodPost, "/api/v1/pipelines/"+id+"/publish", tenantA, `{"published_by":"other"}`, "Idempotency-Key", "pub-1")
+	if status != http.StatusConflict || errorCode(conflict) != "already_exists" {
+		t.Fatalf("conflict publish = %d %+v", status, conflict)
+	}
+
+	status, run := server.do(t, http.MethodPost, "/api/v1/pipelines/"+id+"/runs", tenantA, "", "Idempotency-Key", "run-1")
+	if status != http.StatusAccepted {
+		t.Fatalf("trigger = %d %+v", status, run)
+	}
+	if server.adapter.TriggeredCount != 1 {
+		t.Fatalf("triggered count = %d, want 1", server.adapter.TriggeredCount)
+	}
+	status, replay := server.do(t, http.MethodPost, "/api/v1/pipelines/"+id+"/runs", tenantA, "", "Idempotency-Key", "run-1")
+	if status != http.StatusAccepted || replay["id"] != run["id"] {
+		t.Fatalf("replay trigger = %d %+v want run %v", status, replay, run["id"])
+	}
+	if server.adapter.TriggeredCount != 1 {
+		t.Fatalf("replay invoked engine: %d", server.adapter.TriggeredCount)
+	}
+	status, _ = server.do(t, http.MethodPost, "/api/v1/pipelines/"+id+"/runs", tenantA, "", "Idempotency-Key", "run-2")
+	if status != http.StatusAccepted || server.adapter.TriggeredCount != 2 {
+		t.Fatalf("new key status=%d count=%d", status, server.adapter.TriggeredCount)
+	}
+}
+
+func TestIdempotentTriggerConcurrent(t *testing.T) {
+	server := newTestServer(t)
+	status, payload := server.do(t, http.MethodPost, "/api/v1/pipelines", tenantA, createBody("idem-concurrent"))
+	if status != http.StatusCreated {
+		t.Fatalf("create = %d %+v", status, payload)
+	}
+	id := payload["id"].(string)
+	status, _ = server.do(t, http.MethodPost, "/api/v1/pipelines/"+id+"/publish", tenantA, `{"published_by":"tester"}`)
+	if status != http.StatusOK {
+		t.Fatalf("publish = %d", status)
+	}
+	const n = 8
+	var wg sync.WaitGroup
+	errs := make(chan string, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			status, body := server.do(t, http.MethodPost, "/api/v1/pipelines/"+id+"/runs", tenantA, "", "Idempotency-Key", "concurrent-1")
+			if status != http.StatusAccepted {
+				errs <- fmt.Sprintf("status=%d body=%v", status, body)
+			}
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Fatalf("concurrent trigger: %s", err)
+	}
+	if server.adapter.TriggeredCount != 1 {
+		t.Fatalf("triggered count = %d, want 1", server.adapter.TriggeredCount)
+	}
 }

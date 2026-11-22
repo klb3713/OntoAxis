@@ -1,0 +1,10 @@
+# 本地构建/下载产物，不提交。
+# - trino/fetch-plugin.sh 下载的 PostgreSQL JDBC 驱动
+# - 手工构建后放置的 Iceberg 插件 jar
+# - 冒烟/验证脚本产生的临时输出
+trino/plugins/*.jar
+trino/plugins/*.zip
+connect/plugins/*.jar
+connect/plugins/*.zip
+*.log
+/tmp/

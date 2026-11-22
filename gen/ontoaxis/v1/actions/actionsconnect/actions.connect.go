@@ -59,6 +59,15 @@ const (
 	// ActionServiceRetryActionExecutionProcedure is the procedure name of the ActionService's
 	// RetryActionExecution RPC.
 	ActionServiceRetryActionExecutionProcedure = "/ontoaxis.v1.actions.ActionService/RetryActionExecution"
+	// ActionServiceListApprovalTasksProcedure is the procedure name of the ActionService's
+	// ListApprovalTasks RPC.
+	ActionServiceListApprovalTasksProcedure = "/ontoaxis.v1.actions.ActionService/ListApprovalTasks"
+	// ActionServiceGetApprovalTaskProcedure is the procedure name of the ActionService's
+	// GetApprovalTask RPC.
+	ActionServiceGetApprovalTaskProcedure = "/ontoaxis.v1.actions.ActionService/GetApprovalTask"
+	// ActionServiceDecideApprovalTaskProcedure is the procedure name of the ActionService's
+	// DecideApprovalTask RPC.
+	ActionServiceDecideApprovalTaskProcedure = "/ontoaxis.v1.actions.ActionService/DecideApprovalTask"
 )
 
 var (
@@ -146,6 +155,27 @@ var (
 			Procedure:  ActionServiceRetryActionExecutionProcedure,
 		}
 	})
+	actionServiceListApprovalTasksSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     actions.File_ontoaxis_v1_actions_actions_proto.Services().ByName("ActionService").Methods().ByName("ListApprovalTasks"),
+			Procedure:  ActionServiceListApprovalTasksProcedure,
+		}
+	})
+	actionServiceGetApprovalTaskSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     actions.File_ontoaxis_v1_actions_actions_proto.Services().ByName("ActionService").Methods().ByName("GetApprovalTask"),
+			Procedure:  ActionServiceGetApprovalTaskProcedure,
+		}
+	})
+	actionServiceDecideApprovalTaskSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     actions.File_ontoaxis_v1_actions_actions_proto.Services().ByName("ActionService").Methods().ByName("DecideApprovalTask"),
+			Procedure:  ActionServiceDecideApprovalTaskProcedure,
+		}
+	})
 )
 
 // ActionServiceClient is a client for the ontoaxis.v1.actions.ActionService service.
@@ -162,6 +192,9 @@ type ActionServiceClient interface {
 	ListActionExecutions(context.Context, *actions.ListActionExecutionsRequest) (*actions.ListActionExecutionsResponse, error)
 	CancelActionExecution(context.Context, *actions.CancelActionExecutionRequest) (*actions.ActionExecution, error)
 	RetryActionExecution(context.Context, *actions.RetryActionExecutionRequest) (*actions.ActionExecution, error)
+	ListApprovalTasks(context.Context, *actions.ListApprovalTasksRequest) (*actions.ListApprovalTasksResponse, error)
+	GetApprovalTask(context.Context, *actions.GetApprovalTaskRequest) (*actions.ApprovalTask, error)
+	DecideApprovalTask(context.Context, *actions.DecideApprovalTaskRequest) (*actions.ApprovalTask, error)
 }
 
 // NewActionServiceClient constructs a client for the ontoaxis.v1.actions.ActionService service.
@@ -184,6 +217,9 @@ type ActionServiceHandler interface {
 	ListActionExecutions(context.Context, *actions.ListActionExecutionsRequest) (*actions.ListActionExecutionsResponse, error)
 	CancelActionExecution(context.Context, *actions.CancelActionExecutionRequest) (*actions.ActionExecution, error)
 	RetryActionExecution(context.Context, *actions.RetryActionExecutionRequest) (*actions.ActionExecution, error)
+	ListApprovalTasks(context.Context, *actions.ListApprovalTasksRequest) (*actions.ListApprovalTasksResponse, error)
+	GetApprovalTask(context.Context, *actions.GetApprovalTaskRequest) (*actions.ApprovalTask, error)
+	DecideApprovalTask(context.Context, *actions.DecideApprovalTaskRequest) (*actions.ApprovalTask, error)
 }
 
 // RegisterActionServiceHandler registers svc as the ontoaxis.v1.actions.ActionService
@@ -203,6 +239,9 @@ func RegisterActionServiceHandler(server *connect.Server, svc ActionServiceHandl
 		connect.Method{Spec: actionServiceListActionExecutionsSpec(), Handler: adapter.listActionExecutions},
 		connect.Method{Spec: actionServiceCancelActionExecutionSpec(), Handler: adapter.cancelActionExecution},
 		connect.Method{Spec: actionServiceRetryActionExecutionSpec(), Handler: adapter.retryActionExecution},
+		connect.Method{Spec: actionServiceListApprovalTasksSpec(), Handler: adapter.listApprovalTasks},
+		connect.Method{Spec: actionServiceGetApprovalTaskSpec(), Handler: adapter.getApprovalTask},
+		connect.Method{Spec: actionServiceDecideApprovalTaskSpec(), Handler: adapter.decideApprovalTask},
 	)
 }
 
@@ -255,6 +294,18 @@ func (UnimplementedActionServiceHandler) CancelActionExecution(context.Context, 
 
 func (UnimplementedActionServiceHandler) RetryActionExecution(context.Context, *actions.RetryActionExecutionRequest) (*actions.ActionExecution, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "ontoaxis.v1.actions.ActionService.RetryActionExecution is not implemented")
+}
+
+func (UnimplementedActionServiceHandler) ListApprovalTasks(context.Context, *actions.ListApprovalTasksRequest) (*actions.ListApprovalTasksResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "ontoaxis.v1.actions.ActionService.ListApprovalTasks is not implemented")
+}
+
+func (UnimplementedActionServiceHandler) GetApprovalTask(context.Context, *actions.GetApprovalTaskRequest) (*actions.ApprovalTask, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "ontoaxis.v1.actions.ActionService.GetApprovalTask is not implemented")
+}
+
+func (UnimplementedActionServiceHandler) DecideApprovalTask(context.Context, *actions.DecideApprovalTaskRequest) (*actions.ApprovalTask, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "ontoaxis.v1.actions.ActionService.DecideApprovalTask is not implemented")
 }
 
 type actionServiceClient struct {
@@ -352,6 +403,30 @@ func (c *actionServiceClient) CancelActionExecution(ctx context.Context, req *ac
 func (c *actionServiceClient) RetryActionExecution(ctx context.Context, req *actions.RetryActionExecutionRequest) (*actions.ActionExecution, error) {
 	var res actions.ActionExecution
 	if err := c.client.CallUnary(ctx, actionServiceRetryActionExecutionSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *actionServiceClient) ListApprovalTasks(ctx context.Context, req *actions.ListApprovalTasksRequest) (*actions.ListApprovalTasksResponse, error) {
+	var res actions.ListApprovalTasksResponse
+	if err := c.client.CallUnary(ctx, actionServiceListApprovalTasksSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *actionServiceClient) GetApprovalTask(ctx context.Context, req *actions.GetApprovalTaskRequest) (*actions.ApprovalTask, error) {
+	var res actions.ApprovalTask
+	if err := c.client.CallUnary(ctx, actionServiceGetApprovalTaskSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *actionServiceClient) DecideApprovalTask(ctx context.Context, req *actions.DecideApprovalTaskRequest) (*actions.ApprovalTask, error) {
+	var res actions.ApprovalTask
+	if err := c.client.CallUnary(ctx, actionServiceDecideApprovalTaskSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -497,6 +572,42 @@ func (h actionServiceHandler) retryActionExecution(ctx context.Context, _ connec
 		return err
 	}
 	res, err := h.svc.RetryActionExecution(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h actionServiceHandler) listApprovalTasks(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req actions.ListApprovalTasksRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListApprovalTasks(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h actionServiceHandler) getApprovalTask(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req actions.GetApprovalTaskRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetApprovalTask(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h actionServiceHandler) decideApprovalTask(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req actions.DecideApprovalTaskRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.DecideApprovalTask(ctx, &req)
 	if err != nil {
 		return err
 	}

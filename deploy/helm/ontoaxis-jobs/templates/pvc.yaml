@@ -1,0 +1,18 @@
+{{- if .Values.backup.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.backup.pvc.name }}
+  namespace: {{ .Values.backup.namespace }}
+  labels:
+    {{- include "ontoaxis.labels" (dict "name" "backup" "root" $) | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.backup.pvc.accessMode | default "ReadWriteOnce" }}
+  {{- if .Values.backup.pvc.storageClass }}
+  storageClassName: {{ .Values.backup.pvc.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ required "ontoaxis-jobs: backup.pvc.size is required" .Values.backup.pvc.size }}
+{{- end }}

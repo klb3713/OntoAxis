@@ -1,0 +1,11 @@
+apiVersion: v2
+name: ontoaxis-platform
+description: OntoAxis platform lifecycle chart (PostgreSQL, Keycloak, OpenFGA, Valkey, SeaweedFS) plus namespace layout.
+type: application
+version: 0.1.0
+appVersion: "stage-2"
+keywords:
+  - ontoaxis
+  - platform
+maintainers:
+  - name: ontoaxis-platform

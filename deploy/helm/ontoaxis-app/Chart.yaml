@@ -1,0 +1,11 @@
+apiVersion: v2
+name: ontoaxis-app
+description: OntoAxis application lifecycle chart (ontoaxis-core, web, Meilisearch, search worker).
+type: application
+version: 0.1.0
+appVersion: "stage-2"
+keywords:
+  - ontoaxis
+  - app
+maintainers:
+  - name: ontoaxis-platform

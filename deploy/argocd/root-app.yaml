@@ -1,0 +1,46 @@
+# App-of-apps root for kind / staging-like environments.
+#
+# This Application points at deploy/argocd/apps/ (Directory recurse) so any child
+# Application YAML committed there is synced. Child Applications carry the sync
+# waves (-10 namespaces, -5 secrets, 0 platform, 1 data, 2 app, 3 edge,
+# 4 observability, 5 jobs).
+#
+# kind and staging-like use automated prune + selfHeal. prod-like MUST NOT use
+# this file; use deploy/argocd/root-app.prod-like.yaml (manual sync) instead.
+#
+# NOTE: replace the repoURL placeholder with the real GitOps repository URL.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ontoaxis-root
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: ontoaxis
+    ontoaxis.io/component: root
+    ontoaxis.io/environment: kind
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ontoaxis
+  source:
+    repoURL: https://github.com/ontoaxis/ontoaxis.git
+    targetRevision: main
+    path: deploy/argocd/apps
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,15 @@
+ontoaxis-observability has been rendered for environment: {{ .Values.global.environment }}
+
+All observability components run in namespace oa-observability.
+
+Component summary (replicas / image):
+{{- range $name, $c := .Values.components }}
+{{- if and $c.enabled (eq $c.chart $.Chart.Name) }}
+  - {{ $name }} replicas={{ $c.replicas | default $.Values.global.defaultReplicas }} image={{ $c.image.repository }}@{{ $c.image.digest }}
+{{- end }}
+{{- end }}
+
+Prometheus / Alertmanager / OTel Collector config is mounted from chart-local
+ConfigMaps. In a full GitOps install these ConfigMap bodies are populated from
+deploy/observability/ via scripts/delivery-sync-observability.sh; the chart keeps
+the same keys to avoid a second source of truth.

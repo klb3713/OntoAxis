@@ -6,6 +6,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"github.com/klb3713/ontoaxis/internal/platform/observability"
 	"time"
 
 	"github.com/klb3713/ontoaxis/internal/modules/pipelines/domain"
@@ -24,6 +25,19 @@ type Service interface {
 	TriggerPipelineRun(ctx context.Context, request TriggerPipelineRunRequest) (domain.PipelineRun, error)
 	GetPipelineRun(ctx context.Context, request GetPipelineRunRequest) (domain.PipelineRun, error)
 	ListPipelineRuns(ctx context.Context, request ListPipelineRunsRequest) (PipelineRunPage, error)
+	LookupIdempotency(ctx context.Context, tenantID, operation, keyHash string) (IdempotencyRecord, bool, error)
+	SaveIdempotency(ctx context.Context, record IdempotencyRecord) (bool, error)
+}
+
+// IdempotencyRecord is a replayable POST response keyed by tenant/operation/key.
+type IdempotencyRecord struct {
+	TenantID       string
+	Operation      string
+	KeyHash        string
+	RequestHash    string
+	ResponseStatus int
+	ResponseBody   []byte
+	ExpiresAt      time.Time
 }
 
 // ScheduleService is the exported Schedule-facing service interface
@@ -52,6 +66,12 @@ type Repository interface {
 	CreateRun(ctx context.Context, run domain.PipelineRun) (domain.PipelineRun, error)
 	GetRun(ctx context.Context, tenantID, pipelineID, runID string) (domain.PipelineRun, error)
 	ListRuns(ctx context.Context, filter RunFilter) ([]domain.PipelineRun, int, error)
+	UpdateRunConditional(ctx context.Context, run domain.PipelineRun) (domain.PipelineRun, error)
+	CreateRunInputs(ctx context.Context, inputs []domain.PipelineRunInput) error
+	CreateRunOutputs(ctx context.Context, outputs []domain.PipelineRunOutput) error
+	LookupIdempotency(ctx context.Context, tenantID, operation, keyHash string) (IdempotencyRecord, bool, error)
+	SaveIdempotency(ctx context.Context, record IdempotencyRecord) (bool, error)
+	MarkSucceededWithOutputs(ctx context.Context, run domain.PipelineRun, outputs []domain.PipelineRunOutput) (domain.PipelineRun, error)
 	CreateSchedule(ctx context.Context, schedule domain.Schedule) (domain.Schedule, error)
 	GetSchedule(ctx context.Context, tenantID, scheduleID string) (domain.Schedule, error)
 	ListSchedules(ctx context.Context, filter ScheduleFilter) ([]domain.Schedule, int, error)
@@ -202,8 +222,13 @@ type ListSchedulesRequest struct {
 }
 
 type options struct {
-	adapter         kestra.Adapter
-	datasetResolver DatasetResolver
+	adapter           kestra.Adapter
+	datasetResolver   DatasetResolver
+	dbtCatalog        string
+	environment       string
+	reconcileThrottle time.Duration
+	recoveryTimeout   time.Duration
+	metrics           *observability.Metrics
 }
 
 // Option configures the service implementation.
@@ -220,12 +245,42 @@ func WithDatasetResolver(resolver DatasetResolver) Option {
 	return func(o *options) { o.datasetResolver = resolver }
 }
 
+// WithDBTCatalog sets the dbt target catalog used when rendering projects.
+func WithDBTCatalog(catalog string) Option {
+	return func(o *options) { o.dbtCatalog = catalog }
+}
+
+// WithEnvironment sets the deployment environment label attached to flows.
+func WithEnvironment(environment string) Option {
+	return func(o *options) { o.environment = environment }
+}
+
+// WithReconcileThrottle bounds engine polling for run reads (default 2s).
+func WithReconcileThrottle(throttle time.Duration) Option {
+	return func(o *options) { o.reconcileThrottle = throttle }
+}
+
+// WithRecoveryTimeout bounds lost-trigger recovery (default 2m).
+func WithRecoveryTimeout(timeout time.Duration) Option {
+	return func(o *options) { o.recoveryTimeout = timeout }
+}
+
+// WithMetrics injects the platform metrics registry for reconcile counters.
+func WithMetrics(metrics *observability.Metrics) Option {
+	return func(o *options) { o.metrics = metrics }
+}
+
 // Manager implements Service and ScheduleService.
 type Manager struct {
-	repo            Repository
-	adapter         kestra.Adapter
-	datasetResolver DatasetResolver
-	now             func() time.Time
+	repo              Repository
+	adapter           kestra.Adapter
+	datasetResolver   DatasetResolver
+	dbtCatalog        string
+	environment       string
+	reconcileThrottle time.Duration
+	recoveryTimeout   time.Duration
+	metrics           *observability.Metrics
+	now               func() time.Time
 }
 
 // New constructs the service manager. A nil repository is a programming error
@@ -237,11 +292,24 @@ func New(repo Repository, opts ...Option) *Manager {
 			opt(&o)
 		}
 	}
+	throttle := o.reconcileThrottle
+	if throttle <= 0 {
+		throttle = 2 * time.Second
+	}
+	recoveryTimeout := o.recoveryTimeout
+	if recoveryTimeout <= 0 {
+		recoveryTimeout = 2 * time.Minute
+	}
 	return &Manager{
-		repo:            repo,
-		adapter:         o.adapter,
-		datasetResolver: o.datasetResolver,
-		now:             time.Now,
+		repo:              repo,
+		adapter:           o.adapter,
+		datasetResolver:   o.datasetResolver,
+		dbtCatalog:        o.dbtCatalog,
+		environment:       o.environment,
+		reconcileThrottle: throttle,
+		recoveryTimeout:   recoveryTimeout,
+		metrics:           o.metrics,
+		now:               time.Now,
 	}
 }
 
@@ -251,4 +319,20 @@ func (m *Manager) WithNow(now func() time.Time) *Manager {
 		m.now = now
 	}
 	return m
+}
+
+// LookupIdempotency returns a replayable response for the tenant/operation/key.
+func (m *Manager) LookupIdempotency(ctx context.Context, tenantID, operation, keyHash string) (IdempotencyRecord, bool, error) {
+	if m.repo == nil {
+		return IdempotencyRecord{}, false, domain.ErrUnavailable
+	}
+	return m.repo.LookupIdempotency(ctx, tenantID, operation, keyHash)
+}
+
+// SaveIdempotency stores a response; false means a concurrent request won.
+func (m *Manager) SaveIdempotency(ctx context.Context, record IdempotencyRecord) (bool, error) {
+	if m.repo == nil {
+		return false, domain.ErrUnavailable
+	}
+	return m.repo.SaveIdempotency(ctx, record)
 }

@@ -1,0 +1,257 @@
+# ontoaxis-observability default values.
+# Image digests are deterministic PLACEHOLDERS and must be replaced by the
+# release manifest before real deployment. See deploy/helm/README.md.
+
+global:
+  environment: kind
+  defaultReplicas: 1
+  imagePullPolicy: IfNotPresent
+  defaultResources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  oidc:
+    issuer: http://localhost:18083/realms/ontoaxis
+    audience: ontoaxis-api
+    jwksUrl: ""
+  secretStore:
+    name: ontoaxis-kubernetes-store
+    kind: ClusterSecretStore
+
+components:
+  otel-collector:
+    chart: ontoaxis-observability
+    enabled: true
+    namespace: oa-observability
+    image:
+      repository: docker.io/otel/opentelemetry-collector-contrib
+      digest: sha256:6690aa92236a4c6ad2b377feb690bfedf663b2407f58c820291d14e774baf825
+    ports:
+      - name: otlp-grpc
+        containerPort: 4317
+      - name: otlp-http
+        containerPort: 4318
+      - name: metrics
+        containerPort: 8888
+    command:
+      - --config=/etc/otelcol/config.yaml
+    configMap:
+      enabled: true
+      name: otel-collector-config
+      mountPath: /etc/otelcol
+      data:
+        config.yaml: |
+          receivers:
+            otlp:
+              protocols:
+                http:
+                  endpoint: 0.0.0.0:4318
+                grpc:
+                  endpoint: 0.0.0.0:4317
+          processors:
+            batch: {}
+            memory_limiter:
+              check_interval: 1s
+              limit_mib: 256
+          exporters:
+            debug:
+              verbosity: basic
+            otlp/jaeger:
+              endpoint: jaeger:4317
+              tls:
+                insecure: true
+            prometheus:
+              endpoint: 0.0.0.0:9464
+          service:
+            telemetry:
+              metrics:
+                address: 0.0.0.0:8888
+            pipelines:
+              traces:
+                receivers: [otlp]
+                processors: [memory_limiter, batch]
+                exporters: [otlp/jaeger, debug]
+              metrics:
+                receivers: [otlp]
+                processors: [memory_limiter, batch]
+                exporters: [prometheus]
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: otlp-grpc
+          port: 4317
+          targetPort: otlp-grpc
+        - name: otlp-http
+          port: 4318
+          targetPort: otlp-http
+        - name: metrics
+          port: 8888
+          targetPort: metrics
+    probes:
+      mode: tcp
+      port: metrics
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  prometheus:
+    chart: ontoaxis-observability
+    enabled: true
+    namespace: oa-observability
+    image:
+      repository: docker.io/prom/prometheus
+      digest: sha256:78b274238b8fb0e4d6313cf833fecc591d1c73478e5eb086763ff34b00a48a44
+    ports:
+      - name: http
+        containerPort: 9090
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=24h
+      - --web.enable-lifecycle
+    configMap:
+      enabled: true
+      name: prometheus-config
+      mountPath: /etc/prometheus
+      data:
+        prometheus.yaml: |
+          global:
+            scrape_interval: 15s
+            evaluation_interval: 15s
+          alerting:
+            alertmanagers:
+              - static_configs:
+                  - targets: ["alertmanager:9093"]
+          scrape_configs:
+            - job_name: ontoaxis-core
+              metrics_path: /metrics
+              static_configs:
+                - targets: ["ontoaxis-core:9090"]
+            - job_name: otel-collector
+              metrics_path: /metrics
+              static_configs:
+                - targets: ["otel-collector:8888"]
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 9090
+          targetPort: http
+    probes:
+      mode: http
+      path: /-/healthy
+      readyPath: /-/ready
+      port: http
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  alertmanager:
+    chart: ontoaxis-observability
+    enabled: true
+    namespace: oa-observability
+    image:
+      repository: docker.io/prom/alertmanager
+      digest: sha256:c5a530f07ce2acef2582b08a536b79ca819b4320e8b5e192134ca72965c3b8d7
+    ports:
+      - name: http
+        containerPort: 9093
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yaml
+    configMap:
+      enabled: true
+      name: alertmanager-config
+      mountPath: /etc/alertmanager
+      data:
+        alertmanager.yaml: |
+          route:
+            receiver: default
+            group_by: [alertname, severity]
+            group_wait: 10s
+            group_interval: 1m
+            repeat_interval: 4h
+          receivers:
+            - name: default
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 9093
+          targetPort: http
+    probes:
+      mode: http
+      path: /-/healthy
+      readyPath: /-/ready
+      port: http
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  jaeger:
+    chart: ontoaxis-observability
+    enabled: true
+    namespace: oa-observability
+    image:
+      repository: docker.io/jaegertracing/all-in-one
+      digest: sha256:4de4e8d8935ba6d06c145e122a6a5bed431d18e90aea59f8cb492292db7e5270
+    ports:
+      - name: ui
+        containerPort: 16686
+      - name: otlp-grpc
+        containerPort: 4317
+    env:
+      - name: COLLECTOR_OTLP_ENABLED
+        value: "true"
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: ui
+          port: 16686
+          targetPort: ui
+        - name: otlp-grpc
+          port: 4317
+          targetPort: otlp-grpc
+    probes:
+      mode: tcp
+      port: ui
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  perses:
+    chart: ontoaxis-observability
+    enabled: true
+    namespace: oa-observability
+    image:
+      repository: docker.io/persesdev/perses
+      digest: sha256:25dbe180703aa3e1519a37443248c9911c13b80f1bcf5803a63bf9ff43469479
+    ports:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    probes:
+      mode: http
+      path: /api/health
+      readyPath: /api/health
+      port: http
+    terminationGracePeriodSeconds: 30
+    pdb:
+      enabled: true
+      minAvailable: 1

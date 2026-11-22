@@ -114,18 +114,50 @@ type PipelineVersion struct {
 }
 
 // PipelineRun is one execution attempt (pipeline.runs).
+//
+// ExecutionID, FailureCode, AttemptCount and LastReconciledAt are populated by
+// the runtime execution path (migration 00002). They stay zero for runs created
+// before the Kestra engine integration is enabled.
 type PipelineRun struct {
-	ID          string
-	TenantID    string
-	PipelineID  string
-	Version     int
-	Status      PipelineRunStatus
-	TriggerType TriggerType
-	StartedAt   *time.Time
-	FinishedAt  *time.Time
-	Error       string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID               string
+	TenantID         string
+	PipelineID       string
+	Version          int
+	Status           PipelineRunStatus
+	TriggerType      TriggerType
+	ExecutionID      string
+	FailureCode      string
+	AttemptCount     int
+	LastReconciledAt *time.Time
+	StartedAt        *time.Time
+	FinishedAt       *time.Time
+	Error            string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+// PipelineRunInput is one declared input dataset of a run
+// (pipeline.run_inputs). The pair (PipelineRunID, DatasetID) is unique.
+type PipelineRunInput struct {
+	PipelineRunID string
+	TenantID      string
+	DatasetID     string
+	CreatedAt     time.Time
+}
+
+// PipelineRunOutput is one dataset produced by a succeeded run
+// (pipeline.run_outputs). The relation is fully qualified: Catalog, Schema and
+// Table identify the physical output table. The pair (PipelineRunID,
+// DatasetID) is unique.
+type PipelineRunOutput struct {
+	PipelineRunID string
+	TenantID      string
+	DatasetID     string
+	Model         string
+	Catalog       string
+	Schema        string
+	Table         string
+	CreatedAt     time.Time
 }
 
 // Schedule is one cron schedule attached to a Pipeline
@@ -196,6 +228,35 @@ func DatasetIDsFromDAG(raw json.RawMessage) []string {
 	}
 	for _, input := range payload.Inputs {
 		add(input.DatasetID)
+	}
+	return out
+}
+
+// OutputDatasetIDsFromDAG extracts the declared output dataset IDs from a DAG.
+func OutputDatasetIDsFromDAG(raw json.RawMessage) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var payload struct {
+		Outputs []struct {
+			DatasetID string `json:"dataset_id"`
+		} `json:"outputs"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(payload.Outputs))
+	out := make([]string, 0, len(payload.Outputs))
+	for _, output := range payload.Outputs {
+		value := strings.TrimSpace(output.DatasetID)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
 	}
 	return out
 }

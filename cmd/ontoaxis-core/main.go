@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/klb3713/ontoaxis/internal/app"
 	"github.com/klb3713/ontoaxis/internal/platform/config"
-	"github.com/klb3713/ontoaxis/internal/platform/module"
 	"github.com/klb3713/ontoaxis/internal/platform/observability"
 )
 
@@ -26,8 +27,8 @@ func main() {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	a, err := app.New(ctx, cfg, logger, func(pool *pgxpool.Pool) []module.Module {
-		return app.BuildModules(pool, cfg)
+	a, err := app.New(ctx, cfg, logger, func(assemblyCtx context.Context, pool *pgxpool.Pool, tracer trace.Tracer, assemblyLogger *slog.Logger) (app.RuntimeAssembly, error) {
+		return app.BuildRuntimeAssembly(assemblyCtx, pool, cfg, tracer, assemblyLogger)
 	})
 	if err != nil {
 		logger.Error("startup failed", "error", err)

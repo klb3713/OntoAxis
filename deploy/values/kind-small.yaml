@@ -1,0 +1,43 @@
+# kind-small — kind/k3d with the heavy components trimmed out so the stack fits
+# a modest laptop. Keeps the control plane + object/search path; disables the
+# streaming/analytics/observability extras. Enable a component again with
+# `--set components.<name>.enabled=true` when you need it.
+global:
+  environment: kind-small
+  defaultReplicas: 1
+  defaultResources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  oidc:
+    issuer: http://localhost:18083/realms/ontoaxis
+    audience: ontoaxis-api
+    jwksUrl: ""
+  secretStore:
+    name: ontoaxis-kubernetes-store
+    kind: ClusterSecretStore
+
+components:
+  # Streaming / CDC / analytics / catalog engines trimmed for small clusters.
+  kafka:
+    enabled: false
+  debezium:
+    enabled: false
+  apicurio:
+    enabled: false
+  kestra:
+    enabled: false
+  temporal:
+    enabled: false
+  trino:
+    enabled: false
+  nessie:
+    enabled: false
+  # Observability extras that are not needed for a functional local stack.
+  jaeger:
+    enabled: false
+  perses:
+    enabled: false

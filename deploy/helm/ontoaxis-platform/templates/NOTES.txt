@@ -1,0 +1,19 @@
+ontoaxis-platform has been rendered for environment: {{ .Values.global.environment }}
+
+Namespaces (created only by this chart when createNamespaces=true):
+{{- range .Values.namespaces }}
+  - {{ .name }}
+{{- end }}
+
+Component summary (namespace / replicas / image):
+{{- range $name, $c := .Values.components }}
+{{- if and $c.enabled (eq $c.chart $.Chart.Name) }}
+  - {{ $name }} ({{ $c.namespace | default $.Values.global.namespace }}) replicas={{ $c.replicas | default $.Values.global.defaultReplicas }} image={{ $c.image.repository }}@{{ $c.image.digest }}
+{{- end }}
+{{- end }}
+
+Secrets are injected by External Secrets Operator; this chart only references
+Secret names/keys (postgres-password, keycloak admin/oidc, openfga, s3 access).
+No literal credentials live in values.
+
+Next: apply the oa-data / oa-app workloads only after these namespaces exist.

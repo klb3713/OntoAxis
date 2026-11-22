@@ -1,0 +1,32 @@
+# Common defaults shared by every environment overlay.
+#
+# Usage (one overlay per environment, applied to every chart):
+#   helm template <release> deploy/helm/<chart> \
+#     -f deploy/values/common.yaml -f deploy/values/<env>.yaml
+#
+# Chart-specific component defaults (images, ports, probes, secret refs) live in
+# each chart's own values.yaml. Overlays only carry environment-wide knobs plus
+# targeted component overrides. Component keys that do not belong to the chart
+# being rendered are ignored by templates (each component carries a `chart` tag).
+#
+# NOTE: `global.environment` is intentionally NOT set here; the per-environment
+# overlay must set it, and every chart validates it against
+# kind | kind-small | staging-like | prod-like.
+
+global:
+  imagePullPolicy: IfNotPresent
+  defaultReplicas: 1
+  defaultResources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  oidc:
+    issuer: http://localhost:18083/realms/ontoaxis
+    audience: ontoaxis-api
+    jwksUrl: ""
+  secretStore:
+    name: ontoaxis-kubernetes-store
+    kind: ClusterSecretStore

@@ -9,6 +9,7 @@
 | ontoaxis-core-edge | 8080（容器内） | 仅 edge 网络 |
 | Keycloak | 18083 | OIDC |
 | Trino | 18081 | SQL |
+| Kestra（pipeline-kestra profile） | 18086 | 本地/CI，仅 `pipeline-kestra` profile |
 | PostgreSQL | 15433 | 数据库 |
 
 ## 业务前缀
