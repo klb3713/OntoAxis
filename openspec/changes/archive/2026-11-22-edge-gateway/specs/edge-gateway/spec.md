@@ -71,7 +71,7 @@
 #### Scenario: 客户端伪造身份 header
 
 - **WHEN** 请求同时携带 `Authorization` 与客户端 `X-Tenant-Id`/`X-Ontoaxis-*` header
-- **THEN** 客户端 header 被清理，仅使用 JWT 派生身份
+- **THEN** 客户端 header 不被信任：Traefik 返回 403；Envoy 在 extAuth 前清理该 header，并使用 JWT 派生身份继续
 
 #### Scenario: 租户不匹配
 

@@ -1,6 +1,7 @@
 # edge-gateway 验证证据
 
 日期：2026-11-22
+归档：`openspec/changes/archive/2026-11-22-edge-gateway/`；主 spec：`openspec/specs/edge-gateway/spec.md`
 环境：macOS + Docker Desktop；本地 Compose profile `edge`（Traefik v3.3）；kind v1.37.0 + Envoy Gateway v1.2.6；Go 1.26.3（Docker）
 
 ## 1. 验证结果
@@ -20,6 +21,7 @@
 | Envoy smoke | `scripts/edge-smoke-envoy.sh` | 10/10 PASS | `ontoaxis-edge-smoke-envoy.log` |
 | Actionlint | `rhysd/actionlint` | EXIT=0 | `ontoaxis-edge-actionlint.log` |
 | Shellcheck | `koalaman/shellcheck` | EXIT=0 | `ontoaxis-edge-shellcheck.log` |
+| GitHub Actions | CI run 45026353151 | 6/6 jobs success | https://github.com/klb3713/OntoAxis/actions/runs/45026353151 |
 | Proto breaking | `make proto-breaking` | EXIT=0 | `ontoaxis-edge-proto.log` |
 | 生成检查 | `make generate-check` | EXIT=0 | `ontoaxis-edge-gen.log` |
 | Compose 配置 | `docker compose --profile edge config` | COMPOSE_OK | 本文件 |

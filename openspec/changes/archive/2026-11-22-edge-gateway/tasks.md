@@ -55,5 +55,5 @@
 - [x] `go build ./...`、`go test ./...`、`go test -race ./...` 通过。
 - [x] `make edge-generate-check`、`make proto-breaking`、`make generate-check` 通过。
 - [x] `golangci-lint`、`actionlint`、`shellcheck scripts/edge-smoke.sh` 通过。
-- [ ] 8.4 GitHub Actions 全绿；证据与 traceability 更新（CI edge job 已添加，待推送运行）。
-- [ ] 8.5 负责人评审通过后方可归档 change（待评审）。
+- [x] 8.4 GitHub Actions 全绿；证据与 traceability 更新（CI run 45026353151 六 job 全部成功）。
+- [x] 8.5 负责人评审通过（用户 2026-11-22 确认进入评审与归档），change 可归档。
