@@ -1,6 +1,6 @@
 # Tasks
 
-> 实现、本地验证与负责人评审已完成；7.2 待提交后以 GitHub Actions 远端 run 勾选。
+> 实现、本地验证、负责人评审与 GitHub Actions 远端验证均已完成。
 
 ## 1. Telemetry 基线与配置
 
@@ -42,7 +42,8 @@
 ## 7. 验证 harness
 
 - [x] 7.1 增加 `scripts/observability-smoke.sh`：启动 profile、打一个请求、查询 Prometheus/Jaeger、输出指标与 trace 结果；失败时非零退出。
-- [ ] 7.2 在 CI 增加 `observability` job（或扩展 build-test job）运行规则测试与 smoke，验证 GitHub Actions 通过。
+- [x] 7.2 在 CI 增加 `observability` job（或扩展 build-test job）运行规则测试与 smoke，验证 GitHub Actions 通过。
+  证据：run 45022003253，`observability` job success。
 - [x] 7.3 运行完整回归：`go build ./...`、`go test ./...`、`go test -race ./...`、`golangci-lint`、`make generate-check`、`make proto-breaking`，记录日志到 `docs/stages/evidence/stage-2-runtime-observability/`。
 
 ## 8. 文档与评审

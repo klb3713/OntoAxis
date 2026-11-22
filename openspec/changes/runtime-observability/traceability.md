@@ -43,4 +43,4 @@
 | observability smoke | `observability-smoke.log` | 2026-11-22 |
 | Jaeger trace 查询 | `jaeger-trace.json` | 2026-11-22 |
 | Perses dashboard | `perses-dashboard.png` | 2026-11-22 |
-| CI run | 待提交后补录 | — |
+| CI run | https://github.com/klb3713/OntoAxis/actions/runs/45022003253 | 2026-11-22 |

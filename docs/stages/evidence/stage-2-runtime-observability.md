@@ -18,6 +18,7 @@
 | Jaeger trace | `service=ontoaxis-core&limit=1` | 1 条 trace | `jaeger-trace.json` |
 | 生成/契约 | `make generate-check`、`make proto-breaking` | EXIT=0 | `generate-check.log`、`proto-breaking.log` |
 | CI/YAML/lint | `actionlint`、`shellcheck scripts/*.sh` | EXIT=0 | `actionlint.log`、`shellcheck.log` |
+| GitHub Actions | run 45022003253 | 6/6 jobs success | https://github.com/klb3713/OntoAxis/actions/runs/45022003253 |
 | Web 测试 | `cd web && pnpm test` | 26/26 PASS | `web-test.log` |
 
 ## 2. 本地运行
@@ -35,7 +36,7 @@ scripts/observability-smoke.sh
 - Perses dashboard 通过 API 导入，Prometheus datasource 使用本地 `http://localhost:19091`；
   生产/远程部署需改成环境内 Prometheus 地址。该边界已记录在
   `docs/architecture/observability-baseline.md` 第 12 节。
-- GitHub Actions 的 `observability` job 已写入 `.github/workflows/ci.yml`；本轮未提交/推送，
-  远端 run 证据待提交后补录（tasks 7.2 保持未勾选）。
-- 负责人评审尚未完成（tasks 8.3 保持未勾选）；本证据只代表本地实现验证通过。
+- GitHub Actions 的 `observability` job 已在 run 45022003253 通过；同 run 的
+  `proto`、`frontend`、`docker`、`build-test`、`compose-smoke` 均 success。
+- 负责人已确认评审（tasks 8.3 已勾选）；change 归档仍未执行，需单独授权。
 - 真实生产告警路由（PagerDuty/Slack）不在本 change 范围；本地 Alertmanager 仅作为配置校验。
