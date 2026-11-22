@@ -74,7 +74,7 @@ jobs:
       - name: Build core image
         run: docker build -t ontoaxis-core:ci .
       - name: Build web image
-        run: docker build -f web/Dockerfile -t ontoaxis-web:ci web
+        run: docker build -f web/Dockerfile -t ontoaxis-web:ci .
 
   compose-smoke:
     runs-on: ubuntu-latest
