@@ -2,11 +2,12 @@ SHELL := /bin/bash
 GO ?= go
 BUF ?= buf
 BUF_DOCKER ?= docker run --rm -v "$(CURDIR)":/workspace -w /workspace/proto bufbuild/buf:latest
+GO_DOCKER ?= docker run --rm -v "$(CURDIR)":/src -w /src -e GOFLAGS=-buildvcs=false golang:1.26.3
 
-.PHONY: help build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke
+.PHONY: help build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke
 
 help:
-	@echo "Targets: build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke"
+	@echo "Targets: build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke"
 
 build:
 	$(GO) build ./...
@@ -41,6 +42,12 @@ generate:
 generate-check:
 	$(MAKE) generate
 	@if [ -n "$$(git status --porcelain -- gen openapi web/src/generated | grep -v '^??')" ]; then echo "generated files changed; run make generate and commit outputs"; git status --short -- gen openapi web/src/generated; exit 1; fi
+
+edge-generate:
+	@if command -v $(GO) >/dev/null 2>&1; then $(GO) run ./tools/edgegen -config config/edge/routes.yaml -output deploy/edge/generated; else $(GO_DOCKER) go run ./tools/edgegen -config config/edge/routes.yaml -output deploy/edge/generated; fi
+
+edge-generate-check:
+	@if command -v $(GO) >/dev/null 2>&1; then $(GO) run ./tools/edgegen -config config/edge/routes.yaml -output deploy/edge/generated -check; else $(GO_DOCKER) go run ./tools/edgegen -config config/edge/routes.yaml -output deploy/edge/generated -check; fi
 
 docker-build:
 	docker build -t ontoaxis-core:dev .

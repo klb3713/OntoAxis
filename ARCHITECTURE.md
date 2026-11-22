@@ -1286,7 +1286,7 @@ kafka, debezium, kestra, trino, nessie, seaweedfs, meilisearch
 
 Stage 2 **不需要**先完成 15.2 中的功能实现，但以下设计输入必须在对应 Wave 开始前定稿：
 
-1. **oa-edge 路由契约**：`config/edge/routes.yaml` 的 schema、匹配顺序、公开/受保护路由和生成规则，必须在 `edge-gateway` change 开始前定稿；Envoy Gateway 与 Traefik 只消费同一份生成结果。
+1. **oa-edge 路由契约（已实现并验证，2026-11-22）**：`config/edge/routes.yaml`、`config/edge/routes.schema.json`、`config/edge/README.md` 定义 schema、最长前缀匹配顺序、公开/受保护路由、JWT/header 边界与确定性生成规则；`tools/edgegen` 生成 `deploy/edge/generated/` 的 Envoy/Traefik 产物，`make edge-generate-check` 校验，`scripts/edge-smoke.sh` 覆盖 200/401/403/404/405/429 与 fail-closed 5xx。Envoy Gateway 与 Traefik 只消费同一份生成结果，不再另立路由真源。
 2. **授权边界**：OpenFGA 关系模型、Cedar 策略集、默认拒绝与审计事件字段，必须在 `authorization-openfga-cedar` change 开始前定稿；不得在实现中临时扩大或重叠职责。
 3. **可观测基线**：服务名、指标命名、trace 传播和 SLO 目标，必须在 `runtime-observability` change 开始前定稿，后续 change 直接复用。
 4. **治理前置**：Stage 2 brief 获负责人批准，并创建对应 OpenSpec change；未批准前不实施。

@@ -6,7 +6,7 @@
 core_tag="$(git rev-parse --short HEAD)"
 web_tag="$(git rev-parse --short HEAD)"
 docker build -t "ontoaxis-core:${core_tag}" .
-docker build -f web/Dockerfile -t "ontoaxis-web:${web_tag}" web
+docker build -f web/Dockerfile -t "ontoaxis-web:${web_tag}" .
 ```
 
 镜像构建是确定性的：相同源码、相同基础镜像与相同构建参数重复执行时，`docker build` 返回相同 image id（Stage 1 已验证两次构建 ID 一致）。
@@ -25,6 +25,7 @@ docker compose -f deploy/compose/compose.yaml up -d --build
 | Keycloak | 18083 |
 | Trino | 18081 |
 | PostgreSQL | 15433 |
+| oa-edge（`edge` profile） | 18085 |
 
 健康检查：
 
@@ -41,7 +42,16 @@ curl -fsS http://127.0.0.1:18080/readyz
 4. 校验 `/healthz`、`/readyz` 和关键业务 smoke；迁移只向前执行，若需回滚 schema 必须使用备份恢复，不要手工改迁移历史。
 5. 记录回滚 tag、数据库备份路径、时间和执行人。
 
+## oa-edge profile
+
+```sh
+make edge-generate
+docker compose -f deploy/compose/compose.yaml --profile edge up -d --build
+```
+
+该 profile 启动 `oa-edge`（Traefik）和 `ontoaxis-core-edge`；后者设置 `ONTOAXIS_TRUST_GATEWAY=true`，只接受 edge 注入的内部身份头。direct `ontoaxis-core` 保持 `ONTOAXIS_TRUST_GATEWAY=false`，继续服务 `oa-web`。
+
 ## 注意
 
-- Compose 中 `ONTOAXIS_TRUST_GATEWAY=true` 仅用于本地/受控网络边界；生产由 `oa-edge` 剥离并重写内部身份头后再转发。
-- 不要在宿主机直接暴露 core 的 18080；本地端口映射仅用于验收。
+- `ONTOAXIS_TRUST_GATEWAY=true` 仅用于受控网络边界；生产由 `oa-edge` 剥离并重写内部身份头后再转发。
+- 不要在宿主机直接暴露 direct core 的 18080；本地端口映射仅用于验收。

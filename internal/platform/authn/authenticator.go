@@ -202,3 +202,42 @@ func writeAuthenticatorError(w http.ResponseWriter, r *http.Request, err error) 
 func permissionError(format string, args ...any) error {
 	return fmt.Errorf("%w: %s", ErrPermissionDenied, fmt.Sprintf(format, args...))
 }
+
+// EdgeAuthHandler is the forward-auth endpoint consumed by non-Envoy gateways
+// (Traefik). It authenticates a direct Bearer token and returns the trusted
+// x-ontoaxis-* identity headers in the response. Gateways MUST strip all
+// x-ontoaxis-* request headers before calling this endpoint.
+func (a *EdgeAuthenticator) EdgeAuthHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r = requestWithResolvedID(r)
+		tc, err := a.authenticateDirect(r)
+		if err != nil {
+			writeAuthenticatorError(w, r, err)
+			return
+		}
+		h := w.Header()
+		h.Set(internalTenantHeader, tc.TenantID.String())
+		h.Set(internalUserHeader, tc.UserID.String())
+		if len(tc.OrgIDs) > 0 {
+			h.Set(internalOrgIDsHeader, joinUUIDs(tc.OrgIDs))
+		}
+		if len(tc.WorkspaceIDs) > 0 {
+			h.Set(internalWorkspaceIDsHeader, joinUUIDs(tc.WorkspaceIDs))
+		}
+		if len(tc.Roles) > 0 {
+			h.Set(internalRolesHeader, strings.Join(tc.Roles, ","))
+		}
+		if tc.RequestID != "" {
+			h.Set(internalRequestIDHeader, tc.RequestID)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+}
+
+func joinUUIDs(ids []uuid.UUID) string {
+	parts := make([]string, 0, len(ids))
+	for _, id := range ids {
+		parts = append(parts, id.String())
+	}
+	return strings.Join(parts, ",")
+}

@@ -50,6 +50,8 @@ flowchart TB
 | `production-delivery` | 生产交付 | `deploy/helm/`、`deploy/argocd/`、`deploy/compose/`、`config/` | Helm chart、ArgoCD Application、Secret/PDB/探针、kind/k3d 部署、备份恢复、镜像回滚、生产 IdP 验证 | S2-AC-08、S2-AC-10 |
 | `stage-2-integration` | 集成与证据 | `cmd/`、`internal/app/`、`deploy/`、`docs/stages/evidence/` | 模块装配、跨 change 修复、全栈 E2E、证据、Stage 2 报告 | S2-AC-01、S2-AC-11 |
 
+> 状态（2026-11-22）：`runtime-observability` 已归档（`openspec/changes/archive/2026-11-22-runtime-observability/`，主 spec `openspec/specs/observability/`）；`edge-gateway` 已通过实现评审，`tools/edgegen`、Envoy 清单、Traefik Compose 与 `scripts/edge-smoke.sh` 已落地，证据见 `docs/stages/evidence/stage-2-edge-gateway.md`；其余 change 仍为计划中。
+
 ## 4. 并行波次与合并门
 
 ### Wave 0 — 平台入口与授权（串行）

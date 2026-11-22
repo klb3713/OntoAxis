@@ -22,8 +22,19 @@ Compose 包含：
 | Keycloak | 18083 | realm `ontoaxis` |
 | Trino | 18081 | 单节点查询引擎 |
 | PostgreSQL | 15433 | 平台存储 |
+| oa-edge | 18085（`edge` profile） | Traefik 入口，forwardAuth 到 core |
 
 浏览器打开 <http://127.0.0.1:18082/>，使用 Keycloak 用户 `admin` / `admin123` 登录。
+
+## oa-edge 本地入口（可选）
+
+```sh
+make edge-generate
+docker compose -f deploy/compose/compose.yaml --profile edge up -d --build
+EDGE_TEST_FAIL_CLOSED=1 ./scripts/edge-smoke.sh
+```
+
+`edge` profile 启动 `oa-edge`（Traefik，宿主 18085）与一个 `ONTOAXIS_TRUST_GATEWAY=true` 的 core 副本；direct core 仍用于 `oa-web`，两者共享 PostgreSQL。`scripts/edge-smoke.sh` 覆盖 200/401/403/404/405/429 与鉴权后端不可达的 fail-closed 5xx。Envoy 清单在 `deploy/edge/generated/envoy-httproute.yaml`，kind 安装/校验见 `deploy/edge/kind/`。
 
 ## 验证
 

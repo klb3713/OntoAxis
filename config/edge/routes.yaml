@@ -1,30 +1,51 @@
-# OntoAxis edge route table (oa-edge)
+# OntoAxis edge route table (oa-edge), contract v1.
 #
-# This file is the single source of truth for the public edge path prefixes.
-# It is a declarative skeleton: gateway-specific resources (Envoy Gateway or
-# Traefik) are generated/deployed in a later change that owns deploy/.
+# This file is the single source of truth for the public edge path surface.
+# It is consumed by the edge-gateway change to generate provider-specific
+# resources for Envoy Gateway and Traefik. Do not hand-maintain those generated
+# route lists.
 apiVersion: ontoaxis.edge/v1
 kind: EdgeRouteTable
 metadata:
   name: oa-edge
-  owner: identity-edge
-  stage: stage-1
+  owner: edge-gateway
+  stage: stage-2
+  contractVersion: 1
 spec:
   gateway:
-    provider: envoy-gateway
-    listener: oa-edge
+    providers:
+      - envoy-gateway
+      - traefik
+    listener:
+      name: oa-edge
+      protocol: HTTP
+      port: 8080
+      tls:
+        enabled: false
+    # Public routes are matched before protected routes. They never receive a
+    # JWT or injected identity headers. Keep this list deliberately tiny.
     publicRoutes:
-      - method: GET
+      - name: healthz
+        method: GET
         path: /healthz
-      - method: GET
+        auth: none
+      - name: readyz
+        method: GET
         path: /readyz
-      - method: GET
+        auth: none
+      - name: well-known
+        method: GET
         path: /.well-known/*
-    metrics:
-      path: /metrics
-      internalOnly: true
-    # The gateway MUST delete these client-controlled headers before
-    # forwarding a request to oa-core.
+        auth: none
+    # Internal routes must only be reachable from the cluster/private network;
+    # they are never rendered on the public listener.
+    internalRoutes:
+      - name: metrics
+        method: GET
+        path: /metrics
+        exposure: cluster-only
+    # The gateway MUST delete these client-controlled headers before forwarding
+    # a request to oa-core.
     clientHeadersToStrip:
       - X-Tenant-Id
       - X-User-Id
@@ -39,40 +60,103 @@ spec:
       - x-ontoaxis-workspace-ids
       - x-ontoaxis-roles
       - x-ontoaxis-request-id
+  upstream:
+    service: ontoaxis-core
+    port: 8080
+    scheme: http
+  auth:
+    type: jwt
+    header: Authorization
+    scheme: Bearer
+    issuerEnv: ONTOAXIS_OIDC_ISSUER
+    audienceEnv: ONTOAXIS_OIDC_AUDIENCE
+    jwksURLEnv: ONTOAXIS_OIDC_JWKS_URL
+    clockSkewSeconds: 30
+    requiredClaims:
+      - sub
+      - aud
+      - tenant_id
+  # Per-instance local rate limit. Stage 2 intentionally does not implement
+  # cross-replica exact tenant quotas; the tenant key is best-effort.
+  rateLimit:
+    defaults:
+      requestsPerSecond: 50
+      burst: 100
+    byTenant:
+      requestsPerMinute: 3000
+    exemptPublicRoutes: true
+  # Longest-prefix match wins. Priorities are only a tie-breaker between
+  # identical prefixes; duplicate prefixes are forbidden by the schema/test.
   routes:
     - name: tenancy
       prefix: /api/v1/tenancy
       module: tenancy
       auth: jwt
+      priority: 100
+      methods: [GET, POST, PATCH, PUT, DELETE]
     - name: ontology
       prefix: /api/v1/ontology
       module: ontology
       auth: jwt
+      priority: 100
+      methods: [GET, POST, PUT, DELETE]
     - name: datasets
       prefix: /api/v1/datasets
       module: datasets
       auth: jwt
+      priority: 100
+      methods: [GET, POST, PATCH, DELETE]
     - name: connectors
       prefix: /api/v1/connectors
       module: connectors
       auth: jwt
+      priority: 100
+      methods: [GET, POST, PATCH, DELETE]
     - name: ingestion
       prefix: /api/v1/ingestion
       module: ingestion
       auth: jwt
+      priority: 100
+      methods: [GET, POST]
     - name: pipelines
       prefix: /api/v1/pipelines
       module: pipelines
       auth: jwt
+      priority: 100
+      methods: [GET, POST, PATCH, DELETE]
     - name: objects
       prefix: /api/v1/objects
       module: objects
       auth: jwt
+      priority: 100
+      methods: [GET, POST, PATCH, DELETE]
     - name: query
       prefix: /api/v1/query
       module: query
       auth: jwt
+      priority: 100
+      methods: [GET, POST, DELETE]
     - name: actions
       prefix: /api/v1/actions
       module: actions
       auth: jwt
+      priority: 100
+      methods: [GET, POST, PATCH, DELETE]
+  # Generation is deterministic: public routes in declared order, then
+  # protected routes by descending prefix length, then name. The generated
+  # artifact carries the source digest so drift is detectable.
+  generation:
+    strategy: single-source
+    ordering: [publicRoutes, routes-by-longest-prefix, routes-by-name]
+    digestAnnotation: ontoaxis.dev/route-table-sha256
+    targets:
+      - provider: envoy-gateway
+        apiVersion: gateway.networking.k8s.io/v1
+        kind: HTTPRoute
+        output: deploy/edge/generated/envoy-httproute.yaml
+      - provider: traefik
+        apiVersion: traefik.io/v1alpha1
+        kind: http
+        output: deploy/edge/generated/traefik-dynamic.yaml
+    checks:
+      - make edge-generate-check

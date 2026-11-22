@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ontoaxis.dev/schemas/edge/route-table-v1.json",
+  "title": "OntoAxis EdgeRouteTable",
+  "description": "Normative schema for config/edge/routes.yaml. This table is the single source of truth for oa-edge routing and is consumed by provider-specific generators.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "ontoaxis.edge/v1"
+    },
+    "kind": {
+      "const": "EdgeRouteTable"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "owner",
+        "stage",
+        "contractVersion"
+      ],
+      "properties": {
+        "name": {
+          "const": "oa-edge"
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contractVersion": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gateway",
+        "upstream",
+        "auth",
+        "routes",
+        "generation",
+        "rateLimit"
+      ],
+      "properties": {
+        "gateway": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "providers",
+            "listener",
+            "publicRoutes",
+            "internalRoutes",
+            "clientHeadersToStrip",
+            "internalHeadersToInject"
+          ],
+          "properties": {
+            "providers": {
+              "type": "array",
+              "minItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "envoy-gateway",
+                  "traefik"
+                ]
+              }
+            },
+            "listener": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "protocol",
+                "port",
+                "tls"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "protocol": {
+                  "enum": [
+                    "HTTP",
+                    "HTTPS"
+                  ]
+                },
+                "port": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "tls": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "enabled"
+                  ],
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "secretRef": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            },
+            "publicRoutes": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "method",
+                  "path",
+                  "auth"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*$"
+                  },
+                  "method": {
+                    "enum": [
+                      "GET",
+                      "HEAD",
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "OPTIONS"
+                    ]
+                  },
+                  "path": {
+                    "type": "string",
+                    "pattern": "^/"
+                  },
+                  "auth": {
+                    "const": "none"
+                  }
+                }
+              }
+            },
+            "internalRoutes": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "method",
+                  "path",
+                  "exposure"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*$"
+                  },
+                  "method": {
+                    "enum": [
+                      "GET",
+                      "HEAD",
+                      "POST",
+                      "PUT",
+                      "PATCH",
+                      "DELETE",
+                      "OPTIONS"
+                    ]
+                  },
+                  "path": {
+                    "type": "string",
+                    "pattern": "^/"
+                  },
+                  "exposure": {
+                    "const": "cluster-only"
+                  }
+                }
+              }
+            },
+            "clientHeadersToStrip": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "internalHeadersToInject": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^x-ontoaxis-[a-z0-9-]+$"
+              }
+            }
+          }
+        },
+        "upstream": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "service",
+            "port",
+            "scheme"
+          ],
+          "properties": {
+            "service": {
+              "type": "string",
+              "minLength": 1
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "scheme": {
+              "enum": [
+                "http",
+                "https"
+              ]
+            }
+          }
+        },
+        "auth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "header",
+            "scheme",
+            "issuerEnv",
+            "audienceEnv",
+            "jwksURLEnv",
+            "clockSkewSeconds",
+            "requiredClaims"
+          ],
+          "properties": {
+            "type": {
+              "const": "jwt"
+            },
+            "header": {
+              "const": "Authorization"
+            },
+            "scheme": {
+              "const": "Bearer"
+            },
+            "issuerEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            },
+            "audienceEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            },
+            "jwksURLEnv": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            },
+            "clockSkewSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 300
+            },
+            "requiredClaims": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "routes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "prefix",
+              "module",
+              "auth",
+              "priority",
+              "methods"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "prefix": {
+                "type": "string",
+                "pattern": "^/api/v1/[a-z0-9-]+$"
+              },
+              "module": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "auth": {
+                "const": "jwt"
+              },
+              "priority": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "methods": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "GET",
+                    "HEAD",
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "OPTIONS"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "generation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy",
+            "ordering",
+            "digestAnnotation",
+            "targets",
+            "checks"
+          ],
+          "properties": {
+            "strategy": {
+              "const": "single-source"
+            },
+            "ordering": {
+              "type": "array",
+              "minItems": 3,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "publicRoutes",
+                  "routes-by-longest-prefix",
+                  "routes-by-name"
+                ]
+              }
+            },
+            "digestAnnotation": {
+              "type": "string",
+              "pattern": "^[a-z0-9.-]+/[a-z0-9.-]+$"
+            },
+            "targets": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "provider",
+                  "apiVersion",
+                  "kind",
+                  "output"
+                ],
+                "properties": {
+                  "provider": {
+                    "enum": [
+                      "envoy-gateway",
+                      "traefik"
+                    ]
+                  },
+                  "apiVersion": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kind": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "output": {
+                    "type": "string",
+                    "pattern": "^deploy/edge/generated/[A-Za-z0-9._/-]+\\.yaml$"
+                  }
+                }
+              }
+            },
+            "checks": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "rateLimit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "defaults",
+            "byTenant",
+            "exemptPublicRoutes"
+          ],
+          "properties": {
+            "defaults": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "requestsPerSecond",
+                "burst"
+              ],
+              "properties": {
+                "requestsPerSecond": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                "burst": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                }
+              }
+            },
+            "byTenant": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "requestsPerMinute"
+              ],
+              "properties": {
+                "requestsPerMinute": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                }
+              }
+            },
+            "exemptPublicRoutes": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}

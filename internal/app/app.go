@@ -116,6 +116,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, factory Mo
 		DB:              pool,
 		Modules:         ordered,
 		Authenticate:    authenticate,
+		EdgeAuth:        authenticator.EdgeAuthHandler(),
 		Metrics:         metrics,
 		Tracer:          telemetry.Tracer(),
 		Commit:          cfg.Commit,

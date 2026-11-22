@@ -28,6 +28,8 @@ jobs:
         run: go vet ./...
       - name: Lint
         run: docker run --rm -v "$PWD":/src -w /src golangci/golangci-lint:v2.15.0 golangci-lint run ./...
+      - name: Edge route generation check
+        run: make edge-generate-check
       - name: License
         run: go run github.com/google/go-licenses@v1.6.0 check ./...
 
@@ -118,3 +120,34 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f deploy/compose/compose.yaml down -v
+
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start edge stack
+        run: docker compose -f deploy/compose/compose.yaml --profile edge up -d --build postgres keycloak ontoaxis-core ontoaxis-core-edge oa-edge
+      - name: Wait for edge and Keycloak
+        run: |
+          for _ in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:18085/healthz >/dev/null && \
+               curl -fsS -X POST http://127.0.0.1:18083/realms/ontoaxis/protocol/openid-connect/token \
+                 -H 'Content-Type: application/x-www-form-urlencoded' \
+                 -d 'grant_type=password&client_id=ontoaxis-web&username=admin&password=admin123' >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose -f deploy/compose/compose.yaml --profile edge logs --tail=120
+          exit 1
+      - name: Edge smoke (positive/negative/fail-closed)
+        run: EDGE_TEST_FAIL_CLOSED=1 scripts/edge-smoke.sh
+      - name: Edge manifest structural check
+        run: deploy/edge/kind/verify.sh
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose -f deploy/compose/compose.yaml --profile edge logs --tail=150
+      - name: Tear down
+        if: always()
+        run: docker compose -f deploy/compose/compose.yaml --profile edge down -v

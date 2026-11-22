@@ -38,6 +38,9 @@ type Options struct {
 	// Authenticate wraps all module-owned routes. Health and readiness stay
 	// public; when nil, module routes are left unwrapped (tests only).
 	Authenticate func(http.Handler) http.Handler
+	// EdgeAuth is the forward-auth endpoint used by external gateways. It is
+	// always mounted at /internal/edge-auth and never wrapped by Authenticate.
+	EdgeAuth http.Handler
 	// Metrics is optional; when nil the server creates its own registry.
 	Metrics *observability.Metrics
 	// Tracer starts the inbound HTTP span; nil uses a no-op tracer.
@@ -79,6 +82,10 @@ func New(opts Options) *Server {
 	mux.Use(s.metricsMiddleware)
 	mux.Get("/healthz", s.healthz)
 	mux.Get("/readyz", s.readyz)
+	if opts.EdgeAuth != nil {
+		mux.Handle("/internal/edge-auth", opts.EdgeAuth)
+		mux.Handle("/internal/edge-auth/*", opts.EdgeAuth)
+	}
 	if opts.Authenticate != nil {
 		mux.Group(func(r chi.Router) {
 			r.Use(opts.Authenticate)

@@ -1,0 +1,465 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+    annotations:
+        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+    name: oa-edge
+spec:
+    gatewayClassName: eg
+    listeners:
+        - name: http
+          port: 8080
+          protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    annotations:
+        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+    name: oa-edge-public
+spec:
+    parentRefs:
+        - name: oa-edge
+    rules:
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          matches:
+            - path:
+                type: Exact
+                value: /healthz
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          matches:
+            - path:
+                type: Exact
+                value: /readyz
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          matches:
+            - path:
+                type: PathPrefix
+                value: /.well-known/
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+    annotations:
+        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+    name: oa-edge-protected
+spec:
+    parentRefs:
+        - name: oa-edge
+    rules:
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          filters:
+            - requestHeaderModifier:
+                remove:
+                    - X-Tenant-Id
+                    - X-User-Id
+                    - X-Org-Ids
+                    - X-Workspace-Ids
+                    - X-Roles
+                    - Authorization
+              type: RequestHeaderModifier
+          matches:
+            - method: GET
+              path:
+                type: PathPrefix
+                value: /api/v1/tenancy
+            - method: POST
+              path:
+                type: PathPrefix
+                value: /api/v1/tenancy
+            - method: PATCH
+              path:
+                type: PathPrefix
+                value: /api/v1/tenancy
+            - method: PUT
+              path:
+                type: PathPrefix
+                value: /api/v1/tenancy
+            - method: DELETE
+              path:
+                type: PathPrefix
+                value: /api/v1/tenancy
+        - filters:
+            - extensionRef:
+                group: gateway.envoyproxy.io
+                kind: HTTPRouteFilter
+                name: oa-edge-method-not-allowed
+              type: ExtensionRef
+          matches:
+            - path:
+                type: PathPrefix
+                value: /api/v1/tenancy
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          filters:
+            - requestHeaderModifier:
+                remove:
+                    - X-Tenant-Id
+                    - X-User-Id
+                    - X-Org-Ids
+                    - X-Workspace-Ids
+                    - X-Roles
+                    - Authorization
+              type: RequestHeaderModifier
+          matches:
+            - method: GET
+              path:
+                type: PathPrefix
+                value: /api/v1/ontology
+            - method: POST
+              path:
+                type: PathPrefix
+                value: /api/v1/ontology
+            - method: PUT
+              path:
+                type: PathPrefix
+                value: /api/v1/ontology
+            - method: DELETE
+              path:
+                type: PathPrefix
+                value: /api/v1/ontology
+        - filters:
+            - extensionRef:
+                group: gateway.envoyproxy.io
+                kind: HTTPRouteFilter
+                name: oa-edge-method-not-allowed
+              type: ExtensionRef
+          matches:
+            - path:
+                type: PathPrefix
+                value: /api/v1/ontology
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          filters:
+            - requestHeaderModifier:
+                remove:
+                    - X-Tenant-Id
+                    - X-User-Id
+                    - X-Org-Ids
+                    - X-Workspace-Ids
+                    - X-Roles
+                    - Authorization
+              type: RequestHeaderModifier
+          matches:
+            - method: GET
+              path:
+                type: PathPrefix
+                value: /api/v1/datasets
+            - method: POST
+              path:
+                type: PathPrefix
+                value: /api/v1/datasets
+            - method: PATCH
+              path:
+                type: PathPrefix
+                value: /api/v1/datasets
+            - method: DELETE
+              path:
+                type: PathPrefix
+                value: /api/v1/datasets
+        - filters:
+            - extensionRef:
+                group: gateway.envoyproxy.io
+                kind: HTTPRouteFilter
+                name: oa-edge-method-not-allowed
+              type: ExtensionRef
+          matches:
+            - path:
+                type: PathPrefix
+                value: /api/v1/datasets
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          filters:
+            - requestHeaderModifier:
+                remove:
+                    - X-Tenant-Id
+                    - X-User-Id
+                    - X-Org-Ids
+                    - X-Workspace-Ids
+                    - X-Roles
+                    - Authorization
+              type: RequestHeaderModifier
+          matches:
+            - method: GET
+              path:
+                type: PathPrefix
+                value: /api/v1/connectors
+            - method: POST
+              path:
+                type: PathPrefix
+                value: /api/v1/connectors
+            - method: PATCH
+              path:
+                type: PathPrefix
+                value: /api/v1/connectors
+            - method: DELETE
+              path:
+                type: PathPrefix
+                value: /api/v1/connectors
+        - filters:
+            - extensionRef:
+                group: gateway.envoyproxy.io
+                kind: HTTPRouteFilter
+                name: oa-edge-method-not-allowed
+              type: ExtensionRef
+          matches:
+            - path:
+                type: PathPrefix
+                value: /api/v1/connectors
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          filters:
+            - requestHeaderModifier:
+                remove:
+                    - X-Tenant-Id
+                    - X-User-Id
+                    - X-Org-Ids
+                    - X-Workspace-Ids
+                    - X-Roles
+                    - Authorization
+              type: RequestHeaderModifier
+          matches:
+            - method: GET
+              path:
+                type: PathPrefix
+                value: /api/v1/ingestion
+            - method: POST
+              path:
+                type: PathPrefix
+                value: /api/v1/ingestion
+        - filters:
+            - extensionRef:
+                group: gateway.envoyproxy.io
+                kind: HTTPRouteFilter
+                name: oa-edge-method-not-allowed
+              type: ExtensionRef
+          matches:
+            - path:
+                type: PathPrefix
+                value: /api/v1/ingestion
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          filters:
+            - requestHeaderModifier:
+                remove:
+                    - X-Tenant-Id
+                    - X-User-Id
+                    - X-Org-Ids
+                    - X-Workspace-Ids
+                    - X-Roles
+                    - Authorization
+              type: RequestHeaderModifier
+          matches:
+            - method: GET
+              path:
+                type: PathPrefix
+                value: /api/v1/pipelines
+            - method: POST
+              path:
+                type: PathPrefix
+                value: /api/v1/pipelines
+            - method: PATCH
+              path:
+                type: PathPrefix
+                value: /api/v1/pipelines
+            - method: DELETE
+              path:
+                type: PathPrefix
+                value: /api/v1/pipelines
+        - filters:
+            - extensionRef:
+                group: gateway.envoyproxy.io
+                kind: HTTPRouteFilter
+                name: oa-edge-method-not-allowed
+              type: ExtensionRef
+          matches:
+            - path:
+                type: PathPrefix
+                value: /api/v1/pipelines
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          filters:
+            - requestHeaderModifier:
+                remove:
+                    - X-Tenant-Id
+                    - X-User-Id
+                    - X-Org-Ids
+                    - X-Workspace-Ids
+                    - X-Roles
+                    - Authorization
+              type: RequestHeaderModifier
+          matches:
+            - method: GET
+              path:
+                type: PathPrefix
+                value: /api/v1/objects
+            - method: POST
+              path:
+                type: PathPrefix
+                value: /api/v1/objects
+            - method: PATCH
+              path:
+                type: PathPrefix
+                value: /api/v1/objects
+            - method: DELETE
+              path:
+                type: PathPrefix
+                value: /api/v1/objects
+        - filters:
+            - extensionRef:
+                group: gateway.envoyproxy.io
+                kind: HTTPRouteFilter
+                name: oa-edge-method-not-allowed
+              type: ExtensionRef
+          matches:
+            - path:
+                type: PathPrefix
+                value: /api/v1/objects
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          filters:
+            - requestHeaderModifier:
+                remove:
+                    - X-Tenant-Id
+                    - X-User-Id
+                    - X-Org-Ids
+                    - X-Workspace-Ids
+                    - X-Roles
+                    - Authorization
+              type: RequestHeaderModifier
+          matches:
+            - method: GET
+              path:
+                type: PathPrefix
+                value: /api/v1/query
+            - method: POST
+              path:
+                type: PathPrefix
+                value: /api/v1/query
+            - method: DELETE
+              path:
+                type: PathPrefix
+                value: /api/v1/query
+        - filters:
+            - extensionRef:
+                group: gateway.envoyproxy.io
+                kind: HTTPRouteFilter
+                name: oa-edge-method-not-allowed
+              type: ExtensionRef
+          matches:
+            - path:
+                type: PathPrefix
+                value: /api/v1/query
+        - backendRefs:
+            - name: ontoaxis-core
+              port: 8080
+          filters:
+            - requestHeaderModifier:
+                remove:
+                    - X-Tenant-Id
+                    - X-User-Id
+                    - X-Org-Ids
+                    - X-Workspace-Ids
+                    - X-Roles
+                    - Authorization
+              type: RequestHeaderModifier
+          matches:
+            - method: GET
+              path:
+                type: PathPrefix
+                value: /api/v1/actions
+            - method: POST
+              path:
+                type: PathPrefix
+                value: /api/v1/actions
+            - method: PATCH
+              path:
+                type: PathPrefix
+                value: /api/v1/actions
+            - method: DELETE
+              path:
+                type: PathPrefix
+                value: /api/v1/actions
+        - filters:
+            - extensionRef:
+                group: gateway.envoyproxy.io
+                kind: HTTPRouteFilter
+                name: oa-edge-method-not-allowed
+              type: ExtensionRef
+          matches:
+            - path:
+                type: PathPrefix
+                value: /api/v1/actions
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+    annotations:
+        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+    name: oa-edge-forward-auth
+spec:
+    extAuth:
+        http:
+            backendRefs:
+                - name: ontoaxis-core
+                  port: 8080
+            headersToBackend:
+                - x-ontoaxis-tenant-id
+                - x-ontoaxis-user-id
+                - x-ontoaxis-org-ids
+                - x-ontoaxis-workspace-ids
+                - x-ontoaxis-roles
+                - x-ontoaxis-request-id
+            path: /internal/edge-auth
+    targetRefs:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+          name: oa-edge-protected
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+    annotations:
+        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+    name: oa-edge-rate-limit
+spec:
+    rateLimit:
+        local:
+            rules:
+                - limit:
+                    requests: 50
+                    unit: Second
+    targetRefs:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+          name: oa-edge-protected
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: HTTPRouteFilter
+metadata:
+    annotations:
+        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+    name: oa-edge-method-not-allowed
+spec:
+    directResponse:
+        body:
+            inline: '{"error":{"code":"method_not_allowed","message":"method not allowed"}}'
+            type: Inline
+        contentType: application/json
+        statusCode: 405

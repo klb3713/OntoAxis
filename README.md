@@ -34,6 +34,7 @@ curl -fsS http://127.0.0.1:18080/healthz
 curl -fsS http://127.0.0.1:18080/readyz
 curl -fsS http://127.0.0.1:19090/metrics | head
 open http://127.0.0.1:18082/   # oa-web；Keycloak 登录 admin / admin123
+# 可选 oa-edge（Traefik）入口：make edge-generate && docker compose -f deploy/compose/compose.yaml --profile edge up -d --build
 docker compose -f deploy/compose/compose.yaml down -v
 ```
 
