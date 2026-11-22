@@ -1,10 +1,12 @@
-# OntoAxis 架构设计与实施方案
+# OntoAxis 架构设计
 
 > **项目名：OntoAxis（中文名：元轴）**
 >
-> **状态**：正式版 v1.0，2026-11-22<br>
+> **状态**：正式版 v1.3，2026-11-22<br>
 > **设计基线**：采用五平面模型、清晰的业务领域边界与 `/api/v1` 路径；以 `proto/` 作为唯一契约源，只保留核心契约，从零定义 v1 接口；第三方组件默认使用绿名单许可证（MIT/Apache-2.0/BSD/ISC/PostgreSQL 等，详见 11.3）。<br>
-> **结论**：采用 **1 个 Go 模块化核心 + 1 个 Envoy Gateway/Traefik 边缘 + 1 个 React 前端 + 成熟 OSS 数据面**。
+> **结论**：采用 **1 个 Go 模块化核心 + 1 个 Envoy Gateway/Traefik 边缘 + 1 个 React 前端 + 成熟 OSS 数据面**。<br>
+> **变更记录**：v1.3（2026-11-22）：将第 15 章从“设计缺口表”更新为“Stage 1 已关闭项 + 后续设计待办”。v1.2：移除第 13 章“从零构建顺序”与第 14 章“预期收益”；原 15–17 章顺延为 13–15。v1.1：移除原“实施计划”。<br>
+> **定位**：本文件只保留目标设计、边界与关键决策；实施与验收记录见 `docs/stages/`。
 
 ---
 
@@ -802,6 +804,12 @@ HTTP header、Connect metadata 与 OpenAPI 参数使用同一套名称；Connect
 - Python 转换 = Kestra `Python` task / 容器任务；
 - 不再自研 DAG 引擎、cron 调度器和执行器。
 
+### 7.3 Action：Temporal
+
+- **Pipeline 与 Action 使用两个引擎，但职责不重叠**：Pipeline 的构建、调度、SQL/Python 转换由 Kestra 承担；Action 的执行业务动作由 Temporal 承担。
+- Temporal 负责长事务、重试、定时器、人工审批等待和 saga 补偿；Kestra 不用于 Action 执行。
+- `actions` 模块只持久化 Action Type 与 Execution 元数据，通过 Temporal Adapter 提交 workflow；Stage 1 使用 no-op/契约 adapter，真实 Temporal 实例在 Stage 2 接入。
+
 ---
 
 ## 8. SQL / BI
@@ -1157,42 +1165,25 @@ kafka, debezium, kestra, trino, nessie, seaweedfs, meilisearch
 
 ---
 
-## 13. 从零构建顺序
+## 13. 关键选型决策
 
-1. **基础骨架**：`oa-core` 模块化单体、`platform` 包、proto Connect 生成、PostgreSQL schema、`oa-edge`（Envoy Gateway/Traefik）配置。
-2. **身份与授权**：Keycloak + OpenFGA + Cedar；删掉所有自研登录/密码/JWT 代码。
-3. **数据平台**：PostgreSQL + Iceberg/Nessie + SeaweedFS + Trino；实现 Dataset API。
-4. **接入层**：Kafka Connect/Debezium + Meltano；实现 Connector/Ingestion API。
-5. **语义层**：Ontology 元数据 + Object JSONB + Meilisearch；实现对象浏览与查询。
-6. **Pipeline/Action**：Kestra + dbt + Temporal + CEL；实现 Pipeline 作者接口与 Action 执行。
-7. **前端**：Refine + 生成客户端 + 核心页面。
-8. **运维**：Helm/ArgoCD、Prometheus/OTel/Jaeger/Perses、备份与恢复。
+以下问题已在设计中关闭；实现以本表和对应章节为准。
 
----
+| # | 决策 | 落点 |
+| --- | --- | --- |
+| 1 | Keycloak 采用**单 realm + Organizations**；`realm-per-tenant` 仅作为强监管/物理隔离客户的部署变体，不作为默认。 | §6.1 |
+| 2 | Pipeline 用 **Kestra**，Action 用 **Temporal**；两者职责不同，不是二选一，也不是重复引擎。 | §4、§7.2、§7.3 |
+| 3 | 前端采用 **Refine resource-first + 核心页面自定义 React** 的混合模式，不复制旧页面结构。 | §10、§16.6 |
+| 4 | Valkey 在**首版/本地 Compose 使用单节点**；生产 K8s 只有在要求跨节点高可用时才升级 Sentinel/Cluster，当前基线不引入。 | §5.1、§11 |
+| 5 | **SeaweedFS 为默认对象存储**；RustFS 不默认启用，仅在通过 Iceberg/Nessie/Trino S3 兼容性与多节点故障恢复 PoC 后作为候选。 | §5.4、§11 |
 
-## 14. 预期收益
-
-- 自研 Go 代码控制在 **2–4 万行**；
-- 运行中的自研后端服务只有 **1 个**（`oa-core`），另有两个自研部署单元 `oa-edge` 与 `oa-web`；
-- 身份、授权、网关、CDC、数据湖、SQL、对象存储全部由成熟组件承担；
-- `proto/` 与五平面设计保持稳定；
-- 代码更少、边界更清晰、测试更容易、部署更可控。
+无未决架构级选型；剩余为第 15 章列出的实现级任务。
 
 ---
 
-## 15. 待讨论问题
+## 14. 工程实施约束
 
-1. Keycloak 采用单 realm + Organizations，还是一租户一个 realm？
-2. Action 执行选 Temporal 还是 Kestra，是否需要两个引擎？
-3. 前端以 Refine 为主体，还是保留更多自定义 React 页面？
-4. Valkey 是否需要 Sentinel/Cluster 部署，还是单节点即可满足缓存/限流/幂等需求？
-5. RustFS 是否进入 PoC，与 SeaweedFS 做 Iceberg/Trino S3 兼容性与可靠性对比？
-
----
-
-## 16. 工程实施约束
-
-### 16.1 模块生命周期
+### 14.1 模块生命周期
 
 每个模块统一采用以下启动顺序：
 
@@ -1204,7 +1195,7 @@ kafka, debezium, kestra, trino, nessie, seaweedfs, meilisearch
 
 模块目录统一为 `api/ domain/ repo/ service/`；`repo` 只访问本模块 schema，跨模块查询通过 `service` 接口。
 
-### 16.2 网关路由与租户上下文
+### 14.2 网关路由与租户上下文
 
 - `oa-edge` 使用 **YAML 路由表**声明路径前缀并生成配置，禁止把路由散落在代码中。
 - 路由表必须绑定模块所有权，例如 `/api/v1/datasets/* → datasets`、`/api/v1/ontology/* → ontology`、`/api/v1/objects/* → objects`、`/api/v1/query/* → query`。
@@ -1213,7 +1204,7 @@ kafka, debezium, kestra, trino, nessie, seaweedfs, meilisearch
 - `ontoaxis-core` 在 `ONTOAXIS_TRUST_GATEWAY=true` 时读取内部 header，在 `false` 时直接校验 JWT；无论哪种模式，空 `tenant_id`/非法 UUID/同时出现外部与内部 header 都拒绝。
 - 所有租户级业务表带 `tenant_id`（`core.tenants` 为全局租户表，除外），所有查询必须带租户条件，RLS 作为第二道防线；完整请求链和 claims 契约见 6.3。
 
-### 16.3 数据模型不变量
+### 14.3 数据模型不变量
 
 - ID 统一使用 UUIDv7（时间有序）；Dataset RID 使用 `ri.ontoaxis.main.dataset.<uuid-v7>`。
 - DatasetTransaction 状态：`open | committed | aborted`；事务类型：`snapshot | append | update | delete`；分支、视图、提交都围绕 Nessie 映射。
@@ -1222,14 +1213,14 @@ kafka, debezium, kestra, trino, nessie, seaweedfs, meilisearch
 - Object 实例使用 `object_data.objects`（JSONB）+ `object_data.object_links`；`object_id` 使用 UUIDv7，链接必须带 `source_id` / `target_id` / `link_type_id`。
 - 迁移只通过 `goose` 追加，不修改已发布迁移；所有 schema 变更必须可回滚或有回填计划。
 
-### 16.4 事件、Outbox 与幂等
+### 14.4 事件、Outbox 与幂等
 
 - 业务表与 `jobs.outbox` 同事务写入；Debezium 读取 outbox → Kafka，由 Apicurio 校验 schema。
 - Topic 命名使用 `<domain>.<entity>.v1`；消费端使用 `event_id` 幂等键，所有消费者必须实现幂等。
 - 明确投递语义：至少一次；失败重试要有上限和退避；死信队列保留不少于 14 天。
 - 跨模块副作用（索引刷新、通知、审计）统一走 outbox，不在业务请求线程里同步调用多个外部系统。
 
-### 16.5 错误、健康与 API 契约
+### 14.5 错误、健康与 API 契约
 
 - 外部 API 统一返回 `{"error":{"code","message","metadata","retryable","request_id"}}`；错误码稳定，不把底层 SQL/内部错误直接暴露给前端。
 - 所有进程提供：
@@ -1239,97 +1230,65 @@ kafka, debezium, kestra, trino, nessie, seaweedfs, meilisearch
 - 修改类接口支持 `Idempotency-Key`；列表接口统一使用 `limit` + `cursor` 或 `page` + `per_page`，同一接口只选一种。
 - 契约生成采用 proto → Connect → OpenAPI/TS client，不维护手写 `lib/api` 客户端。
 
-### 16.6 前端与页面边界
+### 14.6 前端与页面边界
 
 - 前端采用 React 19、TanStack Query、懒加载路由、`/api/v1` 同源请求和统一 auth token refresh。
 - 页面按模块拆为 feature 目录；Refine 只生成标准 CRUD 页面，核心工作台仍用自定义 React 页面。
 - 前端 API 类型必须从 OpenAPI/Connect 生成；`items`/`data` 等响应差异应在客户端边界统一适配，不能散落在页面。
 - 至少支持 en/zh 两种 locale，默认按用户 profile locale 解析，登录后应用。
 
-### 16.7 部署与 CI 门槛
+### 14.7 部署与 CI 门槛
 
 - 本地 Compose 保留 healthcheck、初始化 job、profile、端口覆盖等机制；对象存储、数据库、消息系统必须有一键初始化脚本。
 - Helm chart 按生命周期分组（platform / data / ontology / web），ArgoCD App-of-Apps；部署拓扑变化必须同步 chart 与 README。
 - CI 必须包含：`go build ./...`、`go test -race ./...`、integration testcontainers、`buf lint` + `buf breaking`、`sqlc diff`、前端 `check/build/test`、Playwright E2E、`helm lint`、`terraform fmt`、`go-licenses` 扫描。
 - 部署 runbook 必须覆盖镜像 tag 不存在、init 脚本无执行权限、迁移缺列、网关 DNS 缓存、端口冲突等常见故障。
 
-### 16.8 非目标
+### 14.8 非目标
 
 - 不采用多进程微服务、每服务独立数据库、自研 JWT/密码/会话、自研网关、自研 Spark/DAG 引擎、Cassandra 对象存储、MinIO。
 - 不维护手写 `lib/api/*.ts` 和按服务复制的 handler/路由模板；这些由 proto 生成和模块框架替代。
 
 ---
 
-## 17. 实施计划：一次性构建 `ontoaxis-core`
+## 15. 详细设计待办与后续工作
 
-### 17.1 实施原则
+> 2026-11-22 Stage 1 已退出。本节不再维护 v1.0 的初始缺口表，只记录 Stage 1 已关闭项与后续 Stage 仍需补齐的设计。
 
-OntoAxis 按最终形态一次性构建，不保留过渡服务、不双写、不做灰度迁移；以产品行为、API 契约和 E2E 用例作为实现规范。
+### 15.1 Stage 1 已关闭
 
-### 17.2 最简单快速的实施顺序
+| 领域 | 当前状态 | 落点 |
+| --- | --- | --- |
+| 模块契约 | 9 个模块均有 `module.go`、公开接口、依赖顺序和 `api/service/repo/migrations` 边界 | §3.4；`internal/modules/` |
+| 数据架构 | 11 个 PostgreSQL schema、RLS、索引、软删除与迁移已落地；模块迁移使用嵌入式 SQL，平台 `jobs` schema 用 goose | §5.1；`internal/platform/db` |
+| 身份与权限（基础） | Keycloak OIDC、RS256/JWKS 校验、JWT claims、租户 header、fail-closed 中间件与 401/403 已落地 | §6；`internal/platform/authn` |
+| API 与 Proto | 21 个 proto、`buf lint`/`breaking`/`generate-check`、Connect 客户端与 OpenAPI 已生成 | §9；`proto/ontoaxis/v1` |
+| 数据接入/Pipeline（最小） | connectors/ingestion 状态机、datasets、pipelines 与 Kestra adapter 已落地；真实 Kafka Connect/Meltano/dbt 尚未接入 | §7.1–7.2 |
+| 前端核心 | Refine + React、OIDC 登录、Projects/Ontology/Object Explorer/Datasets/Queries 页面及 Playwright E2E | §10；`web/` |
+| 可观测与质量门 | `/healthz`、`/readyz`、`/metrics`；Go build/vet/test/race、lint、proto、license、actionlint、shellcheck、CI 五 job 全绿 | §12；`.github/workflows/ci.yml` |
 
-1. **冻结最小行为集（1–2 天）**
-   - 覆盖登录、组织/项目、Datasets、Ontology、Object Explorer、Queries 六条核心路径；
-   - 用 React 页面和 Playwright E2E 作为验收用例；
-   - 导出 OpenAPI/JSON fixture，作为实现验收基线。
-2. **单二进制骨架（2–3 天）**
-   - 新建 `ontoaxis-core`，一个 Go module，`internal/platform` + `internal/modules/*`；
-   - 先打通 `config → pgxpool → goose → chi/Connect → /healthz /metrics`；
-   - PostgreSQL 单实例、每模块独立 schema，不建多个数据库。
-3. **核心四模块（1–2 周）**
-   - 顺序：`tenancy`（组织/工作区/项目/项目资源）→ `ontology`（object types/properties/links）→ `objects`（JSONB + links）→ `datasets`（元数据 + S3 文件）；
-   - 前端接口返回结构保持稳定，页面按 feature 目录重写。
-4. **查询与周边模块（1 周）**
-   - `query` 模块先实现已保存查询和对象查询；复杂 SQL 再接 Trino；
-   - `connectors`/`ingestion`/`pipelines`/`actions` 可以先实现最小可用 CRUD + 状态机，Kestra/Temporal/Kafka Connect 随后接入。
-5. **一次性切换（1 天）**
-   - 新核心通过全部 parity E2E 后，构建并发布 `ontoaxis-core` 镜像；`oa-edge` 与 `oa-web` 配置指向新核心；
-   - 删除过渡脚手架和未采用的代码；
-   - 保留一个可回滚的 git tag 与镜像版本。
+### 15.2 后续 Stage 待补
 
-### 17.3 成熟组件直接采用
+> 这些不是 Stage 2 的实施前置条件，而是跨 Stage 的目标缺口清单。Stage 2 已把其中大部分收敛为具体 change；Meltano 后移到 Stage 3。
 
-- Keycloak、Envoy Gateway/Traefik、Trino、Kestra、Temporal、Nessie、SeaweedFS、Meilisearch 等成熟组件直接采用，不重写；
-- 不重新实现密码/JWT/会话、CDC、SQL 引擎、对象存储；
-- 不保留全部既有 proto；按第 9 章选择性设计核心契约；
-- 不按多服务拆分数据库；按第 5 章设计模块 schema。
+| 优先级 | 领域 | 待补设计 | 完成标志 | Stage 2 落点 |
+| --- | --- | --- | --- | --- |
+| P1 | 身份与授权扩展 | OpenFGA authorization model、Cedar policy 样例、服务间认证与策略评估 | 策略单测 + 跨租户/跨服务负向测试通过 | `authorization-openfga-cedar` |
+| P1 | 数据接入与 Pipeline | 真实 Kafka Connect/Debezium、Kestra Flow 生成、dbt 项目结构；Meltano 后移 Stage 3 | 一个真实 connector → dataset → pipeline 闭环 | `connector-runtime`、`pipeline-kestra-dbt` |
+| P1 | Action 编排 | Temporal workflow/activity 边界、重试/补偿/幂等、人工审批 | 一条 Action 执行含失败重试和补偿的 E2E | `action-temporal` |
+| P2 | 生产部署 | `oa-edge` 独立 manifest、Helm/ArgoCD、探针/资源/PDB、Secret 注入、备份恢复 | 本地 Compose 与 K8s dry-run 均通过 | `edge-gateway`、`production-delivery` |
+| P2 | 生产 IdP | 预发 issuer/JWKS/claims 映射、密钥轮换 | 预发环境 OIDC 登录与 token 校验通过 | `production-delivery` |
+| P2 | 可观测与测试 | SLO/SLI、指标命名、trace 传播、告警规则、负载测试 | 仪表盘/告警规则/测试矩阵落地 | `runtime-observability` |
+| P2 | 安全与数据治理 | 威胁模型、审计事件目录、数据分级/marking、保留与删除策略 | 安全评审通过，审计事件可查询 | `authorization-openfga-cedar`、`production-delivery`（部分延后） |
+| P2 | 数据迁移一致性 | 评估模块迁移是否统一到 goose，或保留嵌入式 SQL + 版本校验 | 空库一次迁移成功，升级路径可回滚 | `production-delivery` 内决策 |
 
-### 17.4 验收标准
+### 15.3 Stage 2 实施前的设计前置
 
-- 前端核心页面全部通过同一套 Playwright E2E（登录、Projects、Ontology Manager、Object Explorer、Datasets、Queries）；
-- 所有 `/api/v1` 契约、错误码、分页形态稳定；
-- 租户隔离、权限拒绝、审计事件、幂等消费有 negative tests；
-- 所有核心页面与 API 使用同一批 golden fixture 验证；
-- `go build ./...`、`go test ./...`、前端 `check/build/test`、`buf lint` 全部通过；
-- 单二进制冷启动 < 5 秒，P95 延迟达到预设 SLO。
+Stage 2 **不需要**先完成 15.2 中的功能实现，但以下设计输入必须在对应 Wave 开始前定稿：
 
-### 17.5 用 Codex/Claude Code 的并行执行方式
+1. **oa-edge 路由契约**：`config/edge/routes.yaml` 的 schema、匹配顺序、公开/受保护路由和生成规则，必须在 `edge-gateway` change 开始前定稿；Envoy Gateway 与 Traefik 只消费同一份生成结果。
+2. **授权边界**：OpenFGA 关系模型、Cedar 策略集、默认拒绝与审计事件字段，必须在 `authorization-openfga-cedar` change 开始前定稿；不得在实现中临时扩大或重叠职责。
+3. **可观测基线**：服务名、指标命名、trace 传播和 SLO 目标，必须在 `runtime-observability` change 开始前定稿，后续 change 直接复用。
+4. **治理前置**：Stage 2 brief 获负责人批准，并创建对应 OpenSpec change；未批准前不实施。
 
-- 先写 `SPEC.md`：模块边界、数据库 schema、API 端点、错误码、E2E 验收作为不可变输入；
-- 按模块拆分任务并行实现：`tenancy`、`ontology`、`objects`、`datasets`、`query` 各自独立目录/分支，避免多个 agent 同时改同一文件；
-- 每个模块交付必须带：迁移 SQL、handler、repo、单元测试、至少一个 E2E fixture；
-- 最后统一由一个集成 agent 合并路由、生成 wire types、跑全量测试、修跨模块问题；
-- 所有实现写入全新目录，不在既有代码上就地重构。
-
-### 17.6 周期估算
-
-核心 MVP 约 **2–4 周**（2–3 名工程师 + Codex/Claude Code 并行）；完整 9 模块、Trino/Kestra/Temporal、生产加固约 **2–3 个月**。如果第一天就要求全部 9 模块 + 全部 OSS 集成，周期和返工都会显著增加。
-
----
-
-## 18. 详细设计待办清单
-
-| 优先级 | 对应章节 | 还需补充的设计 | 完成标志 |
-|---|---|---|---|
-| P0 | 第 3 章 模块设计 | 每个模块的公开 `Service` 接口、DTO/领域模型、数据所有权、模块注册顺序 | 每个模块有 `module.go`、接口清单和依赖方向图 |
-| P0 | 第 5 章 数据架构 | 所有核心表的 DDL、主键/索引、`tenant_id` + RLS 策略、迁移顺序、数据生命周期 | `goose` 迁移可在空库一次跑通，RLS negative test 通过 |
-| P0 | 第 6 章 身份与权限 | Keycloak realm/client/claims 映射；OpenFGA authorization model；Cedar policy 样例；网关与服务间认证 | 登录、拒绝、跨租户隔离端到端测试通过 |
-| P0 | 第 9 章 API 与 Proto | 统一错误码、分页、幂等键、异步任务状态、请求 ID、限流与版本升级规则 | `buf lint`/`buf breaking` 通过，生成客户端可编译 |
-| P1 | 第 7 章 数据接入与 Pipeline | Connector 配置 schema、Kafka Connect/Meltano topic/状态映射、Kestra Flow 生成规则、dbt 项目结构 | 一个真实 connector → dataset → pipeline 闭环 |
-| P1 | 第 7 / 17 章 Action 与编排 | Action 类型 DSL、Temporal workflow/activity 边界、重试/补偿/幂等、人工审批 | 一条 Action 执行含失败重试和补偿的 E2E |
-| P1 | 第 10 章 前端 | 路由树、feature 目录、Refine resource、登录/刷新、i18n、生成客户端接入、错误边界 | 核心五页 Playwright E2E 全绿 |
-| P2 | 第 11 章 部署拓扑 | Helm chart 结构、values 分层、ArgoCD Application、探针/资源/PDB、Secret 注入、备份恢复 | 本地 Compose 与 K8s dry-run 均通过 |
-| P2 | 第 12 章 可观测与测试 | SLO/SLI、指标命名、trace 传播、日志字段、测试金字塔、fixture/golden 数据策略 | 监控面板、告警规则和 CI 测试矩阵落地 |
-| P2 | 新增 安全与数据治理 | 威胁模型、密钥轮换、审计事件目录、数据分级/marking、保留与删除策略 | 安全评审通过，审计事件可查询 |
-
-已补齐：3.2/3.3 目录组织与约束、3.4 模块契约、5.1 表设计与 RLS 约定、5.5 Proto↔PostgreSQL 映射、6.1–6.3 Keycloak/OpenFGA/Cedar/请求链鉴权、第 9 章 API/Proto 定稿；仍需在实现阶段产出 goose 迁移、RLS negative test、生成的客户端和对应 E2E。
+完成状态以 `openspec/specs/`、`docs/stages/stage-1-exit-report.md` 和后续 Stage brief 为准。

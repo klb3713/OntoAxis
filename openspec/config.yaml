@@ -4,7 +4,7 @@ context: |
   Project: OntoAxis（元轴）——企业级 Ontology 数据平台。
   Language: 简体中文（zh）；All artifacts must be written in 简体中文.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
-  Current stage: Stage 1 已退出（exited，2026-11-22；见 docs/stages/stage-1-ontoaxis-core-brief.md 与 docs/stages/stage-1-exit-report.md）。Stage 2 尚未定义或批准。
+  Current stage: Stage 1 已退出（exited，2026-11-22；见 docs/stages/stage-1-ontoaxis-core-brief.md 与 docs/stages/stage-1-exit-report.md）。Stage 2 为 draft（docs/stages/stage-2-ontoaxis-runtime-brief.md），等待负责人评审，未批准。
   Target design: ARCHITECTURE.md（仓库根目录）。Stage scope/AC: docs/stages/stage-1-ontoaxis-core-brief.md。Workflow: docs/workflow/RUNBOOK.md。
   Behavior contracts belong in openspec/specs; changes belong in openspec/changes.
   Do not treat scaffold code, synthetic fixtures or local tests as production evidence.
