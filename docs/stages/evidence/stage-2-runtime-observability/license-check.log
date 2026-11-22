@@ -1,0 +1,41 @@
+== make license-check ==
+go: downloading github.com/google/go-licenses v1.6.0
+go: downloading github.com/spf13/cobra v1.6.0
+go: downloading github.com/otiai10/copy v1.6.0
+go: downloading golang.org/x/tools v0.5.0
+go: downloading gopkg.in/src-d/go-git.v4 v4.13.1
+go: downloading github.com/google/licenseclassifier v0.0.0-20210722185704-3043a050f148
+go: downloading k8s.io/klog/v2 v2.80.1
+go: downloading golang.org/x/text v0.6.0
+go: downloading go.opencensus.io v0.23.0
+go: downloading golang.org/x/net v0.5.0
+go: downloading golang.org/x/mod v0.7.0
+go: downloading github.com/go-logr/logr v1.2.0
+go: downloading github.com/spf13/pflag v1.0.5
+go: downloading github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
+go: downloading gopkg.in/src-d/go-billy.v4 v4.3.2
+go: downloading golang.org/x/crypto v0.1.0
+go: downloading github.com/emirpasic/gods v1.12.0
+go: downloading github.com/sergi/go-diff v1.2.0
+go: downloading github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
+go: downloading github.com/src-d/gcfg v1.4.0
+go: downloading github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd
+go: downloading github.com/mitchellh/go-homedir v1.1.0
+go: downloading github.com/xanzy/ssh-agent v0.2.1
+go: downloading golang.org/x/sys v0.4.0
+go: downloading gopkg.in/warnings.v0 v0.1.2
+W1122 12:14:35.824432    4068 library.go:101] "github.com/cespare/xxhash/v2" contains non-Go code that can't be inspected for further dependencies:
+/go/pkg/mod/github.com/cespare/xxhash/v2@v2.3.0/xxhash_amd64.s
+W1122 12:14:36.041657    4068 library.go:101] "golang.org/x/sys/unix" contains non-Go code that can't be inspected for further dependencies:
+/go/pkg/mod/golang.org/x/sys@v0.48.0/unix/asm_linux_amd64.s
+W1122 12:14:39.185318    4068 library.go:101] "github.com/klauspost/compress/zstd" contains non-Go code that can't be inspected for further dependencies:
+/go/pkg/mod/github.com/klauspost/compress@v1.17.9/zstd/fse_decoder_amd64.s
+/go/pkg/mod/github.com/klauspost/compress@v1.17.9/zstd/matchlen_amd64.s
+/go/pkg/mod/github.com/klauspost/compress@v1.17.9/zstd/seqdec_amd64.s
+W1122 12:14:39.265434    4068 library.go:101] "github.com/klauspost/compress/huff0" contains non-Go code that can't be inspected for further dependencies:
+/go/pkg/mod/github.com/klauspost/compress@v1.17.9/huff0/decompress_amd64.s
+W1122 12:14:39.325061    4068 library.go:101] "github.com/klauspost/compress/internal/cpuinfo" contains non-Go code that can't be inspected for further dependencies:
+/go/pkg/mod/github.com/klauspost/compress@v1.17.9/internal/cpuinfo/cpuinfo_amd64.s
+W1122 12:14:39.349971    4068 library.go:101] "github.com/klauspost/compress/zstd/internal/xxhash" contains non-Go code that can't be inspected for further dependencies:
+/go/pkg/mod/github.com/klauspost/compress@v1.17.9/zstd/internal/xxhash/xxhash_amd64.s
+LICENSE_EXIT=0

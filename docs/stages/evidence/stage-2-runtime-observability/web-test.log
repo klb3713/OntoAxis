@@ -1,0 +1,30 @@
+== web pnpm test ==
+
+> ontoaxis-web@0.1.0 test /Users/klb3713/work/OntoAxis/web
+> vitest run
+
+
+ RUN  v3.2.7 /Users/klb3713/work/OntoAxis/web
+
+(node:67732) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:67733) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:67734) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:67735) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:67731) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/config/runtime.test.ts (4 tests) 4ms
+ ✓ src/api/errors.test.ts (4 tests) 5ms
+ ✓ src/api/normalize.test.ts (6 tests) 8ms
+ ✓ src/api/mock-data-provider.test.ts (7 tests) 13ms
+ ✓ src/auth/oidc.test.ts (5 tests) 24ms
+
+ Test Files  5 passed (5)
+      Tests  26 passed (26)
+   Start at  20:13:56
+   Duration  1.41s (transform 225ms, setup 743ms, collect 235ms, tests 55ms, environment 2.64s, prepare 818ms)
+
+WEB_TEST_EXIT=0

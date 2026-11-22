@@ -68,3 +68,43 @@ func TestValidateRejectsUnknownMethod(t *testing.T) {
 		t.Fatal("expected unknown method validation error")
 	}
 }
+
+func TestEnvoyProtectedHTTPRouteStaysWithinGatewayAPILimit(t *testing.T) {
+	table, raw := loadTestTable(t)
+	digest := sha256.Sum256(raw)
+	out, err := renderEnvoy(table, hex.EncodeToString(digest[:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dec := yaml.NewDecoder(bytes.NewReader(out))
+	found := false
+	for {
+		var doc map[string]any
+		if err := dec.Decode(&doc); err != nil {
+			break
+		}
+		if doc["kind"] != "HTTPRoute" || doc["metadata"].(map[string]any)["name"] != "oa-edge-protected" {
+			continue
+		}
+		rules := doc["spec"].(map[string]any)["rules"].([]any)
+		if len(rules) > 16 {
+			t.Fatalf("protected HTTPRoute has %d rules, Gateway API max is 16", len(rules))
+		}
+		found = true
+	}
+	if !found {
+		t.Fatal("protected HTTPRoute not found")
+	}
+}
+
+func TestEnvoyRateLimitUsesLocalType(t *testing.T) {
+	table, raw := loadTestTable(t)
+	digest := sha256.Sum256(raw)
+	out, err := renderEnvoy(table, hex.EncodeToString(digest[:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "type: Local") {
+		t.Fatalf("local rate limit type missing:\n%s", out)
+	}
+}

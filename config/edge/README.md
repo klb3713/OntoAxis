@@ -24,7 +24,7 @@
 3. **公开路由**：按 `publicRoutes` 的方法 + 精确 path/前缀匹配（`/.well-known/*` 为前缀）。命中后不校验 JWT，也不注入任何 `x-ontoaxis-*` 身份 header。
 4. **内部路由**：匹配 `internalRoutes`；仅当请求来自集群/私网监听器时允许，否则返回 `404`（不暴露内部路由存在性）。
 5. **受保护路由**：按 `routes[].prefix` **最长前缀优先**匹配；长度相同时按 `priority` 降序、再按 `name` 升序；同一前缀重复视为配置错误，启动/生成时拒绝。
-   - 超过 `rateLimit.defaults` 返回 `429` + `Retry-After`；`publicRoutes` 按 `rateLimit.exemptPublicRoutes` 豁免。
+   - 超过 `rateLimit.defaults` 返回 `429`；Traefik 附带 `Retry-After`，Envoy 本地限流只返回 `429`（provider 差异）；`publicRoutes` 按 `rateLimit.exemptPublicRoutes` 豁免。
    - `rateLimit.byTenant` 是单实例 best-effort 租户配额，不作为跨副本精确限额。
 6. **JWT 校验**：受保护路由先校验签名、`iss`/`aud`/`exp`/`kid` 与 30 秒时钟偏移；失败返回 `401` 并带 `WWW-Authenticate: Bearer`。缺少必要 claim 视作无效 token。
 7. **方法匹配**：请求方法不在该路由的 `methods` 中返回 `405`，不得转发。
@@ -76,7 +76,8 @@ go test ./internal/platform/authn/... -run 'TestEdgeRouteTable' -v
 
 - **Envoy Gateway**：使用 `SecurityPolicy.extAuth.http` 调用 core 的 `/internal/edge-auth`，由 core 统一做 JWT 校验并返回 `x-ontoaxis-*`；不启用原生 JWT claimToHeaders，避免数组 claim 映射限制。
 - **Traefik**：使用 `forwardAuth` 指向同一 core 端点，`authResponseHeaders` 注入身份头；不依赖第三方 JWT 插件。
-- 两种 provider 都必须剥离客户端身份头、保证鉴权端点不可达时 fail-closed（503），并用同一份 `routes.yaml` 生成。
+- 两种 provider 都必须剥离客户端身份头、保证鉴权端点不可达时 fail-closed（非 2xx；Traefik 当前 500，Envoy extAuth 当前 403），并用同一份 `routes.yaml` 生成。
+- 伪造内部 header：Traefik forwardAuth 返回 403；Envoy 在 extAuth 前剥离身份头，请求按 JWT 派生身份继续，不会获得伪造身份。
 
 ## 后续
 

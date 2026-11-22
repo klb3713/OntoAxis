@@ -1,0 +1,3 @@
+== make generate-check ==
+/Library/Developer/CommandLineTools/usr/bin/make generate
+GENERATE_CHECK_EXIT=0

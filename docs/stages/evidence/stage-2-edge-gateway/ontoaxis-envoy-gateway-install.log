@@ -1,0 +1,39 @@
+customresourcedefinition.apiextensions.k8s.io/backendlbpolicies.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/backendtlspolicies.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/gatewayclasses.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/gateways.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/grpcroutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/httproutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/referencegrants.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/tcproutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/tlsroutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/udproutes.gateway.networking.k8s.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/backends.gateway.envoyproxy.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/backendtrafficpolicies.gateway.envoyproxy.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/clienttrafficpolicies.gateway.envoyproxy.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/envoyextensionpolicies.gateway.envoyproxy.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/envoypatchpolicies.gateway.envoyproxy.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/envoyproxies.gateway.envoyproxy.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/httproutefilters.gateway.envoyproxy.io serverside-applied
+customresourcedefinition.apiextensions.k8s.io/securitypolicies.gateway.envoyproxy.io serverside-applied
+namespace/envoy-gateway-system serverside-applied
+serviceaccount/envoy-gateway serverside-applied
+configmap/envoy-gateway-config serverside-applied
+clusterrole.rbac.authorization.k8s.io/eg-gateway-helm-envoy-gateway-role serverside-applied
+clusterrolebinding.rbac.authorization.k8s.io/eg-gateway-helm-envoy-gateway-rolebinding serverside-applied
+role.rbac.authorization.k8s.io/eg-gateway-helm-infra-manager serverside-applied
+role.rbac.authorization.k8s.io/eg-gateway-helm-leader-election-role serverside-applied
+rolebinding.rbac.authorization.k8s.io/eg-gateway-helm-infra-manager serverside-applied
+rolebinding.rbac.authorization.k8s.io/eg-gateway-helm-leader-election-rolebinding serverside-applied
+service/envoy-gateway serverside-applied
+deployment.apps/envoy-gateway serverside-applied
+serviceaccount/eg-gateway-helm-certgen serverside-applied
+role.rbac.authorization.k8s.io/eg-gateway-helm-certgen serverside-applied
+rolebinding.rbac.authorization.k8s.io/eg-gateway-helm-certgen serverside-applied
+job.batch/eg-gateway-helm-certgen serverside-applied
+deployment.apps/envoy-gateway condition met
+envoyproxy.gateway.envoyproxy.io/kind-proxy created
+gatewayclass.gateway.networking.k8s.io/eg created
+gatewayclass.gateway.networking.k8s.io/eg condition met
+NAME   CONTROLLER                                      ACCEPTED   AGE
+eg     gateway.envoyproxy.io/gatewayclass-controller   True       0s

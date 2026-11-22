@@ -61,7 +61,7 @@
 
 ### Requirement: 受保护路由的身份边界
 
-`oa-edge` SHALL 在转发受保护路由前执行 `identity-edge` 契约：验证 Bearer JWT 的签名、`iss`、`aud`、`exp`，将 claims 映射为 `TenantContext`，清理客户端身份 header 并注入内部 `x-ontoaxis-*` header；缺失或无效凭据 SHALL 返回 401，租户不匹配、伪造内部 header 或越权请求 SHALL 返回 403。`oa-edge` MUST NOT 将未验证的身份字段转发给 core。
+`oa-edge` SHALL 在转发受保护路由前执行 `identity-edge` 契约：验证 Bearer JWT 的签名、`iss`、`aud`、`exp`，将 claims 映射为 `TenantContext`，清理客户端身份 header 并注入内部 `x-ontoaxis-*` header；缺失或无效凭据 SHALL 返回 401，租户不匹配或越权请求 SHALL 返回 403。伪造内部 header 的请求 MUST NOT 获得该 header 对应的身份：provider MAY 以 403 拒绝，MAY 在鉴权前剥离该 header 并以 JWT 派生身份继续。`oa-edge` MUST NOT 将未验证的身份字段转发给 core。
 
 #### Scenario: 无令牌访问受保护路由
 
@@ -86,16 +86,16 @@
 #### Scenario: 鉴权后端不可用时 fail-closed
 
 - **WHEN** 受保护请求到达 edge，但 edge 使用的内部鉴权端点不可达或返回 5xx
-- **THEN** 返回 5xx（fail-closed），不将业务请求转发到 core
+- **THEN** 返回非 2xx（Traefik 当前为 500，Envoy extAuth 失败为 403），不将业务请求转发到 core
 
 ### Requirement: 入口限流
 
-`oa-edge` SHALL 对受保护路由执行可配置的入口限流，按客户端与租户维度限制请求速率；超限请求 SHALL 返回 429 并携带 `Retry-After`；公开健康与 well-known 路由 MUST NOT 被限流；限流不得静默放行超限请求。
+`oa-edge` SHALL 对受保护路由执行可配置的入口限流，按客户端与租户维度限制请求速率；超限请求 SHALL 返回 429；provider 支持时 SHALL 携带 `Retry-After`（Traefik 当前携带），Envoy 本地限流至少以 429 表示拒绝；公开健康与 well-known 路由 MUST NOT 被限流；限流不得静默放行超限请求。
 
 #### Scenario: 超过客户端限额
 
 - **WHEN** 同一客户端在窗口内超过配置的请求速率
-- **THEN** 返回 429，响应包含 `Retry-After`，超限请求不转发到 core
+- **THEN** 返回 429；Traefik 响应包含 `Retry-After`，Envoy 本地限流返回 429；超限请求不转发到 core
 
 #### Scenario: 健康路由不受限流
 

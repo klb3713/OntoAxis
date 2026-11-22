@@ -1,0 +1,11 @@
+PASS public /healthz (HTTP 200)
+PASS public /readyz (HTTP 200)
+PASS internal /metrics hidden (HTTP 404)
+PASS unknown route 404 (HTTP 404)
+PASS missing JWT 401 (HTTP 401)
+PASS bogus JWT 401 (HTTP 401)
+PASS valid JWT 200 (HTTP 200)
+PASS forged identity header is not honored (HTTP 200)
+PASS protected unsupported method 405 (HTTP 405)
+PASS rate limit returns 429 (129 of 200)
+envoy edge smoke: 10 passed, 0 failed

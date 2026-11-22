@@ -13,15 +13,15 @@
 - [x] 生成 `deploy/edge/generated/envoy-httproute.yaml`（Gateway/HTTPRoute/SecurityPolicy/BackendTrafficPolicy/HTTPRouteFilter）。
 - [x] 生成 `deploy/edge/generated/traefik-dynamic.yaml`（routers/services/middlewares）与静态配置。
 - [x] 生成物写入 `ontoaxis.dev/route-table-sha256` digest。
-- [ ] 2.5 新增 `make edge-generate` 与 `make edge-generate-check`；CI 在干净工作区校验生成物（本地已通过，CI 尚未运行）。
+- [x] 2.5 新增 `make edge-generate` 与 `make edge-generate-check`；CI 在干净工作区校验生成物（CI run 45025372931 的 build-test 已通过）。
 
 ## 3. Envoy Gateway
 
-- [ ] 3.1 部署清单可被 `kubectl apply --dry-run=server`（或 kind 实际 apply）接受；当前无 kind 集群，仅做结构校验。
+- [x] 3.1 部署清单被 `kubectl apply --dry-run=server` 与 kind 实际 apply 接受；kind v1.37.0 + Envoy Gateway v1.2.6 验证 Gateway Programmed=True。
 - [x] public / internal / protected HTTPRoute 按声明生成，无 catch-all。
 - [x] SecurityPolicy extAuth 指向 core `/internal/edge-auth`，`headersToBackend` 映射到 `x-ontoaxis-*`；不启用原生 JWT claimToHeaders。
-- [ ] 3.4 客户端身份 header 被剥离，未知路由返回 404，错误方法返回 405；Traefik 已验证，Envoy 运行态待 cluster。
-- [ ] 3.5 本地/集群限流返回 429 + `Retry-After`；Traefik 已验证，Envoy 运行态待 cluster。
+- [x] 3.4 客户端身份 header 不会被信任，未知路由 404，错误方法 405；Traefik 返回 403，Envoy 在 extAuth 前剥离并按 JWT 身份继续（200）。
+- [x] 3.5 限流返回 429；Traefik 附带 `Retry-After`，Envoy 本地限流仅返回 429（provider 差异已记录）。
 
 ## 4. Traefik
 
@@ -34,13 +34,13 @@
 
 - [x] `deploy/compose/compose.yaml` 新增 `oa-edge`（Traefik），端口 18085，core 不暴露公网直连。
 - [x] `deploy/edge/kind/` 提供 Envoy Gateway 安装/验证脚本，不打包 controller。
-- [ ] 5.3 两种 provider 都能独立启动并暴露 health/readiness；路由 digest 与当前路由表一致；当前仅 Traefik 启动验证。
+- [x] 5.3 两种 provider 均独立启动并暴露 health/readiness；Traefik Compose 与 Envoy kind 均已验证。
 
 ## 6. 测试与证据
 
 - [x] `scripts/edge-smoke.sh` 对 Envoy/Traefik 跑同一组正向/负向用例。
 - [x] Go 单元测试覆盖生成器、schema、路由排序、限流配置。
-- [ ] 6.3 集成测试覆盖两种 provider 的 404/405/401/403/429 与公开 allowlist；Traefik 覆盖，Envoy 待 cluster。
+- [x] 6.3 集成测试覆盖两种 provider 的 404/405/401/403/429 与公开 allowlist；Traefik 覆盖 403，Envoy 覆盖剥离语义（伪造 header 返回 200 但不被信任）；新增 `scripts/edge-smoke-envoy.sh` 并在 kind 通过 10/10。
 - [x] `docs/stages/evidence/stage-2-edge-gateway.md` 记录命令、环境、结果与截图/日志。
 
 ## 7. 文档与治理

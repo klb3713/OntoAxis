@@ -1,0 +1,83 @@
+?   	github.com/klb3713/ontoaxis/cmd/ontoaxis-core	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/actions	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/actions/actionsconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/audit	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/audit/auditconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/authorization	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/authorization/authorizationconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/common	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/common/commonconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/connectors	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/connectors/connectorsconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/datasets	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/datasets/datasetsconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/identity	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/identity/identityconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/ingestion	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/ingestion/ingestionconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/objects	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/objects/objectsconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/ontology	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/ontology/ontologyconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/pipelines	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/pipelines/pipelinesconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/query	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/query/queryconnect	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/tenancy	[no test files]
+?   	github.com/klb3713/ontoaxis/gen/ontoaxis/v1/tenancy/tenancyconnect	[no test files]
+ok  	github.com/klb3713/ontoaxis/internal/app	0.008s
+ok  	github.com/klb3713/ontoaxis/internal/modules/actions	0.006s
+ok  	github.com/klb3713/ontoaxis/internal/modules/actions/api	0.006s
+?   	github.com/klb3713/ontoaxis/internal/modules/actions/domain	[no test files]
+?   	github.com/klb3713/ontoaxis/internal/modules/actions/repo	[no test files]
+ok  	github.com/klb3713/ontoaxis/internal/modules/actions/service	0.003s
+ok  	github.com/klb3713/ontoaxis/internal/modules/connectors	0.013s
+ok  	github.com/klb3713/ontoaxis/internal/modules/connectors/api	0.020s
+ok  	github.com/klb3713/ontoaxis/internal/modules/connectors/domain	0.004s
+ok  	github.com/klb3713/ontoaxis/internal/modules/connectors/migrations	0.010s
+?   	github.com/klb3713/ontoaxis/internal/modules/connectors/repo	[no test files]
+ok  	github.com/klb3713/ontoaxis/internal/modules/connectors/service	0.010s
+ok  	github.com/klb3713/ontoaxis/internal/modules/datasets	0.017s
+ok  	github.com/klb3713/ontoaxis/internal/modules/datasets/api	0.012s
+ok  	github.com/klb3713/ontoaxis/internal/modules/datasets/domain	0.006s
+ok  	github.com/klb3713/ontoaxis/internal/modules/datasets/migrations	0.005s
+ok  	github.com/klb3713/ontoaxis/internal/modules/datasets/repo	0.009s
+ok  	github.com/klb3713/ontoaxis/internal/modules/datasets/service	0.007s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ingestion	0.005s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ingestion/api	0.009s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ingestion/domain	0.003s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ingestion/migrations	0.007s
+?   	github.com/klb3713/ontoaxis/internal/modules/ingestion/repo	[no test files]
+ok  	github.com/klb3713/ontoaxis/internal/modules/ingestion/service	0.015s
+ok  	github.com/klb3713/ontoaxis/internal/modules/objects	0.010s
+ok  	github.com/klb3713/ontoaxis/internal/modules/objects/api	0.011s
+?   	github.com/klb3713/ontoaxis/internal/modules/objects/domain	[no test files]
+?   	github.com/klb3713/ontoaxis/internal/modules/objects/repo	[no test files]
+ok  	github.com/klb3713/ontoaxis/internal/modules/objects/service	0.006s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ontology	0.014s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ontology/api	0.022s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ontology/domain	0.012s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ontology/migrations	0.007s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ontology/repo	0.010s
+ok  	github.com/klb3713/ontoaxis/internal/modules/ontology/service	0.010s
+ok  	github.com/klb3713/ontoaxis/internal/modules/pipelines	0.018s
+ok  	github.com/klb3713/ontoaxis/internal/modules/pipelines/api	0.050s
+ok  	github.com/klb3713/ontoaxis/internal/modules/pipelines/domain	0.029s
+ok  	github.com/klb3713/ontoaxis/internal/modules/pipelines/kestra	0.015s
+ok  	github.com/klb3713/ontoaxis/internal/modules/pipelines/migrations	0.014s
+ok  	github.com/klb3713/ontoaxis/internal/modules/pipelines/repo	0.013s
+ok  	github.com/klb3713/ontoaxis/internal/modules/pipelines/service	0.013s
+ok  	github.com/klb3713/ontoaxis/internal/modules/query	0.014s
+ok  	github.com/klb3713/ontoaxis/internal/modules/query/api	0.022s
+?   	github.com/klb3713/ontoaxis/internal/modules/query/domain	[no test files]
+?   	github.com/klb3713/ontoaxis/internal/modules/query/repo	[no test files]
+ok  	github.com/klb3713/ontoaxis/internal/modules/query/service	0.013s
+ok  	github.com/klb3713/ontoaxis/internal/modules/query/trino	0.023s
+ok  	github.com/klb3713/ontoaxis/internal/modules/tenancy	0.019s
+ok  	github.com/klb3713/ontoaxis/internal/platform/authn	1.027s
+ok  	github.com/klb3713/ontoaxis/internal/platform/config	0.007s
+ok  	github.com/klb3713/ontoaxis/internal/platform/db	0.017s
+ok  	github.com/klb3713/ontoaxis/internal/platform/httperr	0.012s
+ok  	github.com/klb3713/ontoaxis/internal/platform/httpserver	0.015s
+ok  	github.com/klb3713/ontoaxis/internal/platform/module	0.008s
+ok  	github.com/klb3713/ontoaxis/internal/platform/observability	0.011s

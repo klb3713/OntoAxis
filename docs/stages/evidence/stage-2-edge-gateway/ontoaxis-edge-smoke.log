@@ -1,0 +1,12 @@
+PASS public /healthz (HTTP 200)
+PASS public /readyz (HTTP 200)
+PASS internal /metrics hidden (HTTP 404)
+PASS unknown route 404 (HTTP 404)
+PASS missing JWT 401 (HTTP 401)
+PASS bogus JWT 401 (HTTP 401)
+PASS valid JWT 200 (HTTP 200)
+PASS forged identity header 403 (HTTP 403)
+PASS public unsupported method 405 (HTTP 405)
+PASS protected unsupported method 405 (HTTP 405)
+PASS rate limit returns 429 (88 of 200)
+edge smoke: 11 passed, 0 failed

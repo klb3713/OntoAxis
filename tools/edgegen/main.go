@@ -230,7 +230,8 @@ func renderEnvoy(table routeTable, digest string) ([]byte, error) {
 		},
 	}
 
-	protectedRules := make([]any, 0, len(table.Spec.Routes)*2)
+	protectedRules := make([]any, 0, len(table.Spec.Routes)+1)
+	fallbackMatches := make([]any, 0, len(table.Spec.Routes))
 	for _, r := range table.Spec.Routes {
 		matches := make([]any, 0, len(r.Methods))
 		for _, method := range r.Methods {
@@ -252,20 +253,21 @@ func renderEnvoy(table routeTable, digest string) ([]byte, error) {
 				"port": table.Spec.Upstream.Port,
 			}},
 		})
-		protectedRules = append(protectedRules, map[string]any{
-			"matches": []any{map[string]any{
-				"path": map[string]any{"type": "PathPrefix", "value": r.Prefix},
-			}},
-			"filters": []any{map[string]any{
-				"type": "ExtensionRef",
-				"extensionRef": map[string]any{
-					"group": "gateway.envoyproxy.io",
-					"kind":  "HTTPRouteFilter",
-					"name":  "oa-edge-method-not-allowed",
-				},
-			}},
+		fallbackMatches = append(fallbackMatches, map[string]any{
+			"path": map[string]any{"type": "PathPrefix", "value": r.Prefix},
 		})
 	}
+	protectedRules = append(protectedRules, map[string]any{
+		"matches": fallbackMatches,
+		"filters": []any{map[string]any{
+			"type": "ExtensionRef",
+			"extensionRef": map[string]any{
+				"group": "gateway.envoyproxy.io",
+				"kind":  "HTTPRouteFilter",
+				"name":  "oa-edge-method-not-allowed",
+			},
+		}},
+	})
 	protectedRoute := map[string]any{
 		"apiVersion": "gateway.networking.k8s.io/v1",
 		"kind":       "HTTPRoute",
@@ -319,6 +321,7 @@ func renderEnvoy(table routeTable, digest string) ([]byte, error) {
 				"name":  "oa-edge-protected",
 			}},
 			"rateLimit": map[string]any{
+				"type": "Local",
 				"local": map[string]any{
 					"rules": []any{map[string]any{
 						"limit": map[string]any{
@@ -459,8 +462,11 @@ func traefikPathRule(path string) string {
 	return "Path(`" + path + "`)"
 }
 
-func upstreamHeadersToRemove(table routeTable) []string {
-	return append(append([]string{}, table.Spec.Gateway.ClientHeadersToStrip...), "Authorization")
+func upstreamHeadersToRemove(_ routeTable) []string {
+	// Envoy extAuth must see client identity headers so it can reject spoofing
+	// with 403. Authorization is removed after extAuth so the trusted core does
+	// not reject the request for carrying an end-user token.
+	return []string{"Authorization"}
 }
 
 func upstreamHeaderMap(table routeTable) map[string]any {

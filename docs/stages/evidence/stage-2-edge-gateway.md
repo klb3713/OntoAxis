@@ -1,7 +1,7 @@
 # edge-gateway 验证证据
 
 日期：2026-11-22
-环境：macOS + Docker Desktop，本地 Compose profile `edge`（Traefik v3.3），Go 1.26.3（Docker）
+环境：macOS + Docker Desktop；本地 Compose profile `edge`（Traefik v3.3）；kind v1.37.0 + Envoy Gateway v1.2.6；Go 1.26.3（Docker）
 
 ## 1. 验证结果
 
@@ -15,14 +15,16 @@
 | Lint | `golangci-lint run ./...` | 0 issues | `ontoaxis-edge-lint.log` |
 | Edge smoke | `scripts/edge-smoke.sh` | 11/11 PASS | `ontoaxis-edge-smoke.log` |
 | Edge smoke + fail-closed | `EDGE_TEST_FAIL_CLOSED=1 scripts/edge-smoke.sh` | 12/12 PASS | `ontoaxis-edge-smoke-failclosed.log` |
-| Envoy 清单结构 | `deploy/edge/kind/verify.sh` | 6 个资源结构正确；无集群，服务端 dry-run 未执行 | 本文件 |
+| Envoy kind 安装 | `deploy/edge/kind/install-envoy-gateway.sh` | GatewayClass Accepted=True，Gateway Programmed=True | `ontoaxis-envoy-gateway-install.log` |
+| Envoy 清单应用 | `deploy/edge/kind/verify.sh` | `kubectl apply --dry-run=server` + 实际 apply 通过 | `ontoaxis-envoy-kind-verify.log` |
+| Envoy smoke | `scripts/edge-smoke-envoy.sh` | 10/10 PASS | `ontoaxis-edge-smoke-envoy.log` |
 | Actionlint | `rhysd/actionlint` | EXIT=0 | `ontoaxis-edge-actionlint.log` |
 | Shellcheck | `koalaman/shellcheck` | EXIT=0 | `ontoaxis-edge-shellcheck.log` |
 | Proto breaking | `make proto-breaking` | EXIT=0 | `ontoaxis-edge-proto.log` |
 | 生成检查 | `make generate-check` | EXIT=0 | `ontoaxis-edge-gen.log` |
 | Compose 配置 | `docker compose --profile edge config` | COMPOSE_OK | 本文件 |
 
-生成物 `route-table-sha256`：`df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9`。
+生成物 `route-table-sha256`：`df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9`（以当前 `config/edge/routes.yaml` 为准，见生成物 annotation）。
 
 ## 2. Traefik smoke 覆盖
 
@@ -37,9 +39,17 @@
 - 200 并发请求 → 出现 429（rate limit 生效），`Retry-After: 1`
 - 停止 `ontoaxis-core-edge` 后请求 → 500 fail-closed（不转发业务请求）；恢复后再次 200
 
-## 3. 证据边界
+## 3. Envoy kind 运行验证
 
-- Envoy Gateway 只在本地生成/结构校验；没有 kind/k3d 集群，`kubectl apply --dry-run=server` 与真实 Envoy 路由未执行。`deploy/edge/kind/install-envoy-gateway.sh` 与 `verify.sh` 提供集群内校验入口。
-- Traefik 的 fail-closed 状态是 500（provider 行为）；spec 已改为 5xx，不再绑定精确 503。
+- 集群：kind v0.33.0 / Kubernetes v1.37.0；Envoy Gateway v1.2.6，GatewayClass `eg`，EnvoyProxy `kind-proxy`（Service type NodePort）。
+- 安装时发现默认 `kubectl apply` 对超大 CRD 会触发 `metadata.annotations: Too long`；已改用 `kubectl apply --server-side --force-conflicts`，并补充 GatewayClass + EnvoyProxy 资源。
+- 应用时发现 Gateway API `HTTPRoute` 最大 16 条 rules；生成器原先 9 条 method rule + 9 条 fallback = 18，导致 server-side dry-run 失败。已合并 fallback matches 为单条 rule（10 条），并补 `BackendTrafficPolicy.rateLimit.type: Local`。
+- runtime：`/healthz` 200、`/readyz` 200、`/metrics` 404、未知路由 404、无/坏 JWT 401、有效 JWT 200、错误方法 405、限流 429、auth 后端不可达返回 403 fail-closed。
+- 伪造身份头：Envoy 在 extAuth 前剥离客户端身份头，携带 forged header 的请求按 JWT 身份继续（200）；直接调用 `/internal/edge-auth` 携带同一 header 返回 403，证明伪造身份未被信任。该 provider 差异已写入 spec/README。
+
+## 4. 证据边界
+
+- Traefik 的 fail-closed 状态是 500，Envoy extAuth 失败为 403（provider 行为）；spec 只要求非 2xx fail-closed。
+- 本地 direct core 仍发布 18080 供 `oa-web` 使用；`edge` profile 的 core 副本 `ontoaxis-core-edge` 不发布宿主端口，只接入 edge 网络。
 - 本地 direct core 仍发布 18080 供 `oa-web` 使用；`edge` profile 的 core 副本 `ontoaxis-core-edge` 不发布宿主端口，只接入 edge 网络。
 - 跨副本精确租户限流不在本 change 范围；当前是单实例本地限流。

@@ -1,0 +1,14 @@
+structural validation: Gateway, HTTPRoute, HTTPRoute, SecurityPolicy, BackendTrafficPolicy, HTTPRouteFilter
+gateway.gateway.networking.k8s.io/oa-edge configured (server dry run)
+httproute.gateway.networking.k8s.io/oa-edge-public configured (server dry run)
+httproute.gateway.networking.k8s.io/oa-edge-protected configured (server dry run)
+securitypolicy.gateway.envoyproxy.io/oa-edge-forward-auth configured (server dry run)
+backendtrafficpolicy.gateway.envoyproxy.io/oa-edge-rate-limit unchanged (server dry run)
+httproutefilter.gateway.envoyproxy.io/oa-edge-method-not-allowed unchanged (server dry run)
+gateway.gateway.networking.k8s.io/oa-edge configured
+httproute.gateway.networking.k8s.io/oa-edge-public configured
+httproute.gateway.networking.k8s.io/oa-edge-protected configured
+securitypolicy.gateway.envoyproxy.io/oa-edge-forward-auth configured
+backendtrafficpolicy.gateway.envoyproxy.io/oa-edge-rate-limit unchanged
+httproutefilter.gateway.envoyproxy.io/oa-edge-method-not-allowed unchanged
+gateway.gateway.networking.k8s.io/oa-edge condition met

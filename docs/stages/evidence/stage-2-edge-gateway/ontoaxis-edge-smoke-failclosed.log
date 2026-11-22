@@ -1,0 +1,23 @@
+PASS public /healthz (HTTP 200)
+PASS public /readyz (HTTP 200)
+PASS internal /metrics hidden (HTTP 404)
+PASS unknown route 404 (HTTP 404)
+PASS missing JWT 401 (HTTP 401)
+PASS bogus JWT 401 (HTTP 401)
+PASS valid JWT 200 (HTTP 200)
+PASS forged identity header 403 (HTTP 403)
+PASS public unsupported method 405 (HTTP 405)
+PASS protected unsupported method 405 (HTTP 405)
+PASS rate limit returns 429 (180 of 200)
+ Container ontoaxis-local-ontoaxis-core-edge-1  Stopping
+ Container ontoaxis-local-ontoaxis-core-edge-1  Stopped
+PASS auth backend down fail-closed 5xx (HTTP 500)
+ Container ontoaxis-local-postgres-1  Waiting
+ Container ontoaxis-local-postgres-1  Healthy
+ Container ontoaxis-local-ontoaxis-core-1  Waiting
+ Container ontoaxis-local-postgres-1  Waiting
+ Container ontoaxis-local-postgres-1  Healthy
+ Container ontoaxis-local-ontoaxis-core-1  Healthy
+ Container ontoaxis-local-ontoaxis-core-edge-1  Starting
+ Container ontoaxis-local-ontoaxis-core-edge-1  Started
+edge smoke: 12 passed, 0 failed

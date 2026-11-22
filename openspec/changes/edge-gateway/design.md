@@ -30,7 +30,7 @@
 
 ### D2: 匹配顺序固定为可解释的优先级，而非 provider 默认顺序
 
-顺序：协议/监听器 → strip client headers → 公开路由精确/前缀 allowlist → 内部路由 → 受保护最长前缀 → JWT 校验 → 方法限制 → inject internal headers → upstream 转发。无 catch-all 路由。
+顺序：协议/监听器 → 公开路由精确/前缀 allowlist → 内部路由 → 受保护最长前缀 → 鉴权（extAuth/forwardAuth）→ 清理客户端身份头并注入内部头 → 方法限制 → upstream 转发。无 catch-all 路由。客户端身份头的清理位置按 provider 实现：Traefik 在 forwardAuth 后 strip；Envoy 由 extAuth 拒绝伪造或剥离后以 JWT 派生身份继续。
 
 理由：Envoy 与 Traefik 默认路由和 path 匹配语义不同；固定顺序后，生成器为每个 provider 显式设置优先级/rule order，避免依赖隐式行为。
 
@@ -38,8 +38,8 @@
 
 - `GatewayClass` 由集群管理员提供；本 change 提供 `Gateway`、`HTTPRoute`、`SecurityPolicy`、`BackendTrafficPolicy`。
 - `HTTPRoute` 按 public、internal、受保护前缀生成，使用 `PathPrefix`；public 只匹配精确的 `/healthz`、`/readyz` 与 `/.well-known/*`。
-- `SecurityPolicy` 绑定 JWT provider：issuer、audience、remote JWKS；claim-to-header 映射为 `x-ontoaxis-*`；客户端原始身份 header 通过 `HTTPRoute` filter 删除。
-- `BackendTrafficPolicy` 使用 local rate limit（按客户端 IP），超限 429 + `Retry-After`；租户维度为本地 best-effort，不承诺跨副本全局精确配额。
+- `SecurityPolicy.extAuth.http` 指向 core 的 `/internal/edge-auth`，复用 `internal/platform/authn` 校验 JWT 并返回 `x-ontoaxis-*` 响应头；`headersToBackend` 注入内部身份头。客户端身份 header 不参与授权；伪造值不会获得对应身份。`Authorization` 在 extAuth 后从上游请求中移除。
+- `BackendTrafficPolicy.rateLimit.local` 使用 local rate limit（按客户端 IP），超限 429；Envoy 不保证 `Retry-After`，由 Traefik 提供该头。租户维度为本地 best-effort，不承诺跨副本全局精确配额。
 - 不依赖 Envoy Gateway 的商业扩展。
 
 ### D4: Traefik 使用 forwardAuth 到 core 内部鉴权端点
@@ -58,7 +58,7 @@
   - `byTenant.requestsPerMinute`（本地 best-effort）
   - `exemptPublicRoutes: true`
 - 生成器把默认值写入 provider 配置；Envoy 用 `BackendTrafficPolicy.rateLimit.local`，Traefik 用 `RateLimit` middleware。
-- 超限响应固定为 429，带 `Retry-After: 1`；健康/well-known 不受限流。
+- 超限响应固定为 429；Traefik 带 `Retry-After: 1`，Envoy local rate limit 仅返回 429；健康/well-known 不受限流。
 - 本 change 只承诺单实例本地限流；跨副本精确租户限流留给 `production-delivery`/后续 Stage，文档与监控必须明确该限制。
 
 ### D6: 部署与验收
@@ -70,7 +70,7 @@
 
 ## Risks / Trade-offs
 
-- **Compose edge 鉴权依赖 core**：core auth 端点不可用时 fail-closed 5xx（Traefik 500；Envoy 预期 503）；本地/kind 可接受，生产 edge 自治另议。
+- **edge 鉴权依赖 core**：core auth 端点不可用时 fail-closed 非 2xx（Traefik 500；Envoy extAuth 默认 403）；本地/kind 可接受，生产 edge 自治另议。
 - **Envoy/Traefik 限流语义差异**：本地限流是单实例近似；多副本生产需外部 Redis/Valkey 限流服务，本 change 不承诺跨副本精确限流。
 - **路由表变更需要重新生成**：`edge-generate-check` 会阻断 CI；接受该成本以换取单一来源。
 - **不实现 TLS/LoadBalancer**：Stage 2 验收限定 kind/k3d 与 Compose，生产入口另由 `production-delivery` 处理。
