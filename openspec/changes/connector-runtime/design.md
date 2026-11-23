@@ -50,8 +50,15 @@
 
 - Connector 的 `postgres` 同步配置白名单（在同步启动时严格校验，不改变创建时的宽松校验）：`host`、`port`、`database`、`schema`（默认 `public`）、`tables`（字符串数组，元素 MUST 匹配 `^[a-z_][a-z0-9_]*$`）、`slot_name`（可选，默认由确定性规则生成）、`publication_name`（可选）、`dataset_id`（必填，UUID）、`topic_prefix`（禁止覆盖，由系统生成）。
 - 运行时命名：`source` 连接器 `oa-<tenanthash8>-<connector8>-source`，`sink` 为 `...-sink`；`tenanthash8 = first8(sha256(tenant_id))`，`connector8 = first8(sha256(connector_id))`（实现评审修正：UUIDv7 前 32 位是时间戳，直接截取会在同一时间窗内碰撞；以完整 UUID 做 SHA-256 前缀）；topic 前缀 `oa.<tenanthash8>.<connector8>`。连接器名只含 `[a-z0-9.-]`，满足 Kafka Connect 约束；确定性保证重复提交命中同一运行时对象。
-- sink 使用动态表路由：topic `oa.<th>.<c8>.<schema>.<table>` → Iceberg 表 `<schema>.<table>` 位于 warehouse 的 Dataset 目录，Iceberg JDBC catalog 复用核心 Postgres 的独立 `iceberg_catalog` schema（由运维/迁移准备，不在本 change 修改核心迁移）。
-- 备选：每租户独立 Connect 集群——被拒（Stage 2 本地成本高，命名空间 + 凭据边界已可验证隔离）。
+- 路由与信封（2026-11-23 实施修正，取代初版的"动态表路由"）：
+  - **信封在 source 侧展开**：source 连接器生成 `transforms=unwrapDebezium` + `io.debezium.transforms.ExtractNewRecordState`（`drop.tombstones=true`、`delete.handling.mode=drop`），topic 中即业务行。原因：sink 侧使用 Iceberg 自带 `DebeziumTransform` 会写 `_cdc` 列并要求 identifier fields（本 change 无主键元数据），提交会卡死；而 Debezium 的 SMT 放在 sink 侧实测未生效，放在 source 侧实测有效。删除暂不传播（`delete.handling.mode=drop`），待主键/identifier 字段方案确定后另行处理。
+  - **sink 只做 topic 前缀剥离**：`org.apache.kafka.connect.transforms.RegexRouter`，regex 由 `sinkRoutePattern` 生成，replacement 为 `<dataset namespace>.$2`，配合静态 `iceberg.tables=<dataset namespace>.<table>`。
+  - **共享 warehouse 根 + dataset 命名空间隔离**（2026-11-23 决定）：`iceberg.catalog.warehouse` 绑定 warehouse 根，namespace 为 `ds_<dataset uuid 前 8 位>_<schema>`，表位置为 `<warehouse>/<dataset namespace>/<table>`；这样表标识唯一，避免多 dataset 同名表串写，同时保持单一 catalog 以便 Trino 通过 `default-warehouse-dir` 解析。Dataset 记录的 `storage_location` 为描述性字段，sink 不再使用。
+- 开放问题（Trino 读取与 dataset 隔离，2026-11-23 实测）：
+  - ~~Trino 读取 Connect 写入的表失败~~（2026-11-23 已定位并修复）：根因是 Trino 本地 FileIO 的 `local.location=/warehouse` 会把 `file:` URI 前缀二次拼接成 `/warehouse/warehouse/...`，导致 metadata 文件"不存在"并包装成 `Metadata not found in metadata location`。修复为 `local.location=/`，实测 `select count(*) from iceberg.<ns>.customers` 返回 15（3 个 snapshot × 5 行）。仅影响本地 connector-runtime overlay；生产 S3/kind 需各自确认 FileIO 配置。
+  - 表标识为 `<schema>.<table>`，不含 dataset id；两个 dataset 同名表会落到同一张 Iceberg 表。上述 warehouse 方案需一并解决该冲突。
+  - `SyncConfig` 不含主键，`iceberg.tables.default-id-columns` 无法生成，UPDATE/DELETE 语义未验证；补主键白名单属配置契约变更，需单独确认。
+
 
 ### D4: 秘密边界与注入
 
@@ -72,11 +79,12 @@
 
 - 对账器（默认 5s 周期，批量 50，按租户上下文）：只扫描 `running` 作业，读取 Connect 中 source/sink 状态并归一（`running`/`failed`/`paused|stopped|missing`/`unknown`）。
   - 运行时失败 → 作业 `failed`，错误取 task trace 的脱敏首行；运行时在作业 `running` 期间缺失/停止 → `failed`（`runtime_not_running`）；`unknown` 保持 `running` 但不判定成功。
-- 初始快照完成判定（成功条件，全部满足）：
+- 初始快照完成判定（2026-11-23 实现修正）：
   1. source 与 sink 连接器均为 RUNNING，且无失败 task；
-  2. sink 对应 Iceberg 表存在已提交 snapshot，且 `SELECT count(*)` 可执行；
-  3. sink 行数与派发前记录在 `sync_runs.stats.expected_rows` 的源表行数一致（预检用同一 `SecretResolver` 解析的凭据对源库做有界计数，`ONTOAXIS_CONNECT_VERIFY_MAX_ROWS` 默认 1,000,000，超过上限则跳过计数、以"表+snapshot 存在"为部分证据并明确记录限制）；
+  2. sink 对应 Iceberg 表存在已提交 snapshot：`public.iceberg_tables.metadata_location` → 读取 metadata JSON → `current-snapshot-id` 对应的 `summary.total-records`；任一配置表无 snapshot 则 `done=false`，作业保持 `running`；
+  3. `verified_rows` 取 sink 侧 `total-records` 之和。**源/汇行数等式校验尚未实现**（原计划的 Trino `count(*)` 因 catalog 兼容性问题暂不可用，`expected_rows` 派发期计数也未接线），traceability 不得把它写成双向一致；
   4. 连续两次对账（≥5s）行数稳定。
+- 校验器实现位置：`internal/app/connector_verifier.go`，配置来源优先 `job.Config`，为空时回退到 Connector 记录；仅支持 `file://` warehouse（其他 scheme 启动即报错，不静默降级）；metadata 路径必须落在 warehouse 根内。
 - 满足后：作业 `succeeded`，记录 `verified_rows`、`dataset_id`、完成时间与 `runtime_ref`；随后尝试删除 sink 与停止 source，失败记录 `cleanup_pending`，不撤销成功、不谎报已停止。
 - 备选：Debezium JMX 指标判定 snapshot 完成——被拒（需要 JMX 桥接与额外依赖，REST 无该信息）；备选：固定等待时间——被拒（不可靠、易产生假成功）。
 - 限制与开放问题：大表或持续写入源表下，行数比对可能昂贵或误判；Stage 3 用 offset/watermark（如 sink 提交的 source LSN 与 source slot confirmed_flush_lsn 比较）替代。

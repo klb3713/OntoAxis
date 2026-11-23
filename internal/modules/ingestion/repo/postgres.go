@@ -144,7 +144,7 @@ func (s *PostgresStore) UpdateJobAndRun(ctx context.Context, job *domain.SyncJob
 		SET status = $3, started_at = $4, finished_at = $5, updated_at = $6,
 			runtime_ref = NULLIF($8, ''), attempt = $9,
 			lease_owner = CASE WHEN $3 = 'queued' THEN NULLIF($10, '') ELSE NULL END,
-			lease_until = CASE WHEN $3 = 'queued' THEN $11 ELSE NULL END
+			lease_until = CASE WHEN $3 = 'queued' THEN $11::timestamptz ELSE NULL END
 		WHERE tenant_id = $1 AND id = $2 AND status = $7`,
 		job.TenantID, job.ID, job.Status, job.StartedAt, job.FinishedAt, job.UpdatedAt,
 		expectedStatus, job.RuntimeRef, job.Attempt, job.LeaseOwner, job.LeaseUntil)

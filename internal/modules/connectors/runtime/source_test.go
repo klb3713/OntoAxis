@@ -44,28 +44,36 @@ func TestBuildSourceConfigGolden(t *testing.T) {
 	}
 
 	want := map[string]any{
-		"connector.class":             "io.debezium.connector.postgresql.PostgresConnector",
-		"plugin.name":                 "pgoutput",
-		"topic.prefix":                "oa.fa1ffa66.2ff3a64e",
-		"slot.name":                   "oa_fa1ffa66_2ff3a64e_slot",
-		"publication.name":            "oa_fa1ffa66_2ff3a64e_pub",
-		"table.include.list":          "public.customers,public.orders",
-		"database.hostname":           "source-db.internal",
-		"database.port":               5432,
-		"database.dbname":             "app",
-		"database.user":               "cdc_user",
-		"database.password":           "cdc_pass",
-		"snapshot.mode":               "initial",
-		"decimal.handling.mode":       "string",
-		"tombstones.on.delete":        "true",
-		"publication.autocreate.mode":   "filtered",
-		"key.converter":                 "org.apache.kafka.connect.json.JsonConverter",
-		"key.converter.schemas.enable":  "false",
-		"value.converter":               "org.apache.kafka.connect.json.JsonConverter",
-		"value.converter.schemas.enable": "false",
+		"connector.class":                                "io.debezium.connector.postgresql.PostgresConnector",
+		"plugin.name":                                    "pgoutput",
+		"topic.prefix":                                   "oa.fa1ffa66.2ff3a64e",
+		"slot.name":                                      "oa_fa1ffa66_2ff3a64e_slot",
+		"publication.name":                               "oa_fa1ffa66_2ff3a64e_pub",
+		"table.include.list":                             "public.customers,public.orders",
+		"database.hostname":                              "source-db.internal",
+		"database.port":                                  5432,
+		"database.dbname":                                "app",
+		"database.user":                                  "cdc_user",
+		"database.password":                              "cdc_pass",
+		"snapshot.mode":                                  "initial",
+		"decimal.handling.mode":                          "string",
+		"tombstones.on.delete":                           "true",
+		"publication.autocreate.mode":                    "filtered",
+		"key.converter":                                  "org.apache.kafka.connect.json.JsonConverter",
+		"key.converter.schemas.enable":                   "false",
+		"value.converter":                                "org.apache.kafka.connect.json.JsonConverter",
+		"value.converter.schemas.enable":                 "false",
+		"transforms":                                     "unwrapDebezium",
+		"transforms.unwrapDebezium.type":                 "io.debezium.transforms.ExtractNewRecordState",
+		"transforms.unwrapDebezium.drop.tombstones":      "true",
+		"transforms.unwrapDebezium.delete.handling.mode": "drop",
 	}
 	if !reflect.DeepEqual(config, want) {
 		t.Fatalf("BuildSourceConfig() = %#v\nwant %#v", config, want)
+	}
+
+	if got := config["transforms.unwrapDebezium.type"]; got != "io.debezium.transforms.ExtractNewRecordState" {
+		t.Fatalf("unwrap type = %v, want Debezium ExtractNewRecordState", got)
 	}
 
 	if _, ok := config["topic_prefix"]; ok {

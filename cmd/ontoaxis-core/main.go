@@ -27,8 +27,8 @@ func main() {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	a, err := app.New(ctx, cfg, logger, func(assemblyCtx context.Context, pool *pgxpool.Pool, tracer trace.Tracer, assemblyLogger *slog.Logger) (app.RuntimeAssembly, error) {
-		return app.BuildRuntimeAssembly(assemblyCtx, pool, cfg, tracer, assemblyLogger)
+	a, err := app.New(ctx, cfg, logger, func(assemblyCtx context.Context, pool *pgxpool.Pool, tracer trace.Tracer, assemblyLogger *slog.Logger, metrics *observability.Metrics) (app.RuntimeAssembly, error) {
+		return app.BuildRuntimeAssembly(assemblyCtx, pool, cfg, tracer, assemblyLogger, metrics)
 	})
 	if err != nil {
 		logger.Error("startup failed", "error", err)

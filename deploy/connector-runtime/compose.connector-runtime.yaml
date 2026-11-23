@@ -98,7 +98,8 @@ services:
       # 应用生成的 connector JSON（design D3）决定，本 overlay 只给 worker 默认值。
       CONNECT_PLUGIN_PATH: /kafka/connect,/kafka/connect/iceberg,/kafka/connect/extra-plugins
       CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
-      CONNECT_LOG4J_LOGGERS: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR"
+      # 注意：Debezium 入口脚本会把 CONNECT_LOG4J_LOGGERS 的值直接写进 log4j.rootLogger，
+      # 传入 "a=WARN,b=ERROR" 这类写法会让 rootLogger 失效、日志全部丢失；日志级别用 CONNECT_LOG4J_ROOT_LOGLEVEL。
       KAFKA_HEAP_OPTS: "-Xms512m -Xmx1g"
     ports:
       - "${ONTOAXIS_CONNECT_HOST_PORT:-18086}:8083"
@@ -174,6 +175,10 @@ services:
     restart: "no"
 
   ontoaxis-core:
+    # The snapshot verifier reads committed Iceberg metadata from the shared
+    # warehouse; read-only keeps the core from ever writing dataset files.
+    volumes:
+      - ontoaxis_iceberg_warehouse:/warehouse:ro
     environment:
       ONTOAXIS_CONNECT_URL: http://kafka-connect:8083
       ONTOAXIS_CONNECT_TIMEOUT: 10s

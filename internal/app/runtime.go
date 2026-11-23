@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/trace"
 
 	connectorsruntime "github.com/klb3713/ontoaxis/internal/modules/connectors/runtime"
@@ -15,6 +18,7 @@ import (
 	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/config"
 	"github.com/klb3713/ontoaxis/internal/platform/module"
+	"github.com/klb3713/ontoaxis/internal/platform/observability"
 	"github.com/klb3713/ontoaxis/internal/platform/search"
 )
 
@@ -63,7 +67,7 @@ func (a RuntimeAssembly) closeAll() {
 // module list; callers that must own the authorization/ingestion lifecycle
 // (the App) must call BuildRuntimeAssembly directly.
 func BuildRuntimeModules(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, tracer trace.Tracer, logger *slog.Logger) ([]module.Module, error) {
-	assembly, err := BuildRuntimeAssembly(ctx, pool, cfg, tracer, logger)
+	assembly, err := BuildRuntimeAssembly(ctx, pool, cfg, tracer, logger, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +88,7 @@ func BuildRuntimeModules(ctx context.Context, pool *pgxpool.Pool, cfg config.Con
 //   - search: ONTOAXIS_SEARCH_* is parsed; when enabled the backend and guard
 //     must be present or startup fails.
 //   - actions: construction is fail-closed; a broken execution engine aborts.
-func BuildRuntimeAssembly(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, tracer trace.Tracer, logger *slog.Logger) (RuntimeAssembly, error) {
+func BuildRuntimeAssembly(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, tracer trace.Tracer, logger *slog.Logger, metrics *observability.Metrics) (RuntimeAssembly, error) {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -95,7 +99,14 @@ func BuildRuntimeAssembly(ctx context.Context, pool *pgxpool.Pool, cfg config.Co
 	if err != nil {
 		return RuntimeAssembly{}, fmt.Errorf("load pipeline runtime config: %w", err)
 	}
-	connectRuntime, err := connectorsruntime.NewFromEnv()
+	var connectorRegisterer prometheus.Registerer
+	if metrics != nil && metrics.Registry != nil {
+		connectorRegisterer = metrics.Registry
+	}
+	connectRuntime, err := connectorsruntime.NewFromEnv(
+		connectorsruntime.WithTracer(tracer),
+		connectorsruntime.WithMetrics(connectorsruntime.NewMetrics(connectorRegisterer)),
+	)
 	if err != nil {
 		return RuntimeAssembly{}, fmt.Errorf("initialize connectors runtime: %w", err)
 	}
@@ -164,6 +175,11 @@ func BuildRuntimeAssembly(ctx context.Context, pool *pgxpool.Pool, cfg config.Co
 	// Connectors sync runtime. A nil runtime is allowed: the module still starts
 	// and StartSync reports the adapter as unavailable.
 	business.connectors.SetSyncRuntime(connectRuntime)
+	// Cancelling a running sync job must stop the runtime resource; without this
+	// the cancel endpoint fails closed with "stopper is not configured".
+	if connectRuntime != nil {
+		business.ingestion.SetRuntimeStopper(ingestionruntime.NewConnectorJobRuntime(connectRuntime))
+	}
 
 	// Search backend + guard wiring. When enabled, a missing backend or guard is
 	// a fail-closed startup error rather than a silently 404 route.
@@ -184,14 +200,29 @@ func BuildRuntimeAssembly(ctx context.Context, pool *pgxpool.Pool, cfg config.Co
 	assembly.Closers = append(assembly.Closers, business.actions.Close)
 
 	// The ingestion dispatcher/reconciler needs the migrated ingestion store and
-	// connectors service, so it is constructed after migrations. A nil snapshot
-	// verifier is passed: jobs then stay running instead of being falsely marked
-	// complete, which is documented as an integration gap (a real verifier is
-	// supplied by the stage-2 search/sync integration).
+	// connectors service, so it is constructed after migrations. The snapshot
+	// verifier reads committed Iceberg snapshots from the catalog; without it the
+	// job stays running forever instead of being falsely marked complete.
 	if connectRuntime != nil {
 		jobRuntime := ingestionruntime.NewConnectorJobRuntime(connectRuntime)
+		var verifier ingestionruntime.SnapshotVerifier
+		if warehouse := strings.TrimSpace(os.Getenv("ONTOAXIS_ICEBERG_WAREHOUSE")); warehouse != "" {
+			reader, readerErr := newIcebergCatalogReader(pool, warehouse)
+			if readerErr != nil {
+				assembly.closeAll()
+				return RuntimeAssembly{}, fmt.Errorf("initialize snapshot verifier: %w", readerErr)
+			}
+			verifier = snapshotVerifier{
+				reader: reader,
+				connectors: connectorReader{service: func() connectorsGetter {
+					return business.connectors.Service()
+				}},
+			}
+		} else {
+			logger.Warn("snapshot verifier is not configured; sync jobs will stay running")
+		}
 		assembly.PostMigrate = func(ctx context.Context) ([]BackgroundRuntime, error) {
-			ingestionRuntime, err := business.ingestion.NewRuntime(jobRuntime, nil, ingestionruntime.Options{Logger: logger})
+			ingestionRuntime, err := business.ingestion.NewRuntime(jobRuntime, verifier, ingestionruntime.Options{Logger: logger})
 			if err != nil {
 				return nil, fmt.Errorf("build ingestion runtime: %w", err)
 			}

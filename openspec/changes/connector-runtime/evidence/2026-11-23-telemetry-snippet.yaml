@@ -1,0 +1,46 @@
+# connector-runtime 遥测片段（移交 production-delivery 合并进 deploy/observability/）
+#
+# 指标来自 internal/modules/connectors/runtime/metrics.go：
+#   ontoaxis_connector_runtime_requests_total{dependency,operation,result}
+#   ontoaxis_connector_submit_seconds{operation,result}
+# 标签全部是有界枚举，不含 tenant/connector/topic/连接器名。
+#
+# 本地验证（2026-11-23，connector-runtime + observability profile）：
+#   ontoaxis_connector_runtime_requests_total{operation="upsert",result="ok"} 4
+#   ontoaxis_connector_runtime_requests_total{operation="status",result="ok"} 52
+#   ontoaxis_connector_submit_seconds_count{operation="submit",result="ok"} 2
+
+panels:
+  - title: Kafka Connect 请求速率（按操作/结果）
+    expr: sum by (operation, result) (rate(ontoaxis_connector_runtime_requests_total{dependency="kafka_connect"}[5m]))
+    unit: req/s
+  - title: Kafka Connect 请求错误率
+    expr: |
+      sum(rate(ontoaxis_connector_runtime_requests_total{dependency="kafka_connect",result!="ok"}[5m]))
+      /
+      sum(rate(ontoaxis_connector_runtime_requests_total{dependency="kafka_connect"}[5m]))
+    unit: percentunit
+  - title: 连接器提交耗时 p95
+    expr: histogram_quantile(0.95, sum by (le, operation) (rate(ontoaxis_connector_submit_seconds_bucket[5m])))
+    unit: s
+
+alerts:
+  - alert: OntoaxisConnectorRuntimeErrors
+    expr: |
+      sum(rate(ontoaxis_connector_runtime_requests_total{dependency="kafka_connect",result!="ok"}[10m]))
+      /
+      sum(rate(ontoaxis_connector_runtime_requests_total{dependency="kafka_connect"}[10m])) > 0.1
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: 连接器运行时请求错误率超过 10%（10 分钟）
+      description: 检查 Kafka Connect 可用性与连接器配置；指标不含租户或连接器名，需按日志/job id 定位。
+  - alert: OntoaxisConnectorSubmitSlow
+    expr: histogram_quantile(0.95, sum by (le, operation) (rate(ontoaxis_connector_submit_seconds_bucket{operation="submit"}[5m]))) > 30
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: 连接器提交 p95 超过 30 秒
+      description: 检查 Kafka Connect 队列与目标 catalog 可用性。

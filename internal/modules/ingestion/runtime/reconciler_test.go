@@ -69,6 +69,8 @@ func TestReconcileMapsRuntimeStatusToFailed(t *testing.T) {
 			t.Parallel()
 			store := newFakeStore(newFakeClock())
 			store.addJob(newRunningJob("tenant-a", "job-1", "connector-1", "runtime-1"))
+			// Past the startup grace window: a missing runtime is a real failure.
+			store.clock.Advance(2 * DefaultStartupGrace)
 			jobRuntime := newFakeJobRuntime()
 			jobRuntime.statusFunc = func(context.Context, string, string) (RuntimeStatus, error) {
 				return tc.status, nil
@@ -92,6 +94,34 @@ func TestReconcileMapsRuntimeStatusToFailed(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReconcileStartupGraceKeepsFreshJobRunning(t *testing.T) {
+	t.Parallel()
+	store := newFakeStore(newFakeClock())
+	fresh := newRunningJob("tenant-a", "job-1", "connector-1", "runtime-1")
+	started := store.clock.Now()
+	fresh.StartedAt = &started
+	store.addJob(fresh)
+	jobRuntime := newFakeJobRuntime()
+	jobRuntime.statusFunc = func(context.Context, string, string) (RuntimeStatus, error) {
+		return RuntimeStatus{Source: StateMissing, Sink: StateMissing}, nil
+	}
+	reconciler := newTestReconciler(t, store, newFakeConnectorReader(), jobRuntime, newFakeVerifier(verifyResult{}), nil)
+
+	if err := reconciler.ReconcileOnce(context.Background()); err != nil {
+		t.Fatalf("ReconcileOnce() error = %v", err)
+	}
+	// The dispatcher submits connectors asynchronously; a brand-new job must not
+	// be failed before the runtime shows up.
+	requireJobStatus(t, store, "job-1", domain.StatusRunning)
+
+	// Past the grace window the same status is a real failure.
+	store.clock.Advance(2 * DefaultStartupGrace)
+	if err := reconciler.ReconcileOnce(context.Background()); err != nil {
+		t.Fatalf("ReconcileOnce() error = %v", err)
+	}
+	requireJobStatus(t, store, "job-1", domain.StatusFailed)
 }
 
 func TestReconcileRedactsRuntimeFailureMessage(t *testing.T) {

@@ -62,6 +62,15 @@ func BuildSourceConfig(cfg SyncConfig, names Names, secrets map[string]string) (
 		"key.converter.schemas.enable":   "false",
 		"value.converter":                "org.apache.kafka.connect.json.JsonConverter",
 		"value.converter.schemas.enable": "false",
+		// Flatten the CDC envelope at the source so the topic carries the
+		// business row. Sink-side transforms did not take effect in the local
+		// Debezium/Iceberg combination (verified 2026-11-23), while the source
+		// connector's SMT is the same class and works; normalizing on ingest
+		// also keeps downstream consumers free of Debezium specifics.
+		"transforms":                                     "unwrapDebezium",
+		"transforms.unwrapDebezium.type":                 DebeziumTransformClass,
+		"transforms.unwrapDebezium.drop.tombstones":      "true",
+		"transforms.unwrapDebezium.delete.handling.mode": "drop",
 	}, nil
 }
 

@@ -1,0 +1,10 @@
+# requests_total
+requests_total {"dependency": "kafka_connect", "operation": "status", "result": "ok"} = 102
+requests_total {"dependency": "kafka_connect", "operation": "delete", "result": "ok"} = 2
+requests_total {"dependency": "kafka_connect", "operation": "ping", "result": "ok"} = 3
+requests_total {"dependency": "kafka_connect", "operation": "stop", "result": "ok"} = 2
+requests_total {"dependency": "kafka_connect", "operation": "upsert", "result": "ok"} = 4
+# submit_seconds_count
+submit_seconds_count {"operation": "preflight", "result": "error"} = 1
+submit_seconds_count {"operation": "preflight", "result": "ok"} = 3
+submit_seconds_count {"operation": "submit", "result": "ok"} = 2

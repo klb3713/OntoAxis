@@ -84,6 +84,18 @@ func (m *Module) SetConnectorReader(reader api.ConnectorReader) {
 	}
 }
 
+// SetRuntimeStopper injects the connector runtime stop dependency so cancelling
+// a running sync job can stop the runtime resource. It mirrors
+// SetConnectorReader and rebuilds the service when the store already exists.
+func (m *Module) SetRuntimeStopper(stopper service.RuntimeStopper) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.opts = append(m.opts, service.WithRuntimeStopper(stopper))
+	if m.store != nil {
+		m.svc = service.NewService(m.store, m.opts...)
+	}
+}
+
 func (m *Module) RegisterRoutes(r chi.Router) {
 	m.mu.RLock()
 	guard := m.guard

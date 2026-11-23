@@ -25,7 +25,7 @@ import (
 // AssemblyFactory builds the runtime composition once the shared pool, tracing
 // and logger exist. It returns the modules to register plus the post-migration
 // background runtimes and shutdown closers the App must own.
-type AssemblyFactory func(ctx context.Context, pool *pgxpool.Pool, tracer trace.Tracer, logger *slog.Logger) (RuntimeAssembly, error)
+type AssemblyFactory func(ctx context.Context, pool *pgxpool.Pool, tracer trace.Tracer, logger *slog.Logger, metrics *observability.Metrics) (RuntimeAssembly, error)
 
 type App struct {
 	cfg        config.Config
@@ -76,7 +76,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, factory As
 	}
 
 	if factory != nil {
-		assembly, err = factory(ctx, pool, telemetry.Tracer(), logger)
+		assembly, err = factory(ctx, pool, telemetry.Tracer(), logger, metrics)
 		if err != nil {
 			return fail(err)
 		}

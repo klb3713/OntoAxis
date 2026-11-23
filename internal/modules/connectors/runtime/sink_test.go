@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -35,22 +36,27 @@ func TestBuildSinkConfigGolden(t *testing.T) {
 	}
 
 	want := map[string]any{
-		"connector.class":                      "org.apache.iceberg.connect.IcebergSinkConnector",
-		"topics":                               "oa.fa1ffa66.2ff3a64e.public.customers,oa.fa1ffa66.2ff3a64e.public.orders",
-		"iceberg.catalog":                      "oa",
-		"iceberg.catalog.type":                 "jdbc",
-		"iceberg.catalog.uri":                  "jdbc:postgresql://catalog-db:5432/iceberg",
-		"iceberg.catalog.warehouse":            "s3://ontoaxis-warehouse/iceberg/oa/019c0002-0000-7000-8000-000000000003",
-		"iceberg.catalog.jdbc.user":            "iceberg_catalog",
-		"iceberg.catalog.jdbc.password":        "iceberg_pass",
-		"iceberg.tables.dynamic-enabled":       "false",
-		"iceberg.tables":                       "public.customers,public.orders",
-		"iceberg.tables.auto-create-enabled":   "true",
-		"iceberg.tables.evolve-schema-enabled": "true",
-		"key.converter":                        "org.apache.kafka.connect.json.JsonConverter",
-		"value.converter":                      "org.apache.kafka.connect.json.JsonConverter",
-		"key.converter.schemas.enable":         "false",
-		"value.converter.schemas.enable":       "false",
+		"connector.class":                         "org.apache.iceberg.connect.IcebergSinkConnector",
+		"topics":                                  "oa.fa1ffa66.2ff3a64e.public.customers,oa.fa1ffa66.2ff3a64e.public.orders",
+		"iceberg.catalog":                         "oa",
+		"iceberg.catalog.type":                    "jdbc",
+		"iceberg.catalog.uri":                     "jdbc:postgresql://catalog-db:5432/iceberg",
+		"iceberg.catalog.warehouse":               "s3://ontoaxis-warehouse/iceberg",
+		"iceberg.catalog.jdbc.user":               "iceberg_catalog",
+		"iceberg.catalog.jdbc.password":           "iceberg_pass",
+		"iceberg.tables.dynamic-enabled":          "false",
+		"iceberg.tables":                          "ds_019c0002_public.customers,ds_019c0002_public.orders",
+		"iceberg.tables.auto-create-enabled":      "true",
+		"iceberg.tables.evolve-schema-enabled":    "true",
+		"iceberg.control.commit.timeout-ms":       "120000",
+		"key.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+		"value.converter":                         "org.apache.kafka.connect.json.JsonConverter",
+		"key.converter.schemas.enable":            "false",
+		"value.converter.schemas.enable":          "false",
+		"transforms":                              "stripTopicPrefix",
+		"transforms.stripTopicPrefix.type":        "org.apache.kafka.connect.transforms.RegexRouter",
+		"transforms.stripTopicPrefix.regex":       `^oa\.fa1ffa66\.2ff3a64e\.([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)$`,
+		"transforms.stripTopicPrefix.replacement": "ds_019c0002_public.$2",
 	}
 	if !reflect.DeepEqual(config, want) {
 		t.Fatalf("BuildSinkConfig() = %#v\nwant %#v", config, want)
@@ -296,6 +302,60 @@ func TestSensitiveKey(t *testing.T) {
 	for _, key := range []string{"connector.class", "database.hostname", "topics", "database.user"} {
 		if runtime.SensitiveKey(key) {
 			t.Errorf("SensitiveKey(%q) = true, want false", key)
+		}
+	}
+}
+
+func TestBuildSinkConfigUnwrapsDebeziumAndStripsTopicPrefix(t *testing.T) {
+	t.Parallel()
+
+	cfg := mustSyncConfig(t)
+	names := mustNames(t)
+
+	config, err := runtime.BuildSinkConfig(cfg, names, testWarehouse(), sinkSecrets())
+	if err != nil {
+		t.Fatalf("BuildSinkConfig() error = %v", err)
+	}
+
+	if got := config["transforms"]; got != "stripTopicPrefix" {
+		t.Fatalf("transforms = %v, want only the topic rewrite", got)
+	}
+	if _, ok := config["transforms.unwrapDebezium.type"]; ok {
+		t.Fatalf("sink must not unwrap the CDC envelope; the source connector does it")
+	}
+	if got := config["transforms.stripTopicPrefix.type"]; got != "org.apache.kafka.connect.transforms.RegexRouter" {
+		t.Fatalf("route type = %v, want RegexRouter", got)
+	}
+
+	routeRegex, ok := config["transforms.stripTopicPrefix.regex"].(string)
+	if !ok || routeRegex == "" {
+		t.Fatalf("route regex = %v, want a non-empty pattern", config["transforms.stripTopicPrefix.regex"])
+	}
+	// Java's RegexRouter and Go's regexp share the syntax used here, so Go can
+	// demonstrate the intended rewrite even though the connector runs on the JVM.
+	re, err := regexp.Compile(routeRegex)
+	if err != nil {
+		t.Fatalf("route regex does not compile: %v", err)
+	}
+	replacement, ok := config["transforms.stripTopicPrefix.replacement"].(string)
+	if !ok {
+		t.Fatalf("replacement = %v, want string", config["transforms.stripTopicPrefix.replacement"])
+	}
+	topic := names.Topic(cfg.Schema, cfg.Tables[0])
+	if got, want := re.ReplaceAllString(topic, replacement), "ds_019c0002_public."+cfg.Tables[0]; got != want {
+		t.Fatalf("route rewrite(%q) = %q, want %q", topic, got, want)
+	}
+	if re.MatchString("another.topic." + cfg.Schema + "." + cfg.Tables[0]) {
+		t.Fatalf("route regex matches topics outside the connector prefix")
+	}
+
+	// Transform settings must never carry credentials.
+	for key, value := range config {
+		if !strings.HasPrefix(key, "transforms.") {
+			continue
+		}
+		if text, ok := value.(string); ok && strings.Contains(text, "iceberg_pass") {
+			t.Fatalf("transform %q leaks a credential", key)
 		}
 	}
 }

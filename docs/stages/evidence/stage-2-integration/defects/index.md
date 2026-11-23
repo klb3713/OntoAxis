@@ -4,10 +4,11 @@
 |---|---|---|---|---|---|
 | D-01 | 2.2 edge-gateway | 跨 change 装配缺陷 | `compose.authz.yaml` 未给 `ontoaxis-core-edge` 注入 authz 环境，edge core 启动失败 | 已修复 | 增加 core-edge authz env；edge smoke 12/0；见 `../compose-smoke.md` |
 | D-02 | 2.5 pipeline-kestra-dbt | 依赖缺失/环境 | Kestra profile、dbt 镜像与 v2 API 升级；真实 E2E 已完成 | 已关闭 | 证据 `openspec/changes/pipeline-kestra-dbt/evidence/2026-11-23-kestra-v2-upgrade-e2e.md`；13.x 已勾选 |
-| D-03 | 2.4 connector-runtime | 环境/未验证 | Kafka Connect/Debezium profile 仅 YAML 校验，未起容器/未跑 CDC E2E | 待处置 | 见 `deploy/connector-runtime/README.md`；需受控环境 |
-| D-04 | 2.7 object-search-meilisearch | 依赖缺失 | 缺少 Meilisearch Compose profile 与 worker 合并；仅单元/DB-gated 测试 | 待处置 | 需 search profile + worker 合并 |
-| D-05 | 2.8 production-delivery | 环境/未验证 | Helm/ArgoCD 静态渲染通过；kind/k3d 安装、备份恢复、回滚未在集群执行 | 待处置 | 需受控集群环境 |
+| D-03 | 2.4 connector-runtime | 代码/校验器 | 栈可起、source/sink task `RUNNING`，但 sink lag 不降、Iceberg 无 snapshot、job 不 `succeeded` | 待处置 | 可执行清单 `../../../stage-2-unblock-checklist.md` §1（先诊断 topic 路由，再决定 RegexRouter/JDBC fallback） |
+| D-04 | 2.7 object-search-meilisearch | 配置合并/测试 | overlay 可渲染，但 base compose 无 `search` profile（`--profile search` 报 no such service）；E2E/CI 缺失 | 待处置 | 可执行清单 `../../../stage-2-unblock-checklist.md` §2；先验证已实现的 claim/rebuild 再勾选 |
+| D-05 | 2.8 production-delivery | 环境/GitOps 源 | kind 集群与 ArgoCD 已存在；`ontoaxis-root` 因 repoURL 占位报 `authentication required`，`oa-*` 无 Pod；镜像停在 `a04ab4c` | 待处置 | 可执行清单 `../../../stage-2-unblock-checklist.md` §3（GitOps 源选型 A/B/C + 镜像重建） |
 | D-06 | 2.1/2.3 | 环境问题 | 本地 core 依赖 authz overlay；基础 compose 单文件启动会因缺少 authz 环境失败 | 已说明 | `compose-smoke.md`、`app-wiring.md` |
+| D-07 | 2.4/2.5 跨 change | 配置冲突 | Kafka Connect 与 Kestra 的 host 端口默认值同为 `18086`，两个 profile 无法同时起栈 | 待处置 | 可执行清单 `../../../stage-2-unblock-checklist.md` §3.7；建议 Connect 改 `18089` 并补端口表 |
 
 
 ## D-03 补充（connector CDC，2026-11-23）

@@ -292,6 +292,27 @@ func (s *serviceImpl) MarkFailed(ctx context.Context, tenantID, id, message stri
 // StartSync creates a job and returns its identifier. The signature matches the
 // connectors.SyncStarter port so the ingestion service can be injected there.
 func (s *serviceImpl) StartSync(ctx context.Context, tenantID, connectorID string) (string, error) {
+	if err := s.ready(); err != nil {
+		return "", err
+	}
+	if err := validateTenant(tenantID); err != nil {
+		return "", err
+	}
+	if err := validateID(connectorID, "connector_id"); err != nil {
+		return "", err
+	}
+	// Idempotent start: an active sync for the same connector returns the
+	// existing job instead of queueing a duplicate that the dispatcher would
+	// reject later, which would surface as a spurious failed job.
+	if jobs, _, err := s.store.ListJobs(ctx, tenantID, connectorID, 20, 0); err == nil {
+		for _, existing := range jobs {
+			if existing.Status == domain.StatusQueued || existing.Status == domain.StatusRunning {
+				return existing.ID, nil
+			}
+		}
+	} else if !errors.Is(err, domain.ErrNotFound) {
+		return "", err
+	}
 	job, err := s.CreateJob(ctx, tenantID, connectorID)
 	if err != nil {
 		return "", err

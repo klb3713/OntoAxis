@@ -1,0 +1,193 @@
+{
+ "data": [
+  {
+   "traceID": "4f295a5c7b9e42eca691f484c0673732",
+   "spans": [
+    {
+     "traceID": "4f295a5c7b9e42eca691f484c0673732",
+     "spanID": "638a770fa3647e87",
+     "operationName": "kafka connect upsert",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "4f295a5c7b9e42eca691f484c0673732",
+       "spanID": "aa7ed3835c74986b"
+      }
+     ],
+     "startTime": 1795424189390862,
+     "duration": 55956,
+     "tags": [
+      {
+       "key": "dependency",
+       "type": "string",
+       "value": "kafka_connect"
+      },
+      {
+       "key": "http.request.method",
+       "type": "string",
+       "value": "PUT"
+      },
+      {
+       "key": "http.response.status_code",
+       "type": "int64",
+       "value": 201
+      },
+      {
+       "key": "internal.span.format",
+       "type": "string",
+       "value": "otlp"
+      },
+      {
+       "key": "operation",
+       "type": "string",
+       "value": "upsert"
+      },
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "ontoaxis"
+      },
+      {
+       "key": "result",
+       "type": "string",
+       "value": "ok"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "client"
+      }
+     ],
+     "logs": [],
+     "processID": "p1",
+     "warnings": null
+    },
+    {
+     "traceID": "4f295a5c7b9e42eca691f484c0673732",
+     "spanID": "770b5c7851a8957b",
+     "operationName": "kafka connect upsert",
+     "references": [
+      {
+       "refType": "CHILD_OF",
+       "traceID": "4f295a5c7b9e42eca691f484c0673732",
+       "spanID": "aa7ed3835c74986b"
+      }
+     ],
+     "startTime": 1795424189446868,
+     "duration": 44045,
+     "tags": [
+      {
+       "key": "dependency",
+       "type": "string",
+       "value": "kafka_connect"
+      },
+      {
+       "key": "http.request.method",
+       "type": "string",
+       "value": "PUT"
+      },
+      {
+       "key": "http.response.status_code",
+       "type": "int64",
+       "value": 201
+      },
+      {
+       "key": "internal.span.format",
+       "type": "string",
+       "value": "otlp"
+      },
+      {
+       "key": "operation",
+       "type": "string",
+       "value": "upsert"
+      },
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "ontoaxis"
+      },
+      {
+       "key": "result",
+       "type": "string",
+       "value": "ok"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "client"
+      }
+     ],
+     "logs": [],
+     "processID": "p1",
+     "warnings": null
+    },
+    {
+     "traceID": "4f295a5c7b9e42eca691f484c0673732",
+     "spanID": "aa7ed3835c74986b",
+     "operationName": "connectors.runtime.submit",
+     "references": [],
+     "startTime": 1795424189390121,
+     "duration": 100802,
+     "tags": [
+      {
+       "key": "dependency",
+       "type": "string",
+       "value": "kafka_connect"
+      },
+      {
+       "key": "internal.span.format",
+       "type": "string",
+       "value": "otlp"
+      },
+      {
+       "key": "operation",
+       "type": "string",
+       "value": "submit"
+      },
+      {
+       "key": "otel.scope.name",
+       "type": "string",
+       "value": "ontoaxis"
+      },
+      {
+       "key": "result",
+       "type": "string",
+       "value": "ok"
+      },
+      {
+       "key": "span.kind",
+       "type": "string",
+       "value": "internal"
+      }
+     ],
+     "logs": [],
+     "processID": "p1",
+     "warnings": null
+    }
+   ],
+   "processes": {
+    "p1": {
+     "serviceName": "ontoaxis-core",
+     "tags": [
+      {
+       "key": "deployment.environment.name",
+       "type": "string",
+       "value": "local"
+      },
+      {
+       "key": "service.instance.id",
+       "type": "string",
+       "value": "d879bbdc-95f0-40b2-a6ce-4794cf20f569"
+      },
+      {
+       "key": "service.version",
+       "type": "string",
+       "value": "0.1.0"
+      }
+     ]
+    }
+   },
+   "warnings": null
+  }
+ ]
+}

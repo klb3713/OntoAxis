@@ -40,14 +40,15 @@
 
 - [x] 5.1 `deploy/connector-runtime/` Compose overlay：Redpanda（KRaft）、Kafka Connect（固定镜像 digest + Debezium Postgres source + Iceberg sink 插件）、源 Postgres（`wal_level=logical`、`REPLICA IDENTITY FULL`、publication、合成数据 init SQL）、warehouse 共享卷、Trino Iceberg catalog overlay；全部 `profiles: ["connector-runtime"]`、healthcheck、端口约定（19092/18086/15434）。验证：`docker compose -f deploy/compose/compose.yaml -f deploy/connector-runtime/compose.connector-runtime.yaml --profile connector-runtime config` 通过；容器 healthy；`deploy/compose/compose.yaml` 未修改。
 - [x] 5.2 插件与镜像可复现：版本/digest/校验和清单与构建或下载说明；启动后 `GET /connector-plugins` 含所需 source/sink。验证：重建后插件列表输出归档；README 与实际 digest 一致。
-- [ ] 5.3 本地 E2E 与清理脚本：创建 Dataset（既有 API）与 Connector → 启动同步 → 轮询作业 → Trino 查询行数；含负向（Connect down、非法配置、paused、跨租户、取消）与 `scripts/cleanup.sh`。验证：脚本退出码 0；输出含 job id、runtime connector 名、源/sink/查询行数（均来自合成数据）。
+- [x] 5.3 本地 E2E 与清理脚本：创建 Dataset（既有 API）与 Connector → 启动同步 → 轮询作业 → Trino 查询行数；含负向（Connect down、非法配置、paused、跨租户、取消）与 `scripts/cleanup.sh`。验证：脚本退出码 0；输出含 job id、runtime connector 名、源/sink/查询行数（均来自合成数据）。
 
 ## 6. 真实实例测试与证据
 
-- [ ] 6.1 集成测试（`-tags=integration`，env 开关跳过）：真实 Connect 提交/状态/停止/幂等；错误凭据脱敏；Connect 停止后的不可用路径。验证：`go test -tags=integration ./internal/modules/connectors/... ./internal/modules/ingestion/...` 通过并记录耗时与限制。
-- [ ] 6.2 真实同步 E2E（S2-AC-06，blocked_by 5.1/5.3 与 integration 装配合并）：CDC 链路端到端，Dataset 可查询；证据包括源表行数 = sink 表行数 = Trino 查询行数、dataset RID、作业状态 `succeeded`、运行时连接器名。验证：脚本输出与数据库/Trino/API 三类断言一致；若全栈装配未合并，先以模块内集成替代并在证据中标注。
-- [ ] 6.3 失败与负向矩阵：Connect 不可达（503，不伪造任务）、非法配置（400）、paused/error（409）、运行时提交失败（job failed 且脱敏）、重试耗尽、取消传播、重复启动幂等、跨租户 404。验证：逐场景测试记录与断言输出；授权层 403 断言 await `authorization-openfga-cedar`。
-- [ ] 6.4 可观测性证据：Prometheus 抓取的指标样例、trace 样例、dashboard/告警片段（移交 `production-delivery` 合并）。验证：抓取输出与 span JSON 归档；片段文件存在且未直接改 `deploy/observability/`。
+- [x] 6.1 集成测试（`-tags=integration`，env 开关跳过）：真实 Connect 提交/状态/停止/幂等；错误凭据脱敏；Connect 停止后的不可用路径。验证：`go test -tags=integration ./internal/modules/connectors/... ./internal/modules/ingestion/...` 通过并记录耗时与限制。
+- [x] 6.2 真实同步 E2E（S2-AC-06，blocked_by 5.1/5.3 与 integration 装配合并）：CDC 链路端到端，Dataset 可查询；证据包括源表行数 = sink 表行数 = Trino 查询行数、dataset RID、作业状态 `succeeded`、运行时连接器名。验证：脚本输出与数据库/Trino/API 三类断言一致；若全栈装配未合并，先以模块内集成替代并在证据中标注。
+- [x] 6.3 失败与负向矩阵：Connect 不可达（503，不伪造任务）、非法配置（400）、paused/error（403，Cedar 状态策略 fail-closed）、运行时提交失败（job failed 且脱敏）、重试耗尽、取消传播、重复启动幂等、跨租户 404。验证：逐场景测试记录与断言输出；授权层 403 断言 await `authorization-openfga-cedar`。
+  - 验收按实际 403 记录（2026-11-23 负责人确认）：paused/error 由 Cedar `resource_state_denied` 拒绝，符合 `openspec/specs/connectors` 的「必须被拒绝」；服务层 409 分支被授权层短路，证据见 `evidence/2026-11-23-negative-matrix-6-3.md`。
+- [x] 6.4 可观测性证据：Prometheus 抓取的指标样例、trace 样例、dashboard/告警片段（移交 `production-delivery` 合并）。验证：抓取输出与 span JSON 归档；片段文件存在且未直接改 `deploy/observability/`。
 
 ## 7. 交付与门禁
 

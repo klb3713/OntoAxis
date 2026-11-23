@@ -76,7 +76,7 @@ func clearAssemblyEnv(t *testing.T) {
 func TestBuildRuntimeAssemblyRequiresAuthzEnv(t *testing.T) {
 	clearAssemblyEnv(t)
 
-	_, err := BuildRuntimeAssembly(context.Background(), nil, config.Defaults(), nil, nil)
+	_, err := BuildRuntimeAssembly(context.Background(), nil, config.Defaults(), nil, nil, nil)
 	if err == nil {
 		t.Fatal("expected an error when ONTOAXIS_AUTHZ_* is missing, got nil")
 	}
@@ -91,7 +91,7 @@ func TestBuildRuntimeAssemblyRejectsInvalidPipelineEnv(t *testing.T) {
 	clearAssemblyEnv(t)
 	t.Setenv("ONTOAXIS_PIPELINE_RETRY_MAX_ATTEMPTS", "0")
 
-	_, err := BuildRuntimeAssembly(context.Background(), nil, config.Defaults(), nil, nil)
+	_, err := BuildRuntimeAssembly(context.Background(), nil, config.Defaults(), nil, nil, nil)
 	if err == nil {
 		t.Fatal("expected an error for invalid pipeline retry attempts, got nil")
 	}
@@ -107,7 +107,7 @@ func TestBuildRuntimeAssemblyRejectsInvalidConnectorEnv(t *testing.T) {
 	t.Setenv("ONTOAXIS_CONNECT_URL", "http://127.0.0.1:8083")
 	t.Setenv("ONTOAXIS_CONNECT_TIMEOUT", "not-a-duration")
 
-	_, err := BuildRuntimeAssembly(context.Background(), nil, config.Defaults(), nil, nil)
+	_, err := BuildRuntimeAssembly(context.Background(), nil, config.Defaults(), nil, nil, nil)
 	if err == nil {
 		t.Fatal("expected an error for invalid connector timeout, got nil")
 	}

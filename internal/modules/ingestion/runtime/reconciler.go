@@ -16,6 +16,9 @@ const (
 	DefaultReconcileInterval = 5 * time.Second
 	// DefaultReconcileBatch caps how many running jobs one cycle inspects.
 	DefaultReconcileBatch = 50
+	// DefaultStartupGrace is how long a freshly started job may report a missing
+	// runtime before the reconciler treats it as a failure.
+	DefaultStartupGrace = 30 * time.Second
 	// DefaultStableInterval is the minimum time between the two snapshot row
 	// count samples that confirm a completed sync.
 	DefaultStableInterval = 5 * time.Second
@@ -30,10 +33,14 @@ type ReconcilerOptions struct {
 	BatchSize      int
 	StableInterval time.Duration
 	StabilityTTL   time.Duration
-	Clock          func() time.Time
-	Ticker         TickerFactory
-	Logger         *slog.Logger
-	Metrics        Metrics
+	// StartupGrace tolerates a runtime that is not visible yet right after a
+	// submit: the dispatcher creates the connector resources asynchronously, so
+	// an immediate "missing" status must not fail a freshly started job.
+	StartupGrace time.Duration
+	Clock        func() time.Time
+	Ticker       TickerFactory
+	Logger       *slog.Logger
+	Metrics      Metrics
 }
 
 type stabilitySample struct {
@@ -92,6 +99,9 @@ func normalizeReconcilerOptions(opts ReconcilerOptions) ReconcilerOptions {
 	}
 	if opts.BatchSize <= 0 {
 		opts.BatchSize = DefaultReconcileBatch
+	}
+	if opts.StartupGrace <= 0 {
+		opts.StartupGrace = DefaultStartupGrace
 	}
 	if opts.StableInterval <= 0 {
 		opts.StableInterval = DefaultStableInterval
@@ -176,6 +186,14 @@ func (r *Reconciler) reconcileJob(ctx context.Context, now time.Time, job *domai
 	case StateFailed:
 		return r.fail(ctx, job, failedMessage(status.FailedMessage), logger)
 	case StateMissing, StateStopped, StatePaused:
+		// The dispatcher submits source/sink asynchronously; a job that just
+		// started can legitimately see no runtime yet. Wait out the grace window
+		// instead of failing a healthy sync.
+		if job.StartedAt != nil && now.Sub(*job.StartedAt) < r.opts.StartupGrace {
+			r.forgetStability(job.ID)
+			logger.Debug("connector runtime is not visible yet; waiting out the startup grace window")
+			return nil
+		}
 		return r.fail(ctx, job, "runtime_not_running: runtime_"+string(status.Overall()), logger)
 	case StateRunning:
 		return r.handleRunning(ctx, job, logger)
