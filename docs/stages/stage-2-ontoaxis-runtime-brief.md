@@ -47,7 +47,9 @@ Stage 2 不再扩展业务模块或页面数量，而是把以下三类仍为占
 3. Stage 1 已退出，12 个 change 已归档，11 个 capability spec 已写入；
 4. 已确认 Stage 2 的外部组件版本与部署方式：OpenFGA、Cedar、Temporal、Kestra、dbt、Kafka Connect/Debezium、Meilisearch、Envoy Gateway/Traefik、Helm/ArgoCD；Meltano 不在 Stage 2 范围；
 5. 本地具备 Docker Compose 与 kind/k3d 集群；外部组件只使用本地或预发环境；
-6. Stage 2 不接入真实客户数据，使用合成 fixture 和受控测试账号。
+6. Stage 2 不接入真实客户数据，使用合成 fixture 和受控测试账号；
+7. 依赖基线：组件版本以 `deploy/deps/policy.yaml` + `deploy/deps/lock.yaml` 为准，
+   `make deps-check` 通过；规则与例外见 [`docs/workflow/DEPENDENCIES.md`](../workflow/DEPENDENCIES.md)。
 
 ## 4. Stage 验收标准（AC）
 
@@ -78,6 +80,7 @@ Stage 2 不再扩展业务模块或页面数量，而是把以下三类仍为占
 | `object-search-meilisearch` | 能力 | 对象搜索：outbox 索引消费者、Meilisearch 搜索与重建 | `internal/modules/objects`、`internal/platform/search` | `runtime-observability` | Wave 2 |
 | `production-delivery` | Stage 支撑 | Helm/ArgoCD、Secret/PDB、备份恢复、回滚、生产 IdP 验证 | `deploy/`、`config/` | 所有 Wave 1 | Wave 2 |
 | `stage-2-integration` | Stage 支撑 | 全栈 E2E、跨模块修复、证据与 Stage 报告 | `cmd`、`internal/app`、`deploy/` | 所有 change | Wave 3 |
+| `stage-2-dependency-governance` | Stage 支撑 | 依赖清单、锁文件门禁、Renovate 分级、月度审计 | `deploy/deps`、`scripts/deps.*`、`.github/workflows/deps.yml` | Stage 1 | Wave 0 |
 
 ## 6. 多 Agent 并行策略
 
@@ -106,6 +109,7 @@ Stage 2 不再扩展业务模块或页面数量，而是把以下三类仍为占
 - `config/edge/`：`edge-gateway`；
 - `deploy/compose/`、`deploy/helm/`、`deploy/argocd/`：`production-delivery`；
 - `go.mod`、`go.sum`：由需要新依赖的 change 在 PR 中提出，`stage-2-integration` 合并；
+- `deploy/deps/`、`renovate.json`、`.github/workflows/deps.yml`、`scripts/deps.py`、`scripts/deps.sh`：`stage-2-dependency-governance`；
 - `web/`：默认不新增页面；如 Action 审批需要最小 UI，由 `action-temporal` 提供，`stage-2-integration` 合并。
 
 ## 7. 安全、数据与证据
@@ -124,7 +128,8 @@ Stage 2 不再扩展业务模块或页面数量，而是把以下三类仍为占
 3. `go build ./...`、`go test ./...`、前端 check/build/test、Playwright、`buf lint`/`breaking`、CI 全绿；
 4. Compose 与 kind/k3d 均能启动并按 Stage 2 AC 完成 E2E；
 5. Stage 2 报告、架构文档同步、风险与遗留项记录完成；
-6. 负责人确认 Stage 2 退出；不自动批准、不自动归档、不自动宣布完成。
+6. 依赖基线可复核：`make deps-check` 通过，最近一次 `make deps-audit` 报告已归档，无过期例外；
+7. 负责人确认 Stage 2 退出；不自动批准、不自动归档、不自动宣布完成。
 
 ## 9. 已确认决策（2026-11-22）
 

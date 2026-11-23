@@ -101,6 +101,11 @@ make proto-breaking
 make generate
 make generate-check
 
+# 依赖版本治理（改过任何镜像引用后必跑 lock + check）
+make deps-lock
+make deps-check
+make deps-audit
+
 # 全栈本地启动
 docker compose -f deploy/compose/compose.yaml up -d --build
 scripts/smoke-foundation.sh

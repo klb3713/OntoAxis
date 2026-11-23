@@ -99,6 +99,8 @@ openspec instructions tasks --change <change-name>
 
 5. **评审**：用户/负责人确认后才能实施；“artifacts 存在”不是实施授权。
 6. **实施**：按依赖顺序；只有验证通过才勾选 task。
+7. **依赖变更**：改过任何镜像 tag/digest 后必须 `make deps-lock` 并提交 `deploy/deps/lock.yaml`，
+   `make deps-check` 通过才算完成；p0 组件升级走 change，规则见 `docs/workflow/DEPENDENCIES.md`。
 7. **归档**：
 
 ```bash
@@ -147,6 +149,11 @@ make proto-breaking
 make generate
 make generate-check
 
+# 依赖版本治理
+make deps-lock
+make deps-check
+make deps-audit
+
 # 全栈本地启动
 docker compose -f deploy/compose/compose.yaml up -d --build
 scripts/smoke-foundation.sh
@@ -174,13 +181,15 @@ openspec status --change <change-name>
 | 用合成数据证明真实数据 | 证据造假 | 合成夹具只做自动化；真实验收另记 |
 | 未签核阈值直接判定合格 | 业务结论无依据 | 只输出技术结果或 `NOT_EVALUATED` |
 | 为了本地演示关闭鉴权 | 安全边界失效 | 用受控测试上下文，不对外暴露 |
+| 改了镜像 tag 不更新 `deploy/deps/lock.yaml` | 版本漂移，`deps-check` 失败 | `make deps-lock` 后一起提交，规则见 `docs/workflow/DEPENDENCIES.md` |
+| 给 p0 组件开 Renovate 自动合并 | 引擎 breaking 静默进入主干 | `platform-p0` 规则保持 `automerge: false` |
 
 ## 10. 当前状态
 
 - 当前 Stage：Stage 1 已退出（exited，2026-11-22）；Stage 2 进行中（in_progress；`docs/stages/stage-2-ontoaxis-runtime-brief.md`）
-- 当前 change：无 active change；12 个 Stage 1 change 已归档到 `openspec/changes/archive/`
-- 主规格：`openspec/specs/` 下 11 个 capability spec 已由归档 change 写入
-- 当前事项：Stage 2 已获批准，按 change map 从 Wave 0 开始实施
+- 当前 change：5 个 active change —— `production-delivery`、`connector-runtime`、`stage-2-integration`、`object-search-meilisearch`、`stage-2-dependency-governance`；Stage 1 的 12 个 change 与 Stage 2 的 5 个 change（`runtime-observability`、`edge-gateway`、`authorization-openfga-cedar`、`action-temporal`、`pipeline-kestra-dbt`）已归档到 `openspec/changes/archive/`
+- 主规格：`openspec/specs/` 下 11 个 capability spec 已由归档 change 写入；`dependency-governance` 在 `stage-2-dependency-governance` 归档后写入
+- 当前事项：Stage 2 按 change map 实施；依赖版本治理规则见 `docs/workflow/DEPENDENCIES.md`
 
 ## 11. 技能分工
 

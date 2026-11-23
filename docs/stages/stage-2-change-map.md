@@ -49,8 +49,13 @@ flowchart TB
 | `object-search-meilisearch` | 对象搜索索引 | `internal/modules/objects/`、`internal/platform/search/` | outbox 索引消费者、Meilisearch 索引、增量更新/重建、搜索 E2E | S2-AC-07 |
 | `production-delivery` | 生产交付 | `deploy/helm/`、`deploy/argocd/`、`deploy/compose/`、`config/` | Helm chart、ArgoCD Application、Secret/PDB/探针、kind/k3d 部署、备份恢复、镜像回滚、生产 IdP 验证 | S2-AC-08、S2-AC-10 |
 | `stage-2-integration` | 集成与证据 | `cmd/`、`internal/app/`、`deploy/`、`docs/stages/evidence/` | 模块装配、跨 change 修复、全栈 E2E、证据、Stage 2 报告 | S2-AC-01、S2-AC-11 |
+| `stage-2-dependency-governance` | 依赖版本治理（Stage 支撑） | `deploy/deps/`、`scripts/deps.*`、`.github/workflows/deps.yml` | policy/lock 单一真源、`make deps-check` 门禁、Renovate 分级合并、月度审计报告 | 支撑 S2-AC-08、S2-AC-11 |
 
 > 状态（2026-11-22）：`runtime-observability` 已归档（主 spec `openspec/specs/observability/`）；`edge-gateway` 已归档（主 spec `openspec/specs/edge-gateway/`），Envoy kind 与 Traefik Compose 双 provider 验证通过，CI 45026353151 全绿。剩余 7 个 change 已一次性创建规划产物，统一评审包见 `docs/stages/stage-2-change-batch-review.md`；均未开始实施、未归档。授权边界已于 2026-11-22 定稿，负责人确认安全评审通过。
+>
+> 状态（2026-11-23）：新增 Stage 支撑 change `stage-2-dependency-governance`（依赖版本单一真源与门禁），规划产物已创建，实施已获授权；对应 `deploy/deps/` 与 `scripts/deps.*` 的所有权在 §5 登记。
+>
+> 状态（2026-11-23 归档）：`pipeline-kestra-dbt` 已完成 69/69 并归档为 `2026-11-23-pipeline-kestra-dbt`（Kestra v2.0.12 + dbt 真实 E2E），delta spec 已合入 `openspec/specs/pipelines/spec.md`。当前在途 5 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`、`stage-2-dependency-governance`。
 
 ## 4. 并行波次与合并门
 
@@ -111,6 +116,7 @@ flowchart TB
 | `go.mod`、`go.sum` | 需要新依赖的 change 提交补丁 | 集成 change 统一 tidy |
 | `web/` | `action-temporal`（如审批 UI） | 其他 change 默认不改前端 |
 | `docs/stages/evidence/` | `stage-2-integration` | 各 change 提供证据源文件 |
+| `deploy/deps/`、`renovate.json`、`.github/workflows/deps.yml`、`scripts/deps.py`、`scripts/deps.sh` | `stage-2-dependency-governance` | 其他 change 只改自己组件的 tag/digest，然后跑 `make deps-lock` 并提交锁文件 |
 
 ## 6. 每个 Change 的完成定义
 
@@ -153,7 +159,7 @@ flowchart TB
 
 ## 10. 规划评审结论（2026-11-22）
 
-**状态：本批 7 个 change 的规划产物已通过负责人评审；`authorization-openfga-cedar` 已于 2026-11-23 归档（43/43），其余 change 按计划逐个实施。**
+**状态：本批 7 个 change 的规划产物已通过负责人评审；`authorization-openfga-cedar` 已于 2026-11-23 归档（43/43），`pipeline-kestra-dbt` 已于 2026-11-23 归档（69/69），其余 change 按计划逐个实施。**
 
 评审确认的范围与决策：
 
@@ -168,13 +174,13 @@ flowchart TB
 
 `connector-runtime` 已按 Stage 2 实施目标启动：connectors/ingestion 运行时、调度/对账、迁移与 `deploy/connector-runtime/` 资产已实现，单元/race/静态校验通过；真实 Kafka Connect/Trino E2E、`SnapshotVerifier` 装配与 `internal/app` 接线未完成，因此尚未归档。
 
-**实施进度更新（2026-11-23）**：`authorization-openfga-cedar` 已归档；其余 6 个 change 仍在途。本地单元/静态证据可用，但真实集群/运行时 E2E 尚未闭合，不能据此判定 Stage AC 通过。
+**实施进度更新（2026-11-23）**：`authorization-openfga-cedar` 已归档；`pipeline-kestra-dbt` 已完成 69/69 并归档（`2026-11-23-pipeline-kestra-dbt`）；其余 5 个 change 仍在途。本地单元/静态证据可用，但真实集群/运行时 E2E（CDC、搜索、kind 交付）尚未闭合，不能据此判定 Stage AC 通过。
 
 | change | 任务 | 当前实现边界 |
 | --- | --- | --- |
 | `authorization-openfga-cedar` | 43/43（已归档 2026-11-23） | 核心 authz、策略、9 模块接缝、真实 handler + 真实 OpenFGA 集成、29 条负向矩阵、审计一致性、CI job；见 `openspec/changes/archive/2026-11-23-authorization-openfga-cedar/` |
 | `connector-runtime` | 20/25 | connectors/ingestion runtime、调度/对账、迁移、Compose 资产；真实 Connect/Trino E2E 与 verifier 未闭合 |
-| `pipeline-kestra-dbt` | 55/69 | DAG/Flow/dbt/HTTP adapter、service 编排、迁移/单测；Kestra/dbt spike、幂等、E2E 未闭合 |
+| `pipeline-kestra-dbt` | 69/69（已归档 2026-11-23） | DAG/Flow/dbt/HTTP adapter（Kestra v2.0.12）、service 编排、迁移/单测；真实发布/触发/输出血缘/失败/重试/负向/遥测 E2E 已通过；见 `openspec/changes/archive/2026-11-23-pipeline-kestra-dbt/`，证据交接 `docs/stages/evidence/stage-2-pipeline-kestra-dbt/` |
 | `action-temporal` | 55/55（已归档 2026-11-23） | 领域/迁移/repo、Temporal adapter/workflow/worker、审批 REST + UI、proto/幂等/审计/授权接缝、span、真实 Temporal 集成测试与门禁；见 `openspec/changes/archive/2026-11-23-action-temporal/` |
 | `object-search-meilisearch` | 32/52 | search 客户端/consumer/rebuild、outbox、search API、app adapter；真实 Meilisearch/Postgres E2E 未闭合 |
 | `production-delivery` | 29/66 | Helm/ArgoCD/kind/脚本静态资产与语法校验；helm/kind/ArgoCD/备份/回滚/IdP 全部未执行 |
