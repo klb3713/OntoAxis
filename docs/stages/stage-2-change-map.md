@@ -50,6 +50,7 @@ flowchart TB
 | `production-delivery` | 生产交付 | `deploy/helm/`、`deploy/argocd/`、`deploy/compose/`、`config/` | Helm chart、ArgoCD Application、Secret/PDB/探针、kind/k3d 部署、备份恢复、镜像回滚、生产 IdP 验证 | S2-AC-08、S2-AC-10 |
 | `stage-2-integration` | 集成与证据 | `cmd/`、`internal/app/`、`deploy/`、`docs/stages/evidence/` | 模块装配、跨 change 修复、全栈 E2E、证据、Stage 2 报告 | S2-AC-01、S2-AC-11 |
 | `stage-2-dependency-governance` | 依赖版本治理（Stage 支撑） | `deploy/deps/`、`scripts/deps.*`、`.github/workflows/deps.yml` | policy/lock 单一真源、`make deps-check` 门禁、Renovate 分级合并、月度审计报告 | 支撑 S2-AC-08、S2-AC-11 |
+| `jaeger-v2` | 观测后端迁移（Stage 支撑） | `deploy/compose/`、`deploy/helm/ontoaxis-observability/`、`deploy/deps/` | Jaeger v1→v2 版本与配置迁移、端口契约保持、smoke 断言更新、镜像名同步 Renovate 名单 | 支撑 S2-AC-09；执行 §11 台账 6.3 首项 |
 
 > 状态（2026-11-22）：`runtime-observability` 已归档（主 spec `openspec/specs/observability/`）；`edge-gateway` 已归档（主 spec `openspec/specs/edge-gateway/`），Envoy kind 与 Traefik Compose 双 provider 验证通过，CI 45026353151 全绿。剩余 7 个 change 已一次性创建规划产物，统一评审包见 `docs/stages/stage-2-change-batch-review.md`；均未开始实施、未归档。授权边界已于 2026-11-22 定稿，负责人确认安全评审通过。
 >
@@ -58,6 +59,8 @@ flowchart TB
 > 状态（2026-11-23 归档）：`pipeline-kestra-dbt` 已完成 69/69 并归档为 `2026-11-23-pipeline-kestra-dbt`（Kestra v2.0.12 + dbt 真实 E2E），delta spec 已合入 `openspec/specs/pipelines/spec.md`。当前在途 5 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`、`stage-2-dependency-governance`。
 >
 > 状态（2026-11-23 归档）：`stage-2-dependency-governance` 已完成 19/19（含 4 项一致性修正与块外镜像覆盖）并归档为 `2026-11-23-stage-2-dependency-governance`（`openspec/changes/archive/2026-11-23-stage-2-dependency-governance/`），主 spec 写入 `openspec/specs/dependency-governance/spec.md`。Helm 占位 digest 回填等 3 项显式移交，见 §11 台账；当前在途 4 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`。
+>
+> 状态（2026-11-23 规划）：新增 `jaeger-v2`（Jaeger v1 EOL，需迁 v2），规划产物已创建（proposal/specs/design/tasks），**未授权实施**。`deploy/compose/` 与 `deploy/helm/` 归 `production-delivery`，实施前需其确认；该 change 不作为 G2 前置，但需在 §11 台账 6.1 回填 jaeger 行之前定版本。当前在途 5 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`、`jaeger-v2`（规划）。
 
 ## 4. 并行波次与合并门
 

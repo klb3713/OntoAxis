@@ -4,10 +4,10 @@ BUF ?= buf
 BUF_DOCKER ?= docker run --rm -v "$(CURDIR)":/workspace -w /workspace/proto bufbuild/buf:1.75.0
 GO_DOCKER ?= docker run --rm -v "$(CURDIR)":/src -w /src -e GOFLAGS=-buildvcs=false golang:1.26.3
 
-.PHONY: help build test test-race fmt vet lint license-check deps-lock deps-check deps-audit deps-test proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke
+.PHONY: help build test test-race fmt vet lint license-check deps-lock deps-check deps-audit deps-test deps-resolve proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke
 
 help:
-	@echo "Targets: build test test-race fmt vet lint license-check deps-lock deps-check deps-audit deps-test proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke"
+	@echo "Targets: build test test-race fmt vet lint license-check deps-lock deps-check deps-audit deps-test deps-resolve proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke"
 
 build:
 	$(GO) build ./...
@@ -44,6 +44,10 @@ deps-audit:
 
 deps-test:
 	python3 scripts/deps_test.py
+
+deps-resolve:
+	@echo "# 联网查询 tag→digest 映射（Helm 占位 digest 回填前使用）"
+	python3 scripts/deps.py resolve
 
 proto-lint:
 	@if command -v $(BUF) >/dev/null 2>&1; then cd proto && $(BUF) lint; else $(BUF_DOCKER) lint; fi

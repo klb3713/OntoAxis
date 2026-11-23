@@ -14,6 +14,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 # 测试是被导入执行的脚本，不落 __pycache__，避免污染仓库工作区。
 sys.dont_write_bytecode = True
@@ -147,6 +148,37 @@ class LockRenderTest(unittest.TestCase):
         self.assertIn('    digest: "sha256:' + "c" * 64 + '"', text)
         # 无时间戳：同一输入必须逐字节稳定，否则锁文件无法 diff。
         self.assertEqual(text, deps.render_lock(entries))
+
+
+class ResolveTest(unittest.TestCase):
+    def test_docker_hub_digest(self):
+        payload = {"digest": "sha256:" + "a" * 64}
+        with mock.patch.object(deps, "http_json", return_value=payload) as http:
+            digest = deps.registry_digest("docker.io/library/postgres", "16-alpine")
+        self.assertEqual(digest, "sha256:" + "a" * 64)
+        self.assertIn(
+            "hub.docker.com/v2/repositories/library/postgres/tags/16-alpine",
+            http.call_args[0][0],
+        )
+
+    def test_quay_digest(self):
+        payload = {"tags": [{"manifest_digest": "sha256:" + "b" * 64}]}
+        with mock.patch.object(deps, "http_json", return_value=payload) as http:
+            digest = deps.registry_digest("quay.io/keycloak/keycloak", "26.0")
+        self.assertEqual(digest, "sha256:" + "b" * 64)
+        self.assertIn("specificTag=26.0", http.call_args[0][0])
+
+    def test_quay_missing_tag_is_none(self):
+        with mock.patch.object(deps, "http_json", return_value={"tags": []}):
+            self.assertIsNone(deps.registry_digest("quay.io/keycloak/keycloak", "0.0.0"))
+
+    def test_docker_hub_missing_digest_is_none(self):
+        with mock.patch.object(deps, "http_json", return_value={}):
+            self.assertIsNone(deps.registry_digest("docker.io/library/postgres", "0.0.0"))
+
+    def test_self_built_images_are_not_queried(self):
+        with mock.patch.object(deps, "http_json", side_effect=AssertionError("must not query")):
+            self.assertIsNone(deps.registry_digest("ghcr.io/ontoaxis/core", "abc123"))
 
 
 class ExceptionCoverageTest(unittest.TestCase):

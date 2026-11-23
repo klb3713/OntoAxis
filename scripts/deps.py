@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -631,6 +632,87 @@ def eol_for(slug, major):
     return None
 
 
+def registry_digest(image, tag):
+    """查询 registry 返回 tag 对应的 manifest digest；无法确认时返回 None。"""
+    if image.startswith("ghcr.io/ontoaxis/"):
+        return None
+    if image.startswith("quay.io/"):
+        repo = image.split("quay.io/", 1)[1]
+        payload = http_json(
+            "https://quay.io/api/v1/repository/%s/tag/?specificTag=%s&limit=5"
+            % (repo, urllib.parse.quote(tag))
+        )
+        tags = payload.get("tags") or []
+        return tags[0].get("manifest_digest") if tags else None
+    path = normalize_image(image)
+    if "/" not in path:
+        path = "library/" + path
+    payload = http_json(
+        "https://hub.docker.com/v2/repositories/%s/tags/%s"
+        % (path, urllib.parse.quote(tag))
+    )
+    return payload.get("digest")
+
+
+def cmd_resolve(args):
+    """把 lock 中的 tag 解析成 digest，输出可直接用于 Helm values 的映射表。
+
+    只读查询，不写仓库文件；查询不到记为 unknown，不推测。用于 Helm 占位 digest
+    回填前先拿到真实 digest，减少人工逐个查 registry。
+    """
+    rows = {}
+    for entry in collect_entries():
+        if not entry["tag"]:
+            continue
+        key = (entry["image"], entry["tag"])
+        row = rows.setdefault(key, {"components": set(), "sources": set()})
+        row["components"].add(entry["component"])
+        row["sources"].add(entry["source"])
+
+    out = [
+        "# tag → digest 映射",
+        "",
+        "- 生成时间：%s" % datetime.datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "- 来源：`deploy/deps/lock.yaml` + Docker Hub / Quay manifest 查询",
+        "- 说明：digest 为 registry 返回的 manifest（多架构为 image index）digest；查询失败记 unknown，不推测。",
+        "",
+        "| 组件 | 镜像 | tag | digest | 来源 |",
+        "|---|---|---|---|---|",
+    ]
+    unknown = 0
+    for (image, tag), row in sorted(rows.items()):
+        try:
+            digest = registry_digest(image, tag)
+        except (urllib.error.URLError, urllib.error.HTTPError, ValueError, OSError):
+            digest = None
+        if not digest:
+            digest = "unknown"
+            unknown += 1
+        out.append(
+            "| %s | `%s` | `%s` | `%s` | %s |"
+            % (
+                ",".join(sorted(row["components"])),
+                image,
+                tag,
+                digest,
+                ",".join(sorted(row["sources"])),
+            )
+        )
+    out.append("")
+    out.append("共 %d 条，unknown %d 条。" % (len(rows), unknown))
+    text = "\n".join(out) + "\n"
+
+    if args.out:
+        target = args.out if os.path.isabs(args.out) else os.path.join(ROOT, args.out)
+        os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+        with open(target, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        print("wrote %s (%d rows, %d unknown)" % (rel(target), len(rows), unknown))
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
 def cmd_audit(args):
     try:
         policy = load_policy()
@@ -769,6 +851,10 @@ def main(argv):
     check = sub.add_parser("check", help="离线校验")
     check.add_argument("--verbose", action="store_true", help="显示警告")
     check.set_defaults(func=cmd_check)
+
+    resolve = sub.add_parser("resolve", help="把 lock 中的 tag 解析成 digest（联网）")
+    resolve.add_argument("--out", help="写入指定文件")
+    resolve.set_defaults(func=cmd_resolve)
 
     audit = sub.add_parser("audit", help="联网审计并输出报告")
     audit.add_argument("--out", help="写入指定文件")

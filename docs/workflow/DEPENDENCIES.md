@@ -20,7 +20,12 @@ make deps-lock     # 重新抽取并写回 deploy/deps/lock.yaml（改过任何�
 make deps-check    # 离线校验，CI 阻塞项；退出码非 0 即失败
 make deps-audit    # 联网查询上游最新版本与 EOL，输出 markdown（不写文件）
 make deps-test     # 工具自身回归测试（标准库 unittest，不联网）
+make deps-resolve  # 联网把 lock 里的 tag 解析成 digest，输出映射表（Helm 回填前用）
 ```
+
+Helm 占位 digest 回填前，先跑 `make deps-resolve` 拿到 tag→digest 映射（Docker Hub / Quay
+manifest 查询，查不到记 `unknown`，不推测）；映射表本身不作证据，回填后仍以 lock 与
+`helm template` 输出为准。
 
 需要存档时：
 
