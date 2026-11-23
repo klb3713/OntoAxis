@@ -50,7 +50,6 @@ flowchart TB
 | `production-delivery` | 生产交付 | `deploy/helm/`、`deploy/argocd/`、`deploy/compose/`、`config/` | Helm chart、ArgoCD Application、Secret/PDB/探针、kind/k3d 部署、备份恢复、镜像回滚、生产 IdP 验证 | S2-AC-08、S2-AC-10 |
 | `stage-2-integration` | 集成与证据 | `cmd/`、`internal/app/`、`deploy/`、`docs/stages/evidence/` | 模块装配、跨 change 修复、全栈 E2E、证据、Stage 2 报告 | S2-AC-01、S2-AC-11 |
 | `stage-2-dependency-governance` | 依赖版本治理（Stage 支撑） | `deploy/deps/`、`scripts/deps.*`、`.github/workflows/deps.yml` | policy/lock 单一真源、`make deps-check` 门禁、Renovate 分级合并、月度审计报告 | 支撑 S2-AC-08、S2-AC-11 |
-| `jaeger-v2` | 观测后端迁移（Stage 支撑） | `deploy/compose/`、`deploy/helm/ontoaxis-observability/`、`deploy/deps/` | Jaeger v1→v2 版本与配置迁移、端口契约保持、smoke 断言更新、镜像名同步 Renovate 名单 | 支撑 S2-AC-09；执行 §11 台账 6.3 首项 |
 
 > 状态（2026-11-22）：`runtime-observability` 已归档（主 spec `openspec/specs/observability/`）；`edge-gateway` 已归档（主 spec `openspec/specs/edge-gateway/`），Envoy kind 与 Traefik Compose 双 provider 验证通过，CI 45026353151 全绿。剩余 7 个 change 已一次性创建规划产物，统一评审包见 `docs/stages/stage-2-change-batch-review.md`；均未开始实施、未归档。授权边界已于 2026-11-22 定稿，负责人确认安全评审通过。
 >
@@ -60,7 +59,7 @@ flowchart TB
 >
 > 状态（2026-11-23 归档）：`stage-2-dependency-governance` 已完成 19/19（含 4 项一致性修正与块外镜像覆盖）并归档为 `2026-11-23-stage-2-dependency-governance`（`openspec/changes/archive/2026-11-23-stage-2-dependency-governance/`），主 spec 写入 `openspec/specs/dependency-governance/spec.md`。Helm 占位 digest 回填等 3 项显式移交，见 §11 台账；当前在途 4 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`。
 >
-> 状态（2026-11-23 规划）：新增 `jaeger-v2`（Jaeger v1 EOL，需迁 v2），规划产物已创建（proposal/specs/design/tasks），**未授权实施**。`deploy/compose/` 与 `deploy/helm/` 归 `production-delivery`，实施前需其确认；该 change 不作为 G2 前置，但需在 §11 台账 6.1 回填 jaeger 行之前定版本。当前在途 5 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`、`jaeger-v2`（规划）。
+> 状态（2026-11-23 归属修正）：`jaeger-v2` 的规划产物已创建，但**不属于 Stage 2 范围**——Stage 2 brief §5 未列入，§2.1 可观测交付与 S2-AC-09 也不要求 Jaeger v2，Stage 2 退出条件 6 只要求 `deps-check` 通过、无过期例外。该 change 改登记到 §12「Stage 外/后续候选」，Stage 2 在途仍为 4 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`。
 
 ## 4. 并行波次与合并门
 
@@ -199,12 +198,21 @@ flowchart TB
 
 | 项 | 内容 | owner | 期限 | 验收 |
 | --- | --- | --- | --- | --- |
-| 6.1 | Helm 22 条占位镜像引用回填真实 digest + 补 `image.tag`（21 个组件 + `ontoaxis-jobs` 的 `backup.image`） | `production-delivery` | 2026-12-31（例外 `helm-placeholder-digests` 到期） | 22 条 `repository`+真实 `digest`+`tag`；`helm template` 输出 `repo@sha256:`；删除例外后 `make deps-check` 通过 |
+| 6.1 | Helm 22 条占位镜像引用回填真实 digest + 补 `image.tag`（21 个组件 + `ontoaxis-jobs` 的 `backup.image`）。jaeger 一行按**当前 v1 版本**钉真实 digest，EOL 风险写入审计备注 | `production-delivery` | 2026-12-31（例外 `helm-placeholder-digests` 到期） | 22 条 `repository`+真实 `digest`+`tag`；`helm template` 输出 `repo@sha256:`；删除例外后 `make deps-check` 通过；审计报告 jaeger 行标注 EOL |
 | 6.2 | GitHub Actions `uses:` 改 commit SHA（`ci.yml`/`deps.yml` 共 20 处） | `production-delivery` | 2027-01-31 | `grep -rn "uses:.*@v[0-9]" .github/workflows` 无结果；CI 绿灯 |
 | 6.3 | P0 版本升级（Jaeger v2、Keycloak、Temporal、Meilisearch、Traefik、Prometheus/Alertmanager/OTel、PostgreSQL major） | 各组件 owner（见 `deploy/deps/policy.yaml`） | `review_by` 字段 | 每个引擎独立 change，按 `openspec validate --all --strict` 与门禁归档 |
 
 关联约束：
 
-- 6.3 中 Jaeger v1 已 EOL，`review_by: 2026-12-31`，需在 6.1 回填前定 v2 目标版本，避免 jaeger 行改两次；
+- 6.3 中 Jaeger v2 迁移已单独建规划 change（`openspec/changes/jaeger-v2`，见 §12），**不属于 Stage 2**；Stage 2 内 6.1 先钉 v1 真实 digest 并把 EOL 风险写进审计，v2 迁移随 Stage 3 或独立授权推进；
 - 6.1 回填时**不夹带版本升级**：先按当前 compose 版本固定，升级另走 6.3 的 change；
 - digest 棘轮 `2027-01-31` 到期后，compose/Dockerfile/Makefile 共 21 条无 digest 引用会从 warning 变 error，需独立 change 收口。
+
+## 12. Stage 外/后续候选 change
+
+以下 change 已存在规划产物，但**不属于 Stage 2 范围**（Stage 2 brief 的 change 清单未列入、
+也不为其 AC 或退出条件所必需）。登记在此避免被误计入 Stage 2 在途清单。
+
+| change | 内容 | 当前状态 | 归属与前置 | 与 Stage 2 的关系 |
+| --- | --- | --- | --- | --- |
+| `jaeger-v2` | Jaeger v1→v2 迁移：镜像、配置、端口契约、smoke 断言 | 规划完成，0/10 任务，未授权实施 | 待 Stage 3 立项或独立授权；目录 `deploy/compose/`、`deploy/helm/ontoaxis-observability/` 归 `production-delivery` | Stage 2 的 6.1 先钉 v1 真实 digest 并记录 EOL；v2 迁移不在 Stage 2 退出判据内 |

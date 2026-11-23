@@ -6,6 +6,7 @@
 - 依赖策略：`policy.yaml` 中 jaeger 为 p0、`review_by: 2026-12-31`；`renovate.json` 的 `platform-p0` 名单包含 `jaegertracing/all-in-one`，镜像名变化后名单必须同步，否则 `E_RENOVATE` 直接失败。
 - 观测契约：core 通过 OTLP 导出，本地 Jaeger UI 用于查 trace；端口 16686 / 4317 / 4318 是既有约定。
 - 本 change 当前只做规划：不修改任何部署资产，实施需单独授权。
+- 范围归属：**不属于 Stage 2**（brief §5 未列入、S2-AC-09 不要求），登记为 change map §12 的 Stage 外候选；Stage 2 内的 6.1 先钉 v1 真实 digest 并记录 EOL 风险。
 
 ## 决策
 

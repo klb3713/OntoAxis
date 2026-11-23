@@ -187,7 +187,7 @@ openspec status --change <change-name>
 ## 10. 当前状态
 
 - 当前 Stage：Stage 1 已退出（exited，2026-11-22）；Stage 2 进行中（in_progress；`docs/stages/stage-2-ontoaxis-runtime-brief.md`）
-- 当前 change：5 个 active change —— `production-delivery`、`connector-runtime`、`stage-2-integration`、`object-search-meilisearch`、`jaeger-v2`（仅规划，未授权实施）；Stage 1 的 12 个 change 与 Stage 2 的 6 个 change（`runtime-observability`、`edge-gateway`、`authorization-openfga-cedar`、`action-temporal`、`pipeline-kestra-dbt`、`stage-2-dependency-governance`）已归档到 `openspec/changes/archive/`
+- 当前 change：4 个 Stage 2 active change —— `production-delivery`、`connector-runtime`、`stage-2-integration`、`object-search-meilisearch`；另有一个 **Stage 外**规划 change `jaeger-v2`（不属于 Stage 2，见 change map §12，未授权实施）；Stage 1 的 12 个 change 与 Stage 2 的 6 个 change（`runtime-observability`、`edge-gateway`、`authorization-openfga-cedar`、`action-temporal`、`pipeline-kestra-dbt`、`stage-2-dependency-governance`）已归档到 `openspec/changes/archive/`
 - 主规格：`openspec/specs/` 下 12 个 capability spec 已由归档 change 写入（含 `dependency-governance`）
 - 当前事项：Stage 2 按 change map 实施；依赖版本治理规则见 `docs/workflow/DEPENDENCIES.md`，未完成项见 change map §11 移交台账（Helm 占位 digest 回填期限 2026-12-31）
 

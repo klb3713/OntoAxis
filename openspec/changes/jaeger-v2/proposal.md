@@ -1,5 +1,9 @@
 # Proposal: Jaeger v1 → v2 迁移
 
+## 范围归属
+
+**本 change 不属于 Stage 2。** Stage 2 brief 的 change 清单未列入它，S2-AC-09 与 Stage 2 退出条件也不要求 Jaeger v2；该 change 登记在 `docs/stages/stage-2-change-map.md` §12「Stage 外/后续候选」，待 Stage 3 立项或独立授权后实施。其存在意义是：在 Stage 2 的依赖台账 6.1 回填 jaeger 行之前，先把 v2 的目标版本与迁移路径定清楚。
+
 ## Why
 
 `jaegertracing/all-in-one:1.62.0` 仍能拉取，但 Jaeger v1 已于 2025 年 EOL，只在出安全问题时补丁；仓库的 `deploy/deps/policy.yaml` 给 jaeger 设的 `review_by` 是 2026-12-31，与 Helm 占位 digest 例外到期同一天。继续给 v1 补 digest 等于把不可持续版本钉死，所以现在定版本、立项迁移，而不是等例外到期再处理。
