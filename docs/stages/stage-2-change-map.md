@@ -56,6 +56,8 @@ flowchart TB
 > 状态（2026-11-23）：新增 Stage 支撑 change `stage-2-dependency-governance`（依赖版本单一真源与门禁），规划产物已创建，实施已获授权；对应 `deploy/deps/` 与 `scripts/deps.*` 的所有权在 §5 登记。
 >
 > 状态（2026-11-23 归档）：`pipeline-kestra-dbt` 已完成 69/69 并归档为 `2026-11-23-pipeline-kestra-dbt`（Kestra v2.0.12 + dbt 真实 E2E），delta spec 已合入 `openspec/specs/pipelines/spec.md`。当前在途 5 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`、`stage-2-dependency-governance`。
+>
+> 状态（2026-11-23 归档）：`stage-2-dependency-governance` 已完成 19/19（含 4 项一致性修正与块外镜像覆盖）并归档为 `2026-11-23-stage-2-dependency-governance`（`openspec/changes/archive/2026-11-23-stage-2-dependency-governance/`），主 spec 写入 `openspec/specs/dependency-governance/spec.md`。Helm 占位 digest 回填等 3 项显式移交，见 §11 台账；当前在途 4 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`。
 
 ## 4. 并行波次与合并门
 
@@ -185,3 +187,21 @@ flowchart TB
 | `object-search-meilisearch` | 32/52 | search 客户端/consumer/rebuild、outbox、search API、app adapter；真实 Meilisearch/Postgres E2E 未闭合 |
 | `production-delivery` | 29/66 | Helm/ArgoCD/kind/脚本静态资产与语法校验；helm/kind/ArgoCD/备份/回滚/IdP 全部未执行 |
 | `stage-2-integration` | 22/52 | `internal/app`/`cmd` 运行时装配、fail-fast 组合测试、go mod tidy、基础 Compose + OpenFGA 冒烟与重复性完成；Gate G2/kind/全链路 E2E/质量门未闭合 |
+
+## 11. 依赖治理移交台账（2026-11-23）
+
+`stage-2-dependency-governance` 归档时未完成的 3 项，从 change tasks 移出，由本台账跟踪。
+**这些项不因 change 归档而消失**：Stage 2 退出条件 6「`make deps-check` 通过、无过期例外」
+仍要求 6.1 在 2026-12-31 前闭合。
+
+| 项 | 内容 | owner | 期限 | 验收 |
+| --- | --- | --- | --- | --- |
+| 6.1 | Helm 22 条占位镜像引用回填真实 digest + 补 `image.tag`（21 个组件 + `ontoaxis-jobs` 的 `backup.image`） | `production-delivery` | 2026-12-31（例外 `helm-placeholder-digests` 到期） | 22 条 `repository`+真实 `digest`+`tag`；`helm template` 输出 `repo@sha256:`；删除例外后 `make deps-check` 通过 |
+| 6.2 | GitHub Actions `uses:` 改 commit SHA（`ci.yml`/`deps.yml` 共 20 处） | `production-delivery` | 2027-01-31 | `grep -rn "uses:.*@v[0-9]" .github/workflows` 无结果；CI 绿灯 |
+| 6.3 | P0 版本升级（Jaeger v2、Keycloak、Temporal、Meilisearch、Traefik、Prometheus/Alertmanager/OTel、PostgreSQL major） | 各组件 owner（见 `deploy/deps/policy.yaml`） | `review_by` 字段 | 每个引擎独立 change，按 `openspec validate --all --strict` 与门禁归档 |
+
+关联约束：
+
+- 6.3 中 Jaeger v1 已 EOL，`review_by: 2026-12-31`，需在 6.1 回填前定 v2 目标版本，避免 jaeger 行改两次；
+- 6.1 回填时**不夹带版本升级**：先按当前 compose 版本固定，升级另走 6.3 的 change；
+- digest 棘轮 `2027-01-31` 到期后，compose/Dockerfile/Makefile 共 21 条无 digest 引用会从 warning 变 error，需独立 change 收口。

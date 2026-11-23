@@ -5,13 +5,13 @@
 > 项目领域：企业级 Ontology 数据平台，围绕对象类型、对象实例、数据集、Pipeline 与查询提供统一的数据建模和探索能力。
 > 当前阶段：Stage 1 已退出（exited，2026-11-22）；Stage 2 进行中（in_progress，2026-11-22）
 > 负责人：klb3713
-> 最后更新：2026-11-22
+> 最后更新：2026-11-23
 
 ## 0. 当前治理状态
 
 - 治理基础已建立：`AGENTS.md`、`CLAUDE.md`、`docs/workflow/RUNBOOK.md`、`openspec/config.yaml`。
 - Stage 1 已退出：`docs/stages/stage-1-ontoaxis-core-brief.md` 与 `stage-1-change-map.md`；12 个 change 已归档，执行证据见 `docs/stages/stage-1-exit-report.md`。当前没有 active change。
-- Stage 2 进行中：`docs/stages/stage-2-ontoaxis-runtime-brief.md` 与 `stage-2-change-map.md`；按 change 逐项实施，已完成 `runtime-observability` 归档。
+- Stage 2 进行中：`docs/stages/stage-2-ontoaxis-runtime-brief.md` 与 `stage-2-change-map.md`；按 change 逐项实施，已归档 `runtime-observability`、`edge-gateway`、`authorization-openfga-cedar`、`action-temporal`、`pipeline-kestra-dbt`、`stage-2-dependency-governance`。
 - Stage 2 及后续变更仍需 change 级实施授权；不要凭 Stage 1 退出或 Stage 2 批准自动扩展范围。
 
 ## 1. 真源与读取顺序
@@ -105,6 +105,7 @@ make generate-check
 make deps-lock
 make deps-check
 make deps-audit
+make deps-test
 
 # 全栈本地启动
 docker compose -f deploy/compose/compose.yaml up -d --build
