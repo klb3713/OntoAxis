@@ -5,74 +5,36 @@
 > 项目领域：企业级 Ontology 数据平台，围绕对象类型、对象实例、数据集、Pipeline 与查询提供统一的数据建模和探索能力。
 > 当前阶段：Stage 1 已退出（exited，2026-11-22）；Stage 2 进行中（in_progress，2026-11-22）
 > 负责人：klb3713
-> 最后更新：2026-11-22
-
-## 0. 当前治理状态
-
-- 治理基础已建立：`AGENTS.md`、`CLAUDE.md`、`docs/workflow/RUNBOOK.md`、`openspec/config.yaml`。
-- Stage 1 已退出：`docs/stages/stage-1-ontoaxis-core-brief.md` 与 `stage-1-change-map.md`；12 个 change 已归档，执行证据见 `docs/stages/stage-1-exit-report.md`。当前没有 active change。
-- Stage 2 进行中：`docs/stages/stage-2-ontoaxis-runtime-brief.md` 与 `stage-2-change-map.md`；按 change 逐项实施，已完成 `runtime-observability` 归档。
-- Stage 2 及后续变更仍需 change 级实施授权；不要凭 Stage 1 退出或 Stage 2 批准自动扩展范围。
+> 最后更新：2026-11-23
 
 ## 1. 真源与读取顺序
 
 开始工作前按顺序读取：
 
-1. 本文件：硬约束、命令、安全边界。
-2. `docs/workflow/RUNBOOK.md`：Stage/change 操作流程、门禁和常见错误。
+1. 本文件：硬约束、安全边界、禁止项。
+2. `docs/workflow/RUNBOOK.md`：Stage/change 操作流程、门禁、命令和常见错误。
 3. `ARCHITECTURE.md`（仓库根目录）：目标设计；目标设计不等于已实现。
-4. 当前 Stage brief：从 `docs/stages/` 进入（Stage 1 已退出；Stage 2 in_progress 见 `docs/stages/stage-2-ontoaxis-runtime-brief.md`）。
+4. 当前 Stage brief 与 change map：从 `docs/stages/` 进入（Stage 1 已退出；Stage 2 in_progress 见 `docs/stages/stage-2-ontoaxis-runtime-brief.md`）。
 5. OpenSpec：`openspec/config.yaml`、`openspec/specs/`、`openspec/changes/`。
 
 | 主题 | 真源 |
 | --- | --- |
-| 目标架构与职责边界 | `ARCHITECTURE.md` |
+| 目标架构与职责边界 | `ARCHITECTURE.md`（仓库根目录） |
 | 当前阶段范围/AC/退出条件 | `docs/stages/stage-<N>-*-brief.md`（Stage 1 已退出；Stage 2 in_progress） |
+| 并行拆解、依赖、wave、共享资源归属 | `docs/stages/stage-<N>-*-change-map.md`（两个以上 change 时） |
 | 当前行为契约 | `openspec/specs/`（归档后） |
 | 在途行为变更 | `openspec/changes/` |
-| 工作流与门禁 | `docs/workflow/RUNBOOK.md` |
+| 工作流、门禁与命令 | `docs/workflow/RUNBOOK.md` |
 | 阶段状态 | `docs/stages/` + 项目看板/路线图（如已有） |
 | 验证证据 | 报告、测试输出、运行记录；不写进规格冒充事实 |
 
 ## 2. Stage 与 OpenSpec 的分工
 
-- **Stage**：交付程序/治理单元，管范围、授权、跨域、资源/环境准入、AC、证据和退出。
-- **OpenSpec change**：行为变更单元，管一次可观察行为的变化。
-- **Fast Track**：行为不变的小修、样式、配置、文档；保留测试和清晰提交说明。
-- 一个 Stage 可以包含多个 change；change 归档不等于 Stage 退出。
-- Stage brief 不复制行为需求；行为需求放 delta specs。
-
-两级门禁：
-
-1. **change archive**：tasks 完成、证据可复核、traceability 一致、validate 通过、评审确认。
-2. **Stage exit**：所有必需 changes 归档、Stage AC 有证据、报告完成、文档同步、负责人确认。
+Stage/change/Fast Track 的定义、两级门禁、change map 的 wave 门规则见 `docs/workflow/RUNBOOK.md` §2、§3；change 归档不等于 Stage 退出。
 
 ## 3. 标准流程
 
-1. 读架构、RUNBOOK、当前 Stage brief、现有 specs/changes。
-2. 判断走 Stage、change 还是 Fast Track。
-3. 行为变化：创建/继续 change，先写 proposal 和 delta specs，再写 design/tasks。
-4. 评审通过后才实施；按 tasks 依赖顺序推进。
-5. 只有证据存在才勾选 task；测试成功、无效输入和关键拒绝路径都要覆盖。
-6. 归档前跑 `openspec validate --all --strict`，检查 tasks/traceability/证据。
-7. Stage 退出前写报告、同步文档，由负责人确认。
-
-工具链：OpenSpec 2.1.0（global npm，命令前缀 `openspec`）；Node.js >=22.20.0。
-
-OpenSpec 命令：
-
-```bash
-openspec new change <change-name>
-openspec instructions proposal --change <change-name>
-openspec instructions specs --change <change-name>
-openspec instructions design --change <change-name>
-openspec instructions tasks --change <change-name>
-openspec validate --all --strict
-openspec status --change <change-name>
-openspec archive <change-name>
-```
-
-不要创建 `openspec/templates/`，不要使用本地复制脚本。
+走 Stage、change 还是 Fast Track，以及 Stage/change 生命周期、artifacts、评审、实施与归档步骤见 `docs/workflow/RUNBOOK.md` §3–§5；工具链与命令见其 §8。
 
 ## 4. Fast Track
 
@@ -85,50 +47,17 @@ openspec archive <change-name>
 
 ## 5. 常用命令
 
-当前命令已在 Stage 1 建立并通过 CI 验证：
-
-```bash
-# 编译、测试、静态检查
-make build
-make test
-make test-race
-make lint
-make vet
-
-# 契约与生成
-make proto-lint
-make proto-breaking
-make generate
-make generate-check
-
-# 依赖版本治理（改过任何镜像引用后必跑 lock + check）
-make deps-lock
-make deps-check
-make deps-audit
-
-# 全栈本地启动
-docker compose -f deploy/compose/compose.yaml up -d --build
-scripts/smoke-foundation.sh
-docker compose -f deploy/compose/compose.yaml down -v
-
-# 前端
-cd web
-pnpm install --frozen-lockfile
-pnpm check
-pnpm test
-pnpm build
-```
-
-端口约定：core 18080、metrics 19090、web 18082、Keycloak 18083、Trino 18081、Postgres 15433。
+OpenSpec 安装方式：global npm，命令前缀 `openspec`。安装/开发/测试/检查/构建与 OpenSpec 的命令清单只维护在 `docs/workflow/RUNBOOK.md` §8；命令必须来自仓库真实配置。
 
 ## 6. 安全与数据
 
 - 认证/授权默认 fail-closed；不引入默认 Principal、`AUTH_DISABLED` 或伪造身份。
 - 未注册业务路由保持 `404`；健康端点不是匿名业务入口。
-- 真实数据只在授权环境使用；记录来源、用途、范围和清理方式。
+- 真实数据只在授权环境使用；记录来源、用途、哈希/范围（如适用）和清理方式。
 - 合成夹具、模板页、本地测试通过不得写成真实数据/生产验收。
-- 不提交 `.env`、token、数据库口令、客户数据或生产连接信息。
-- 不擅自启动服务、Docker、数据库、Worker 或生产操作；需要时先请求确认。
+- 未签核阈值/规则只能输出技术结果，不能判定业务“合格”。
+- 不提交 `.env`、token、数据库口令、客户数据或生产连接信息；日志/错误详情不泄露秘密。
+- 启停服务/容器/数据库/Worker 前先判级 L0–L2（规则见 `docs/workflow/RUNBOOK.md` §7.1）；命中 L2（生产、真实数据/凭据、权限或基础设施变更、不可逆、公网暴露、关闭鉴权）即停并逐次确认。先判级后执行，不留“先启动后补确认”。
 
 ## 7. 代码风格
 
@@ -149,6 +78,7 @@ pnpm build
 
 ## 9. 禁止
 
+- 不创建 `openspec/templates/`，不使用本地 OpenSpec 复制/包装脚本。
 - 不自动批准 Stage、自动归档 change、自动 commit 或自动宣布完成。
 - 不伪造 AC、证据、测试结果、认证、坐标、阈值或上游成功。
 - 不覆盖用户改动；不把模板、草案或目录存在当成已实现。
