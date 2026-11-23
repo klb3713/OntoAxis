@@ -97,6 +97,8 @@ func TestRuntimeRunReturnsOnContextCancel(t *testing.T) {
 func TestRuntimeStartRejectsNilContext(t *testing.T) {
 	t.Parallel()
 	runtime := newTestRuntime(t, newFakeStore(newFakeClock()), newFakeConnectorReader(), newFakeJobRuntime(), nil)
+	// SA1012 禁止传 nil context；本用例专门验证 Start 拒绝 nil 的防御路径。
+	//nolint:staticcheck // 见上：这是被测试的拒绝路径，不是生产调用方式
 	if err := runtime.Start(nil); !errors.Is(err, ErrInvalidConfig) {
 		t.Fatalf("Start(nil) error = %v, want ErrInvalidConfig", err)
 	}

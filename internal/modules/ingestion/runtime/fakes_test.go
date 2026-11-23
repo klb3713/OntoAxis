@@ -96,20 +96,6 @@ func (s *fakeStore) addJob(job *domain.SyncJob) {
 	}
 }
 
-func (s *fakeStore) setJobStatus(jobID string, status domain.JobStatus) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	job := s.jobs[jobID]
-	if job == nil {
-		return
-	}
-	job.Status = status
-	run := s.runs[jobID]
-	if run != nil {
-		run.Status = status
-	}
-}
-
 func (s *fakeStore) getJob(jobID string) *domain.SyncJob {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -120,12 +106,6 @@ func (s *fakeStore) getRun(jobID string) *domain.SyncRun {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return cloneRun(s.runs[jobID])
-}
-
-func (s *fakeStore) eventsSnapshot() []string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return append([]string(nil), s.events...)
 }
 
 func (s *fakeStore) countEvents(prefix string) int {
@@ -624,32 +604,6 @@ func (v *fakeVerifier) callCount() int {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	return v.calls
-}
-
-// fakeMetrics records hook invocations.
-type fakeMetrics struct {
-	mu          sync.Mutex
-	submitCalls int
-	retryCalls  int
-	reconciles  int
-}
-
-func (m *fakeMetrics) ObserveSubmit(_ time.Duration, _ string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.submitCalls++
-}
-
-func (m *fakeMetrics) IncRetry(_, _ string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.retryCalls++
-}
-
-func (m *fakeMetrics) ObserveReconcile(_ time.Duration, _ string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.reconciles++
 }
 
 func cloneJob(job *domain.SyncJob) *domain.SyncJob {

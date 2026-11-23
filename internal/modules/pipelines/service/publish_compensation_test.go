@@ -237,7 +237,7 @@ func TestPublishRecoversAfterEngineFailureOnlyOnce(t *testing.T) {
 func TestPublishCompensationFailureIsWarnedAndStillFails(t *testing.T) {
 	store := repo.NewMemoryStore()
 	base := &recordingAdapter{MemoryAdapter: kestra.NewMemoryAdapter()}
-	base.MemoryAdapter.DeleteFlowError = errors.New("injected delete flow failure")
+	base.DeleteFlowError = errors.New("injected delete flow failure")
 	failing := &failingPublishRepo{MemoryStore: store, fail: true}
 	now := time.Date(2026, 11, 23, 12, 0, 0, 0, time.UTC)
 	manager := service.New(failing,

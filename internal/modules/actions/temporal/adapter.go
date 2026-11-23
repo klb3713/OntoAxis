@@ -159,7 +159,7 @@ func (a *Adapter) Describe(ctx context.Context, ref service.ExecutionRef) (servi
 	if err := a.validateRef(ref); err != nil {
 		return service.ExecutionInfo{}, err
 	}
-	description, err := a.client.DescribeWorkflowExecution(ctx, ref.WorkflowID, ref.RunID)
+	description, err := a.client.DescribeWorkflow(ctx, ref.WorkflowID, ref.RunID)
 	if err != nil {
 		var notFound *serviceerror.NotFound
 		if errors.As(err, &notFound) {
@@ -173,11 +173,13 @@ func (a *Adapter) Describe(ctx context.Context, ref service.ExecutionRef) (servi
 	}
 	runID := ref.RunID
 	status := domain.ExecutionStatusFailed
-	if description.WorkflowExecutionInfo != nil {
-		if description.WorkflowExecutionInfo.Execution != nil {
-			runID = description.WorkflowExecutionInfo.Execution.RunId
+	if description != nil && description.RawResponse != nil {
+		if info := description.RawResponse.WorkflowExecutionInfo; info != nil {
+			if info.Execution != nil {
+				runID = info.Execution.RunId
+			}
+			status = mapWorkflowStatus(info.Status)
 		}
-		status = mapWorkflowStatus(description.WorkflowExecutionInfo.Status)
 	}
 	return service.ExecutionInfo{Status: status, RunID: runID}, nil
 }
@@ -212,14 +214,16 @@ func (a *Adapter) validateRef(ref service.ExecutionRef) error {
 
 // describeRun returns the current run id of a workflow.
 func (a *Adapter) describeRun(ctx context.Context, workflowID string) (string, error) {
-	description, err := a.client.DescribeWorkflowExecution(ctx, workflowID, "")
+	description, err := a.client.DescribeWorkflow(ctx, workflowID, "")
 	if err != nil {
 		return "", fmt.Errorf("describe workflow %q: %w", workflowID, err)
 	}
-	if description.WorkflowExecutionInfo == nil || description.WorkflowExecutionInfo.Execution == nil {
+	if description == nil || description.RawResponse == nil ||
+		description.RawResponse.WorkflowExecutionInfo == nil ||
+		description.RawResponse.WorkflowExecutionInfo.Execution == nil {
 		return "", fmt.Errorf("describe workflow %q: missing execution info", workflowID)
 	}
-	return description.WorkflowExecutionInfo.Execution.RunId, nil
+	return description.RawResponse.WorkflowExecutionInfo.Execution.RunId, nil
 }
 
 func mapWorkflowStatus(status enumspb.WorkflowExecutionStatus) string {

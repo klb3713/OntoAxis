@@ -192,7 +192,7 @@ func (w *executionWorkflow) awaitApproval(index int, step domain.StepDefinition)
 	if cancelled {
 		return w.stop(domain.ExecutionStatusCancelled, "cancelled", fmt.Sprintf("execution cancelled while awaiting approval for step %q", step.ID))
 	}
-	if cancelled == false && received == false && timedOut {
+	if !cancelled && !received && timedOut {
 		expireCtx := workflow.WithActivityOptions(w.ctx, w.activityOptions(nil))
 		_ = workflow.ExecuteActivity(expireCtx, activityRef.ExpireApproval, ExpireApprovalInput{
 			TenantID:    w.in.TenantID,

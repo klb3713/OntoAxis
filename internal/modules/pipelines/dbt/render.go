@@ -90,11 +90,6 @@ type File struct {
 	Content []byte
 }
 
-const (
-	dbtProjectName = "ontoaxis_pipeline"
-	dbtProfileName = "ontoaxis_pipeline"
-)
-
 // dbtProjectFile is static: the profile name is fixed (design D9), the models
 // directory is the only source path and every model is materialized as a table.
 const dbtProjectFile = `name: ontoaxis_pipeline

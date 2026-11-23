@@ -38,7 +38,7 @@ type cedarEngine struct {
 
 func newCedarEngine(bundle *Bundle, catalog *Catalog) (*cedarEngine, error) {
 	if bundle == nil || bundle.PolicySet == nil {
-		return nil, fmt.Errorf("Cedar policy bundle is empty")
+		return nil, fmt.Errorf("cedar policy bundle is empty")
 	}
 	em := make(types.EntityMap)
 	for _, group := range catalog.Groups() {
@@ -92,7 +92,7 @@ func (e *cedarEngine) Evaluate(tc authn.TenantContext, spec ActionSpec, resource
 		Resource:  resUID,
 		Context:   types.NewRecord(nil),
 	}
-	allowed, diag := e.set.IsAuthorized(entities, req)
+	allowed, diag := cedar.Authorize(e.set, entities, req)
 	matched := make([]string, 0, len(diag.Reasons))
 	for _, reason := range diag.Reasons {
 		matched = append(matched, string(reason.PolicyID))

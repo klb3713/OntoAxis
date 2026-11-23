@@ -153,20 +153,6 @@ func httpTestFlow() Flow {
 	}
 }
 
-func httpTestAssertJSONEqual(t *testing.T, got, want string) {
-	t.Helper()
-	var gotValue, wantValue any
-	if err := json.Unmarshal([]byte(got), &gotValue); err != nil {
-		t.Fatalf("decode got JSON %q: %v", got, err)
-	}
-	if err := json.Unmarshal([]byte(want), &wantValue); err != nil {
-		t.Fatalf("decode want JSON %q: %v", want, err)
-	}
-	if !reflect.DeepEqual(gotValue, wantValue) {
-		t.Fatalf("JSON mismatch:\n got: %s\nwant: %s", got, want)
-	}
-}
-
 func TestNewHTTPAdapterRequiresBaseURL(t *testing.T) {
 	for _, baseURL := range []string{"", "   "} {
 		adapter, err := NewHTTPAdapter(HTTPConfig{BaseURL: baseURL})

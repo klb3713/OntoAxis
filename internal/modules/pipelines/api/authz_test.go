@@ -134,15 +134,6 @@ func (s *authzServer) seedPipeline(t *testing.T, tenantID, name string, status d
 	return pipeline.ID
 }
 
-func pipelineIDFrom(t *testing.T, payload map[string]any) string {
-	t.Helper()
-	id, _ := payload["id"].(string)
-	if id == "" {
-		t.Fatalf("response has no pipeline id: %+v", payload)
-	}
-	return id
-}
-
 func lastGuardCall(t *testing.T, guard *authtest.FakeGuard) (authz.Action, authz.ResourceFact) {
 	t.Helper()
 	actions, resources := guard.Calls()

@@ -59,7 +59,7 @@ func run(args []string) error {
 	verify := flags.Bool("verify", false, "verify document counts after rebuild")
 	limit := flags.Int("limit", 100, "maximum dead-letter events to replay")
 	flags.Usage = func() {
-		fmt.Fprintf(flags.Output(), "usage: ontoaxis-search <consume|rebuild|replay|migrate> [flags]\n")
+		_, _ = fmt.Fprintf(flags.Output(), "usage: ontoaxis-search <consume|rebuild|replay|migrate> [flags]\n")
 		flags.PrintDefaults()
 	}
 	if err := flags.Parse(args); err != nil {

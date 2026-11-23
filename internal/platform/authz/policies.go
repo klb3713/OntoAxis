@@ -106,11 +106,11 @@ func LoadBundle(fsys fs.FS) (*Bundle, error) {
 			found++
 		}
 		if found == 0 {
-			return nil, fmt.Errorf("Cedar file %s contains no policies", name)
+			return nil, fmt.Errorf("cedar file %s contains no policies", name)
 		}
 	}
 	if len(bundle.PolicyIDs) == 0 {
-		return nil, fmt.Errorf("Cedar policy set is empty")
+		return nil, fmt.Errorf("cedar policy set is empty")
 	}
 	bundle.Digest = "sha256:" + hex.EncodeToString(h.Sum(nil))
 	modelSum := sha256.Sum256(model)
@@ -207,7 +207,7 @@ func parseSchemaDoc(bundle *Bundle) (schemaDoc, error) {
 	}
 	body, ok := raw[""]
 	if !ok {
-		return schemaDoc{}, fmt.Errorf("Cedar schema has no root namespace")
+		return schemaDoc{}, fmt.Errorf("cedar schema has no root namespace")
 	}
 	var doc schemaDoc
 	if err := json.Unmarshal(body, &doc); err != nil {
