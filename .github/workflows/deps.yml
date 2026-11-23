@@ -23,8 +23,8 @@ jobs:
     name: deps-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
       - name: 校验锁文件、latest 禁令、策略覆盖、例外与 renovate 名单
@@ -33,19 +33,22 @@ jobs:
       - name: 运行 deps 工具回归测试
         run: make deps-test
 
+      - name: 校验 GitHub Actions 引用固定到 commit SHA
+        run: make deps-actions-check
+
   audit:
     name: deps-audit
     needs: check
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
       - name: 查询上游最新版本与 EOL
         run: make deps-audit > deps-audit.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: deps-audit
           path: deps-audit.md

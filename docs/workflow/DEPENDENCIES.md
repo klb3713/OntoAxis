@@ -21,6 +21,7 @@ make deps-check    # 离线校验，CI 阻塞项；退出码非 0 即失败
 make deps-audit    # 联网查询上游最新版本与 EOL，输出 markdown（不写文件）
 make deps-test     # 工具自身回归测试（标准库 unittest，不联网）
 make deps-resolve  # 联网把 lock 里的 tag 解析成 digest，输出映射表（Helm 回填前用）
+make deps-actions-check  # 校验 .github/workflows 的 uses: 全部钉在 commit SHA（CI 阻塞项）
 ```
 
 Helm 占位 digest 回填前，先跑 `make deps-resolve` 拿到 tag→digest 映射（Docker Hub / Quay
@@ -112,8 +113,10 @@ exceptions:
   digest 是否真实存在于 registry。占位 digest 靠例外 `helm-placeholder-digests` 显式覆盖：
   `deps-check` 会报 `W_EXCEPTION_COVERED` 列出覆盖条数与到期日，审计报告把这类行标为
   「例外覆盖（未验证）」，不并入「已固定」；例外到期（2026-12-31）后未回填即阻塞。
-- **GitHub Actions 仍是浮动 tag**（`@v4` 等）。`helpers:pinGitHubActionDigests` 会提 PR 钉到
-  SHA，但本 change 不强制门禁。
+- **GitHub Actions 已钉 commit SHA**（2026-11-23，台账 6.2）：`make deps-actions-check` 阻断
+  浮动 tag，`deps.yml` 每个 PR 都跑。`helpers:pinGitHubActionDigests` 会为 SHA 更新提 PR；
+  行尾保留 `# vN` 注释便于评审。证据见
+  [`docs/stages/evidence/stage-2-dependency-governance/2026-11-23-actions-sha-pin.md`](../../stages/evidence/stage-2-dependency-governance/2026-11-23-actions-sha-pin.md)。
 - **自有镜像**（`ghcr.io/ontoaxis/*`）由 CI 构建，不走版本升级，审计跳过上游查询。
 - **审计的网络依赖**：Docker Hub / Quay / endoflife.date 任一不可达时对应行记为 `unknown`，
   不推测、不冒充成功。
