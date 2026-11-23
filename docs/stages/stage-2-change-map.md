@@ -198,7 +198,7 @@ flowchart TB
 
 | 项 | 内容 | owner | 期限 | 验收 |
 | --- | --- | --- | --- | --- |
-| 6.1 | Helm 22 条占位镜像引用回填真实 digest + 补 `image.tag`（21 个组件 + `ontoaxis-jobs` 的 `backup.image`）。jaeger 一行按**当前 v1 版本**钉真实 digest，EOL 风险写入审计备注 | `production-delivery` | 2026-12-31（例外 `helm-placeholder-digests` 到期） | 22 条 `repository`+真实 `digest`+`tag`；`helm template` 输出 `repo@sha256:`；删除例外后 `make deps-check` 通过；审计报告 jaeger 行标注 EOL |
+| 6.1 | Helm 22 条占位镜像引用回填真实 digest + 补 `image.tag`（21 个组件 + `ontoaxis-jobs` 的 `backup.image`）。jaeger 一行按**当前 v1 版本**钉真实 digest，EOL 风险写入审计备注。准备材料：`docs/stages/evidence/stage-2-dependency-governance/2026-11-23-digest-mapping.md`（12 个组件可直接用，9 个需先定 tag） | `production-delivery` | 2026-12-31（例外 `helm-placeholder-digests` 到期） | 22 条 `repository`+真实 `digest`+`tag`；`helm template` 输出 `repo@sha256:`；删除例外后 `make deps-check` 通过；审计报告 jaeger 行标注 EOL |
 | 6.2 | ~~GitHub Actions `uses:` 改 commit SHA（`ci.yml`/`deps.yml` 共 20 处）~~ **已完成 2026-11-23** | `production-delivery` | ✅ 2026-11-23（原期限 2027-01-31） | 20/20 钉 SHA；`make deps-actions-check` 门禁接入 CI；证据 `docs/stages/evidence/stage-2-dependency-governance/2026-11-23-actions-sha-pin.md` |
 | 6.3 | P0 版本升级（Jaeger v2、Keycloak、Temporal、Meilisearch、Traefik、Prometheus/Alertmanager/OTel、PostgreSQL major） | 各组件 owner（见 `deploy/deps/policy.yaml`） | `review_by` 字段 | 每个引擎独立 change，按 `openspec validate --all --strict` 与门禁归档 |
 

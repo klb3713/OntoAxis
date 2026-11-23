@@ -10,6 +10,7 @@
 """
 
 import importlib.util
+import io
 import os
 import sys
 import tempfile
@@ -179,6 +180,26 @@ class ResolveTest(unittest.TestCase):
     def test_self_built_images_are_not_queried(self):
         with mock.patch.object(deps, "http_json", side_effect=AssertionError("must not query")):
             self.assertIsNone(deps.registry_digest("ghcr.io/ontoaxis/core", "abc123"))
+
+
+class ResolveCommandTest(unittest.TestCase):
+    def test_ref_option_adds_row(self):
+        out = io.StringIO()
+        with mock.patch.object(deps, "collect_entries", return_value=[]), mock.patch.object(
+            deps, "registry_digest", return_value="sha256:" + "f" * 64
+        ), mock.patch.object(deps.sys, "stdout", out):
+            code = deps.main(["resolve", "--ref", "docker.io/library/postgres:16-alpine"])
+        text = out.getvalue()
+        self.assertEqual(code, 0)
+        self.assertIn("docker.io/library/postgres", text)
+        self.assertIn("`16-alpine`", text)
+        self.assertIn("sha256:" + "f" * 64, text)
+        self.assertIn("(指定)", text)
+
+    def test_ref_requires_tag(self):
+        with mock.patch.object(deps, "collect_entries", return_value=[]):
+            with self.assertRaises(SystemExit):
+                deps.main(["resolve", "--ref", "docker.io/library/postgres"])
 
 
 class ExceptionCoverageTest(unittest.TestCase):

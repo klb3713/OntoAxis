@@ -25,8 +25,9 @@ make deps-actions-check  # 校验 .github/workflows 的 uses: 全部钉在 commi
 ```
 
 Helm 占位 digest 回填前，先跑 `make deps-resolve` 拿到 tag→digest 映射（Docker Hub / Quay
-manifest 查询，查不到记 `unknown`，不推测）；映射表本身不作证据，回填后仍以 lock 与
-`helm template` 输出为准。
+manifest 查询，查不到记 `unknown`，不推测）；Helm 侧还没有 tag 的组件用
+`python3 scripts/deps.py resolve --ref image:tag` 先解析拟定的版本。映射表本身不作证据，
+回填后仍以 lock、`helm template` 输出与 `make deps-check` 为准。
 
 需要存档时：
 

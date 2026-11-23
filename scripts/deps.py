@@ -669,6 +669,16 @@ def cmd_resolve(args):
         row["components"].add(entry["component"])
         row["sources"].add(entry["source"])
 
+    # --ref 用于 Helm 侧还没有 tag 的组件：先按拟定的 image:tag 解析 digest。
+    for raw in args.ref or []:
+        image, tag, digest = split_ref(raw)
+        if not tag or digest:
+            raise SystemExit("error[E_REF] --ref 需要 image:tag 形式，收到 %r" % raw)
+        key = (image, tag)
+        row = rows.setdefault(key, {"components": set(), "sources": set()})
+        row["components"].add("(指定)")
+        row["sources"].add("--ref")
+
     out = [
         "# tag → digest 映射",
         "",
@@ -854,6 +864,12 @@ def main(argv):
 
     resolve = sub.add_parser("resolve", help="把 lock 中的 tag 解析成 digest（联网）")
     resolve.add_argument("--out", help="写入指定文件")
+    resolve.add_argument(
+        "--ref",
+        action="append",
+        metavar="IMAGE:TAG",
+        help="额外解析未在 lock 中出现的 image:tag（可重复）",
+    )
     resolve.set_defaults(func=cmd_resolve)
 
     audit = sub.add_parser("audit", help="联网审计并输出报告")
