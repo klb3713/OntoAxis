@@ -44,10 +44,9 @@
 
 ## 6. 未在本 change 内完成（显式移交）
 
-- [ ] 6.1 Helm 21 个占位 digest 回填 + 补 `image.tag`（owner：`production-delivery`，期限 2026-12-31）
+- [ ] 6.1 Helm 22 条占位镜像引用回填 + 补 `image.tag`（21 个组件 + `ontoaxis-jobs` 的 `backup.image`；owner：`production-delivery`，期限 2026-12-31）
 - [ ] 6.2 GitHub Actions `uses:` 改 commit SHA（`review_by: 2027-01-31`）
 - [ ] 6.3 P0 版本升级（Jaeger v2、Temporal 1.31、Keycloak 26.x、Meilisearch、Argo CD 3 等）按 change 单独排期
-- [ ] 6.4 将 `deploy/helm/ontoaxis-jobs/values.yaml` 的 `backup.image` 纳入 lock 覆盖（在 `components:` 块外，是 21 个组件之外的第 22 个 Helm 镜像引用，当前无 tag、不进审计）
 
 ## 7. 一致性修正（2026-11-23，评审发现）
 
@@ -58,4 +57,6 @@
 - [x] 7.3 chart values 支持 `image.tag`：`extract_helm` 按组件块解析 repository/tag/digest（顺序无关），tag 写入锁文件与审计
   - 验证：`make deps-test` 覆盖 tag 在前/在后/缺 digest 三种情况；临时给 keycloak 加 `tag: "26.0"` 后锁文件出现该 tag
 - [x] 7.4 占位 digest 不再冒充「已固定」：审计把例外覆盖行标为「例外覆盖（未验证）」，check 报 `W_NOTAG` / `W_EXCEPTION_COVERED`
-  - 验证：`python3 scripts/deps.py check --verbose` 出现 21 条 `W_NOTAG` 与 1 条 `W_EXCEPTION_COVERED`；负向用例仍以退出码 1 拒绝 `:latest`
+  - 验证：`python3 scripts/deps.py check --verbose` 出现 22 条 `W_NOTAG` 与 1 条 `W_EXCEPTION_COVERED`；负向用例仍以退出码 1 拒绝 `:latest`
+- [x] 7.5 消除块外镜像盲区：`extract_helm` 改为解析所有 `image:` 映射，`components:` 之外的 `backup.image` 也进 lock/审计；无组件名时按镜像名回退到 policy
+  - 验证：`openspec/changes/stage-2-dependency-governance/evidence/2026-11-23-block-image-coverage.txt`；`make deps-check` 输出 `entries=46 exception_covered=22`；lock 仅新增 jobs 一条

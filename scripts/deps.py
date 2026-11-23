@@ -148,62 +148,79 @@ def extract_dockerfile(path):
 
 
 def extract_helm(path):
-    """解析 chart values 的 components 块。
+    """解析 chart values 中的 image 映射（`image:` 块及其 repository/tag/digest）。
 
-    每个组件按块收集 `repository` / `tag` / `digest` 三个可选标量后再产出条目，
-    因此字段顺序不影响结果（tag 可写在 digest 前后）。`tag` 只是元数据：
-    模板仍按 `repository@digest` 渲染，tag 供审计与 Renovate 判断版本。
-    `repository` 存在但缺 `digest` 时同样产出条目，由 check 报 E_NOTAG/W_NODIGEST，
-    避免「缺 digest 的镜像从清单里消失」。
+    组件名取 `components:` 下的块名；在 `components:` 之外的 image 映射（例如
+    jobs chart 的 `backup.image`）不归属组件，交给 `component_key` 按镜像名回退，
+    从而同样进入锁文件、审计与门禁，不再出现「块外镜像不被检查」的盲区。
+
+    `tag` 只是元数据：模板仍按 `repository@digest` 渲染，tag 供审计与 Renovate
+    判断版本。字段顺序不影响结果。`repository` 存在但缺 `digest` 时同样产出条目，
+    由 check 报 E_NOTAG/W_NODIGEST，避免「缺 digest 的镜像从清单里消失」。
     """
-    blocks = []
-    current = None
+    entries = []
     in_components = False
+    component = None
+    image = None
     for lineno, raw in enumerate(read_lines(path), 1):
         line = strip_comment(raw).rstrip()
         if not line.strip():
             continue
-        if re.match(r"^components:\s*$", line):
-            in_components = True
+        indent = len(line) - len(line.lstrip())
+        text = line.strip()
+
+        if indent == 0:
+            in_components = text == "components:"
+            component = None
+            image = None
             continue
-        if in_components and re.match(r"^\S", line):
-            in_components = False
-        if not in_components:
-            continue
-        comp = re.match(r"^  ([A-Za-z0-9_.-]+):\s*$", line)
-        if comp:
-            current = {
-                "component": comp.group(1),
+
+        if in_components and indent == 2:
+            comp = re.match(r"^([A-Za-z0-9_.-]+):\s*$", text)
+            if comp:
+                component = comp.group(1)
+                image = None
+                continue
+
+        if text == "image:":
+            image = {
+                "component": component if in_components else None,
                 "repository": None,
                 "tag": "",
                 "digest": None,
                 "line": lineno,
+                "indent": indent,
             }
-            blocks.append(current)
+            entries.append(image)
             continue
-        if current is None:
+
+        if image is None:
             continue
-        field = re.match(r"^\s+(repository|tag|digest):\s*(\S+)\s*$", line)
+        if indent <= image["indent"]:
+            image = None
+            continue
+
+        field = re.match(r"^(repository|tag|digest):\s*(\S+)\s*$", text)
         if not field:
             continue
         key, raw_value = field.group(1), field.group(2)
         value = str(parse_scalar(raw_value))
-        if key == "repository" and current["repository"] is None:
-            current["repository"] = value
-            current["line"] = lineno
-        elif key == "tag" and not current["tag"]:
-            current["tag"] = value
-        elif key == "digest" and current["digest"] is None:
-            current["digest"] = value
+        if key == "repository" and image["repository"] is None:
+            image["repository"] = value
+            image["line"] = lineno
+        elif key == "tag" and not image["tag"]:
+            image["tag"] = value
+        elif key == "digest" and image["digest"] is None:
+            image["digest"] = value
 
-    entries = []
-    for block in blocks:
+    found = []
+    for block in entries:
         if not block["repository"]:
             continue
         ref = block["repository"]
         if block["digest"]:
             ref += "@" + block["digest"]
-        entries.append(
+        found.append(
             {
                 "source": rel(path),
                 "line": block["line"],
@@ -213,7 +230,7 @@ def extract_helm(path):
                 "tag": block["tag"],
             }
         )
-    return entries
+    return found
 
 
 def extract_makefile(path):

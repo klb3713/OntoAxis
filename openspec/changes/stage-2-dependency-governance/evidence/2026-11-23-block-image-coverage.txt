@@ -1,0 +1,83 @@
+# 块外镜像覆盖（2026-11-23，任务 7.5）
+
+## 背景
+
+`deploy/helm/ontoaxis-jobs/values.yaml` 的 `backup.image` 位于 `components:` 块之外。
+旧版 `extract_helm` 只解析 `components:` 下的组件，这条引用因此不进 lock、不进审计，
+也不受 `E_LATEST` / `E_NODIGEST` 约束，只被例外 `helm-placeholder-digests` 的 scope
+间接覆盖——回填 6.1 时会被漏掉，例外到期也不会因它报错。
+
+## 修正
+
+- `extract_helm` 改为解析 values 中所有 `image:` 映射：
+  - `components:` 内的映射仍按组件块名归属（行为不变）；
+  - `components:` 外的映射（如 `backup.image`）不归属组件，由 `component_key` 按镜像名
+    回退，本例回退为 `postgres`，无需新增 policy 条目；
+  - 镜像映射遇到同级或更浅的键即结束，组件层的 `tag` 不会被误当 `image.tag`。
+- 锁文件新增 1 条（45 → 46），其余 45 条逐字节不变。
+
+## 验证输出
+
+### 1. 锁文件只新增 jobs 一条
+
+```
+$ git diff deploy/deps/lock.yaml
+@@ -210,6 +210,12 @@ entries:
++  - source: deploy/helm/ontoaxis-jobs/values.yaml
++    line: 25
++    component: postgres
++    image: docker.io/library/postgres
++    tag: ""
++    digest: "sha256:6fea524445be83b661e89d8c10d4280535e3ec8af116d4f0a9395d28adf67872"
+```
+
+`line: 25` 即 `repository:` 所在行；`component: postgres` 是按镜像名回退的结果。
+
+### 2. 回归测试（新增 2 个用例）
+
+```
+$ make deps-test
+Ran 10 tests in 0.003s
+
+OK
+```
+
+新增用例：
+- `test_image_outside_components_still_collected`：块外 `backup.image` 仍被收集，
+  `helm_component` 为 None 且 `component_key` 回退为 `postgres`；
+- `test_image_block_closed_by_sibling_key`：组件层 `tag` 不被误当 `image.tag`。
+
+### 3. 门禁与覆盖数量
+
+```
+$ make deps-check
+summary: entries=46 components=29 exception_covered=22 errors=0 warnings=53 ratchet=2027-01-31
+```
+
+```
+$ python3 scripts/deps.py check --verbose | ...
+W_NOTAG=22 W_EXCEPTION_COVERED=1 W_NODIGEST=21 W_FLOATING=9
+```
+
+`entries` 45→46、`exception_covered` 21→22、`W_NOTAG` 21→22，其余分类不变，
+说明只新增了 jobs 这一条，没有改变既有判定。
+
+### 4. 锁文件幂等
+
+```
+$ make deps-lock && cp deploy/deps/lock.yaml /tmp/l1 && make deps-lock && diff /tmp/l1 deploy/deps/lock.yaml
+lock-idempotent=yes
+```
+
+### 5. OpenSpec 校验
+
+```
+$ openspec validate --all --strict
+Totals: 19 passed, 0 failed (19 items)
+```
+
+## 影响
+
+- 任务 6.1 的回填范围由「21 个组件」修正为「22 条镜像引用（21 个组件 + jobs 备份镜像）」；
+- 例外 `helm-placeholder-digests` 的覆盖范围现在与审计可见范围一致（22 条）；
+- 未修改 `deploy/helm/` 任何 values 内容，仅改变抽取覆盖范围。

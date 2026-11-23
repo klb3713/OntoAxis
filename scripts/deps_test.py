@@ -90,6 +90,45 @@ class ExtractHelmTest(unittest.TestCase):
             os.unlink(path)
         self.assertEqual(entries, [])
 
+    def test_image_outside_components_still_collected(self):
+        # jobs chart 的 backup.image 在 components 块外，不能成为门禁盲区。
+        path = write_values(
+            "global:\n"
+            "  environment: kind\n"
+            "backup:\n"
+            "  schedule: \"0 2 * * *\"\n"
+            "  image:\n"
+            "    repository: docker.io/library/postgres\n"
+            "    digest: sha256:" + "d" * 64 + "\n"
+            "  secretName: ontoaxis-backup-secrets\n"
+        )
+        try:
+            entries = deps.extract_helm(path)
+        finally:
+            os.unlink(path)
+        self.assertEqual(len(entries), 1)
+        self.assertIsNone(entries[0]["helm_component"])
+        self.assertEqual(entries[0]["line"], 6)
+        # 没有组件名时按镜像名回退，仍能对上 policy 里的 postgres。
+        self.assertEqual(deps.component_key({**entries[0], "image": "docker.io/library/postgres"}), "postgres")
+
+    def test_image_block_closed_by_sibling_key(self):
+        path = write_values(
+            "components:\n"
+            "  postgres:\n"
+            "    image:\n"
+            "      repository: docker.io/library/postgres\n"
+            "      digest: sha256:" + "e" * 64 + "\n"
+            "    tag: not-an-image-tag\n"
+        )
+        try:
+            entries = deps.extract_helm(path)
+        finally:
+            os.unlink(path)
+        self.assertEqual(len(entries), 1)
+        # 组件层的 tag 不是镜像元数据，不得被当成 image.tag。
+        self.assertEqual(entries[0]["tag"], "")
+
 
 class LockRenderTest(unittest.TestCase):
     def test_tag_round_trips_into_lock(self):

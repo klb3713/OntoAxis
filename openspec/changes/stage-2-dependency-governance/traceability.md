@@ -24,14 +24,14 @@ digest，不使用 latest」），并为 S2-AC-08、S2-AC-11 提供依赖证据�
 | 例外登记与到期失效 | `exceptions[].scope/expires/reason`；E_EXCEPTION | 负向用例 2：expires 改到 2020-01-01 触发 E_EXCEPTION |
 | 自动更新通道的合并分级 | `renovate.json` 的 `platform-p0`（automerge=false）与 build-toolchain（仅 patch/digest） | `scripts/deps.py check` 的 E_RENOVATE 双向比对；`renovate.json` JSON 解析通过 |
 | 审计报告与阶段证据 | `scripts/deps.py audit`（Docker Hub / Quay / endoflife.date）；例外覆盖行标为「例外覆盖（未验证）」 | `evidence/2026-11-23-deps-audit.md`，30 个组件行，查询失败标 unknown |
-| Helm 版本可审计 | `scripts/deps.py` 的 `extract_helm` 解析 `image.tag`（顺序无关），写入 lock 与审计；缺 tag 报 `W_NOTAG` | `make deps-test`（8 个用例）；临时加 tag 后 lock 出现该字段 |
+| Helm 版本可审计 | `scripts/deps.py` 的 `extract_helm` 解析 `image.tag`（顺序无关），写入 lock 与审计；缺 tag 报 `W_NOTAG` | `make deps-test`（10 个用例）；临时加 tag 后 lock 出现该字段 |
 | 升级归类 change vs Fast Track | `docs/workflow/DEPENDENCIES.md` §4 | 文档评审；p0 升级路径写入 Stage brief 退出条件 |
 
 ## 4. 显式移交（不在本 change 验证）
 
 | 项 | owner | 期限 | 依据 |
 | --- | --- | --- | --- |
-| Helm 21 个占位 digest 回填 + 补 `tag` | `production-delivery` | 2026-12-31 | 例外 `helm-placeholder-digests`；`deploy/README.md` 自述 placeholder |
+| Helm 22 条占位镜像引用回填 + 补 `tag`（21 个组件 + jobs `backup.image`） | `production-delivery` | 2026-12-31 | 例外 `helm-placeholder-digests`；`deploy/README.md` 自述 placeholder |
 | GitHub Actions `uses:` 改 commit SHA | `production-delivery` | 2027-01-31 | `renovate.json` 中 `helpers:pinGitHubActionDigests` 会提 PR |
 | P0 升级（Jaeger v2、PostgreSQL major、Keycloak、Temporal、Meilisearch、Prometheus、Traefik、OTel） | 各 owner | 见 `review_by` | `evidence/2026-11-23-baseline.md` §6 |
 

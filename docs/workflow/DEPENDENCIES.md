@@ -45,7 +45,7 @@ CI 在 `.github/workflows/deps.yml`：每次 push/PR 跑 `deps-check`；每月 1
 
 顶层 `digest_required_from`：digest 棘轮日期。在此之前缺 digest 只是 warning，
 之后变成 error。当前为 `2027-01-31`，选择该日期而不是立即强制，是因为补齐
-21 个 Helm 组件的占位 digest、以及 14 个 compose 镜像 + 4 处 Dockerfile + 3 处 Makefile
+22 条 Helm 镜像引用（21 个组件 + jobs 备份镜像）的占位 digest、以及 14 个 compose 镜像 + 4 处 Dockerfile + 3 处 Makefile
 共 21 条完全没有 digest 的引用，都必须先定 tag（等于顺带做一轮版本决策），会掩盖行为变化。
 
 ### 分级与合并规则
@@ -95,7 +95,7 @@ exceptions:
 
 | id | scope | 到期 | 说明 |
 | --- | --- | --- | --- |
-| `helm-placeholder-digests` | `deploy/helm/` | 2026-12-31 | Helm values 的 digest 是 deterministic placeholder，回填真实 digest 需先定 tag，移交 production-delivery |
+| `helm-placeholder-digests` | `deploy/helm/` | 2026-12-31 | Helm values 的 digest 是 deterministic placeholder（22 条引用，含 jobs 的 `backup.image`），回填真实 digest 需先定 tag，移交 production-delivery |
 
 ## 6. 已知缺口
 

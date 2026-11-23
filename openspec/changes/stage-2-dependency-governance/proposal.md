@@ -2,7 +2,7 @@
 
 ## Why
 
-2026-11-23 的版本盘点暴露三件事：镜像与工具链版本散落在 compose、Dockerfile、Helm values 与 Makefile 四处，没有单一真源；`trinodb/trino:latest`、`bufbuild/buf:latest` 与 Helm 的 21 个占位 digest 让「固定版本」无法举证；Jaeger v1 已 EOL 近一年才被发现。缺的是清单、门禁和升级节奏，不是某一次升级。
+2026-11-23 的版本盘点暴露三件事：镜像与工具链版本散落在 compose、Dockerfile、Helm values 与 Makefile 四处，没有单一真源；`trinodb/trino:latest`、`bufbuild/buf:latest` 与 Helm 的 22 条占位镜像引用（21 个组件 + jobs 备份镜像）让「固定版本」无法举证；Jaeger v1 已 EOL 近一年才被发现。缺的是清单、门禁和升级节奏，不是某一次升级。
 
 ## What Changes
 

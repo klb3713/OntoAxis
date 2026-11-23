@@ -210,6 +210,12 @@ entries:
     image: docker.io/projectnessie/nessie
     tag: ""
     digest: "sha256:502350d16c4925efaa6433bf37c5f4d15d74da0effb49c2624d4d956103482bf"
+  - source: deploy/helm/ontoaxis-jobs/values.yaml
+    line: 25
+    component: postgres
+    image: docker.io/library/postgres
+    tag: ""
+    digest: "sha256:6fea524445be83b661e89d8c10d4280535e3ec8af116d4f0a9395d28adf67872"
   - source: deploy/helm/ontoaxis-observability/values.yaml
     line: 30
     component: otel-collector
