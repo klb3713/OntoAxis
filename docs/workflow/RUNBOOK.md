@@ -2,21 +2,11 @@
 
 > 状态：draft，待项目负责人评审。
 > 本文件说明 Stage 与 OpenSpec 怎么配合；规则真源是 `AGENTS.md` 和 `openspec/config.yaml`。
-> 最后更新：2026-11-22
+> 最后更新：2026-11-23
 
-## 1. 真源与文档职责
+## 1. 文档职责
 
-| 文档 | 负责 | 不负责 |
-| --- | --- | --- |
-| `AGENTS.md` | 硬约束、命令、安全边界 | 具体行为需求 |
-| `ARCHITECTURE.md` | 目标设计、职责边界、关键决策 | 实施状态、验收证据 |
-| `docs/stages/stage-<N>-*-brief.md` | 范围、AC、非目标、退出条件 | 行为细节 |
-| `openspec/specs/<capability>/spec.md` | 当前行为契约 | 阶段状态、路线图 |
-| `openspec/changes/<change>/` | 在途行为变更 | 阶段验收结论 |
-| `docs/workflow/RUNBOOK.md` | 操作步骤、门禁、常见错误 | 总体设计 |
-| 报告/测试输出/运行记录 | 证据 | 需求定义 |
-
-一份事实只维护一个地方；其他文档用链接引用。
+职责划分与真源表见 `AGENTS.md` §1。本文件只写操作步骤、门禁与常见错误；一份事实只维护一个地方，其他文档用链接引用。
 
 ## 2. 两级模型
 
@@ -121,13 +111,21 @@ openspec archive <change-name>
 
 ## 7. 安全与数据门禁
 
-- 认证/授权 fail-closed；不引入默认 Principal、`AUTH_DISABLED` 或伪造身份。
-- 未注册路由 `404`；健康端点不是匿名业务入口。
-- 真实数据只在授权环境使用；记录来源、用途、哈希/范围（如适用）和清理方式。
-- 合成夹具只能证明流程，不能证明真实数据验收。
-- 未签核阈值/规则只能输出技术结果，不能判定业务“合格”。
-- 不提交秘密；日志/错误详情不泄露秘密。
-- 不擅自启动服务、Docker、数据库、Worker 或生产操作。
+认证/授权、真实数据、秘密、未签核阈值与生产操作的硬约束见 `AGENTS.md` §6，这里不重复。证据分层与“无证据不得标 verified”见本文件 §6。
+
+### 7.1 服务启停分级（唯一真源）
+
+先判级再执行；命中更高一级条件即按更高一级处理，禁止“先启动后补确认”。
+
+| 级别 | 适用 | 前置条件 | 确认与事后 |
+| --- | --- | --- | --- |
+| L0 本地自决 | 本地进程/容器，合成数据，无真实凭据，不对外暴露 | 只绑 localhost；合成数据；用完即拆；不得作为真实数据验收证据 | 直接执行，无需确认，无需落盘证据 |
+| L1 change 内已授权 | 已评审 change 的 `tasks.md` 明确写了启停命令、环境和验证方式 | 仍限本地+合成数据；不得超出 task 写明的命令/环境 | 按 task 执行；在 task 备注记命令、时间、退出码、输出摘要 |
+| L2 逐次确认 | 生产/预发、真实数据或真实凭据、权限或基础设施变更、不可逆操作、公网暴露、关闭鉴权 | 先停止并说明目的/环境/数据/影响面 | 每次重新请求确认；按批准范围执行；证据落 change 的 `evidence/` |
+
+判定顺序：先查 L2，命中即停；再查 L1（change 已评审且 task 明确）；否则 L0。§8 的命令白名单只表示命令形态，**不等于自动 L0**——命中 L2 任一条件就升级。
+
+L2 证据含命令、时间、退出码、输出摘要（先脱敏），与 `traceability.md` 的证据索引保持可追溯。分级只放宽本地启停，不放宽 change 实施授权、归档、Stage 退出或真实数据验收。
 
 ## 8. 常用命令
 
@@ -153,6 +151,9 @@ make generate-check
 make deps-lock
 make deps-check
 make deps-audit
+make deps-test           # deps 工具回归测试（离线）
+make deps-resolve        # 联网解析 tag→digest（Helm 回填前用）
+make deps-actions-check  # 校验 Actions 引用钉 commit SHA
 
 # 全栈本地启动
 docker compose -f deploy/compose/compose.yaml up -d --build
@@ -183,18 +184,3 @@ openspec status --change <change-name>
 | 为了本地演示关闭鉴权 | 安全边界失效 | 用受控测试上下文，不对外暴露 |
 | 改了镜像 tag 不更新 `deploy/deps/lock.yaml` | 版本漂移，`deps-check` 失败 | `make deps-lock` 后一起提交，规则见 `docs/workflow/DEPENDENCIES.md` |
 | 给 p0 组件开 Renovate 自动合并 | 引擎 breaking 静默进入主干 | `platform-p0` 规则保持 `automerge: false` |
-
-## 10. 当前状态
-
-- 当前 Stage：Stage 1 已退出（exited，2026-11-22）；Stage 2 进行中（in_progress；`docs/stages/stage-2-ontoaxis-runtime-brief.md`）
-- 当前 change：4 个 Stage 2 active change —— `production-delivery`、`connector-runtime`、`stage-2-integration`、`object-search-meilisearch`；另有一个 **Stage 外**规划 change `jaeger-v2`（不属于 Stage 2，见 change map §12，未授权实施）；Stage 1 的 12 个 change 与 Stage 2 的 6 个 change（`runtime-observability`、`edge-gateway`、`authorization-openfga-cedar`、`action-temporal`、`pipeline-kestra-dbt`、`stage-2-dependency-governance`）已归档到 `openspec/changes/archive/`
-- 主规格：`openspec/specs/` 下 12 个 capability spec 已由归档 change 写入（含 `dependency-governance`）
-- 当前事项：Stage 2 按 change map 实施；依赖版本治理规则见 `docs/workflow/DEPENDENCIES.md`，未完成项见 change map §11 移交台账（Helm 占位 digest 回填期限 2026-12-31）
-
-## 11. 技能分工
-
-- `stage-openspec-init`：从零建立治理（本文件就是它生成的）。
-- `stage-project-bootstrap`：审计/修复已有治理。
-- `stage-change-workflow`：日常分类、artifacts、门禁。
-
-技能只是操作助手；规则以仓库文件为准。

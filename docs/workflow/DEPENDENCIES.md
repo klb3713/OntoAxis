@@ -129,4 +129,4 @@ exceptions:
 - 依赖基线属于 Stage 范围的一部分：Stage brief 的 Dependency baseline 一节引用本文件。
 - 月度审计报告是 Stage 退出的证据之一，存入 `docs/stages/evidence/`（由 stage-2-integration 汇总）
   或 change 自己的 `evidence/`。
-- 本文件的命令变更需要同步 `AGENTS.md` 第 5 节与 `docs/workflow/RUNBOOK.md`。
+- 本文件的命令变更需要同步 `docs/workflow/RUNBOOK.md` §8（命令清单唯一真源）。
