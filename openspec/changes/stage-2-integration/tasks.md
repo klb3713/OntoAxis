@@ -15,7 +15,7 @@
 - [x] 2.1 合并 `runtime-observability`：接入 telemetry/指标/observability profile 相关补丁。验证：`go build ./...`、`go test ./...`、`make observability-rules-test`、`scripts/observability-smoke.sh` 通过，日志入库。
 - [x] 2.2 合并 `edge-gateway`：接入 oa-edge 生成物使用与 edge profile 配置。验证：`make edge-generate-check`、edge profile 起栈、`EDGE_TEST_FAIL_CLOSED=1 ./scripts/edge-smoke.sh` 通过（含 401/403/404/405/429/5xx），日志入库。
 - [x] 2.3 合并 `authorization-openfga-cedar`：接入 OpenFGA/Cedar 客户端与授权中间件接线。验证：该 change 的授权集成测试（allow/deny、跨租户拒绝、无策略默认拒绝、审计）通过；记录其证据链接与本次复跑结果。
-- [ ] 2.4 合并 `connector-runtime`：接入 Kafka Connect/Debezium 运行时与 ingestion 接缝。验证：该 change 的 CDC 集成测试与同步状态回写检查通过；Compose profile 起栈与日志入库。
+- [x] 2.4 合并 `connector-runtime`：接入 Kafka Connect/Debezium 运行时与 ingestion 接缝。验证：该 change 的 CDC 集成测试与同步状态回写检查通过；Compose profile 起栈与日志入库。合并提交 `8f3e533`（含 `internal/app/`、`cmd/ontoaxis-core/` 接线）；记录见 `docs/stages/evidence/stage-2-integration/change-merges.md`（2.4）与 `docs/stages/evidence/stage-2-connector-runtime/README.md`。
 - [ ] 2.5 合并 `pipeline-kestra-dbt`：接入 Kestra/dbt 运行时与 pipelines 接缝。验证：Flow 发布/运行/状态回写/失败重试/dataset 产出的集成测试通过，日志入库。
 - [x] 2.6 合并 `action-temporal`：接入 Temporal workflow/activity 与 actions 接缝。验证：重试/补偿/审批分支与状态回写集成测试通过；如含 `web/` 审批 UI，一并合并其前端测试。
 - [x] 2.7 合并 `object-search-meilisearch`：接入 outbox 消费者与 Meilisearch 索引接缝。验证：对象创建/更新/删除与索引一致性、全量重建可复现的集成测试通过，日志入库。

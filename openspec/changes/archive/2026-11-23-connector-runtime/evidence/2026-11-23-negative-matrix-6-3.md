@@ -28,6 +28,6 @@
 ## 说明：paused/error 按 403 验收（原任务文本写 409，2026-11-23 负责人确认改为 403）
 
 - 连接器状态更新成功（200），随后 `POST /api/v1/connectors/{id}/sync` 在授权层被 Cedar 的 `platform/resource-state.cedar` 拒绝（`resource_state_denied`），HTTP 映射为 403。
-- `openspec/specs/connectors/spec.md` 只要求 paused/error 的同步被拒绝，没有规定状态码；409 是 tasks 里的实现备注。
+- 更正（2026-11-23 归档评审）：`openspec/specs/connectors/spec.md` 的「启动同步」原文要求 `paused` 返回**冲突错误**，并非「没有规定状态码」；此前的表述有误。负责人已确认接受 `403` 为最终契约，本 change 的 delta 已增加 `MODIFIED` 需求，把拒绝语义明确为「`403` 或冲突错误」，因此归档后不再与旧要求矛盾。
 - 当前 fail-closed 策略优先于服务层冲突语义：若要严格返回 409，需要把状态检查下沉到 ingestion/connectors service 并调整 Cedar 策略，属于授权行为变更，需单独评审。
 - 本记录按实际 403 归档，不把任务文本的 409 写成已实现。

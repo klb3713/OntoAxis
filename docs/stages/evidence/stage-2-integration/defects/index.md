@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|
 | D-01 | 2.2 edge-gateway | 跨 change 装配缺陷 | `compose.authz.yaml` 未给 `ontoaxis-core-edge` 注入 authz 环境，edge core 启动失败 | 已修复 | 增加 core-edge authz env；edge smoke 12/0；见 `../compose-smoke.md` |
 | D-02 | 2.5 pipeline-kestra-dbt | 依赖缺失/环境 | Kestra profile、dbt 镜像与 v2 API 升级；真实 E2E 已完成 | 已关闭 | 证据 `openspec/changes/pipeline-kestra-dbt/evidence/2026-11-23-kestra-v2-upgrade-e2e.md`；13.x 已勾选 |
-| D-03 | 2.4 connector-runtime | 代码/校验器 | 栈可起、source/sink task `RUNNING`，但 sink lag 不降、Iceberg 无 snapshot、job 不 `succeeded` | 待处置 | 可执行清单 `../../../stage-2-unblock-checklist.md` §1（先诊断 topic 路由，再决定 RegexRouter/JDBC fallback） |
+| D-03 | 2.4 connector-runtime | 代码/校验器 | 栈可起、source/sink task `RUNNING`，但 sink lag 不降、Iceberg 无 snapshot、job 不 `succeeded` | 已关闭 | 见下方「D-03 关闭」；证据 `openspec/changes/connector-runtime/evidence/2026-11-23-cdc-e2e-three-way.md` |
 | D-04 | 2.7 object-search-meilisearch | 配置合并/测试 | overlay 可渲染，但 base compose 无 `search` profile（`--profile search` 报 no such service）；E2E/CI 缺失 | 待处置 | 可执行清单 `../../../stage-2-unblock-checklist.md` §2；先验证已实现的 claim/rebuild 再勾选 |
 | D-05 | 2.8 production-delivery | 环境/GitOps 源 | kind 集群与 ArgoCD 已存在；`ontoaxis-root` 因 repoURL 占位报 `authentication required`，`oa-*` 无 Pod；镜像停在 `a04ab4c` | 待处置 | 可执行清单 `../../../stage-2-unblock-checklist.md` §3（GitOps 源选型 A/B/C + 镜像重建） |
 | D-06 | 2.1/2.3 | 环境问题 | 本地 core 依赖 authz overlay；基础 compose 单文件启动会因缺少 authz 环境失败 | 已说明 | `compose-smoke.md`、`app-wiring.md` |
@@ -57,3 +57,10 @@
 - 真实 E2E 已通过：publish 200、trigger 202、run `succeeded`、Kestra execution `SUCCESS`、Trino `memory.oa_t11111111_p01a205e4.build_orders` 可查。证据 `openspec/changes/pipeline-kestra-dbt/evidence/2026-11-23-kestra-v2-upgrade-e2e.md`。
 - 13.1/0.2/0.3 已勾选；13.2–13.7（dataset 输出/血缘、失败/重试/负向、遥测）仍未覆盖。
 - **更正（同日稍后）**：上述"13.2–13.7 仍未覆盖"已被同日后续执行推翻。13.2 输出/血缘、13.3 坏 SQL、13.4 停机 503→恢复重试、13.5 状态回写、13.6 负向、13.7 遥测均已通过并勾选，tasks 69/69；证据见 `docs/stages/evidence/stage-2-pipeline-kestra-dbt/`（`raw/` 下 13.x 原始响应与 metrics/trace 摘录）。D-02 保持"已关闭"，本 change 已按归档流程处理，后续集成 E2E 覆盖归 `stage-2-integration` 7.2。
+
+### D-03 关闭（connector CDC，2026-11-23）
+
+- 根因与修复：sink 不提交由三处叠加造成——source 侧需 `ExtractNewRecordState` 拆信封、sink 需共享 warehouse 根并按 `ds_<uuid8>_<schema>` 命名空间隔离、`iceberg.control.commit.timeout-ms=120000` 修复 rebalance 后重复写入；Trino 侧 `local.location=/` 修复 `file:/warehouse/...` 路径解析。
+- 结果：`scripts/connector-runtime-e2e.sh --success-only` 7/7，源表 5 = sink `verified_rows` 5 = Trino 5，作业 `01a20826-…` / `01a20854-…` 均 `succeeded`；默认负向矩阵 18/18、`--with-outage` 10/10；集成测试 3 个真实实例用例通过。
+- 证据：`openspec/changes/connector-runtime/evidence/2026-11-23-cdc-e2e-three-way.md`、`2026-11-23-negative-matrix-6-3.md`、`2026-11-23-integration-and-telemetry.md`；Stage 2 索引 `docs/stages/evidence/stage-2-connector-runtime/README.md`。
+- 遗留：主键/upsert 未实现、告警未 firing、真实第二租户 E2E 不可行、`cleanup.sh` 未在矩阵调用，均已在 change 的 traceability「未覆盖与后续」登记。D-07（端口冲突）仍待处置，不随 D-03 关闭。

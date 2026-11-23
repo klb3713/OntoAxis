@@ -158,3 +158,24 @@
 
 - **WHEN** 租户 A 请求取消租户 B 的作业
 - **THEN** 系统返回未找到，且租户 B 的作业与运行时连接器保持原状态
+
+## MODIFIED Requirements
+
+### Requirement: 同步任务取消
+
+系统 SHALL 允许取消 `queued` 或 `running` 状态的同步任务。取消 `queued` 任务后 MUST 直接置为 `cancelled` 并记录结束时间，MUST NOT 创建运行时资源；取消 `running` 任务 MUST 先向运行时传播停止，运行时确认停止后 MUST 置为 `cancelled` 并记录结束时间。运行时停止未获确认时 MUST 返回错误并保持 `running` 供重试，MUST NOT 报告已取消。终态任务再次取消 MUST 返回冲突且不改变状态。
+
+#### Scenario: 取消排队任务
+
+- **WHEN** 租户取消一个 `queued` 任务
+- **THEN** 任务状态变为 `cancelled` 并返回更新后的任务，运行时不出现新连接器
+
+#### Scenario: 停止未被确认
+
+- **WHEN** 取消 `running` 任务时运行时不可达或拒绝停止请求
+- **THEN** 系统返回错误，任务保持 `running` 供重试，且不报告已取消
+
+#### Scenario: 取消已结束任务被拒绝
+
+- **WHEN** 租户取消一个 `succeeded` 或 `failed` 任务
+- **THEN** 系统返回冲突错误，且原状态保持不变

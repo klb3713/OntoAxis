@@ -8,7 +8,7 @@
 
 | 缺陷 | change | 一句话现状 | 阻塞类型 | 完成判据 |
 | --- | --- | --- | --- | --- |
-| D-03 | `connector-runtime` | source/sink task `RUNNING`、topic 有 snapshot 记录，但 sink lag 不降、Iceberg `snapshots: []`，job 停在 `running` | 代码（路由/提交）+ 校验器缺失 | 源行数 = sink 行数 = Trino 查询行数；job `succeeded`；5.3/6.1–6.4 勾选 |
+| D-03 | `connector-runtime` | source/sink task `RUNNING`、topic 有 snapshot 记录，但 sink lag 不降、Iceberg `snapshots: []`，job 停在 `running` | 代码（路由/提交）+ 校验器缺失 | **已关闭（2026-11-23）**：源行数 = sink 行数 = Trino 查询行数（5=5=5）；job `succeeded`；5.3/6.1–6.4 已勾选 |
 | D-04 | `object-search-meilisearch` | client/consumer/rebuild/worker 已在仓库，但 base compose 无 `search` profile、E2E 脚本与 CI job 缺失 | 配置合并 + 测试/证据 | 对象增删改后搜索结果一致；重建可复现；7.5/8.1–8.4 勾选 |
 | D-05 | `production-delivery` | kind 集群与 ArgoCD 已存在，root app 因 repoURL 占位报 `authentication required`；镜像 digest 落后 3 个提交 | 环境（GitOps 仓库）+ 镜像 | Helm/ArgoCD 部署 Synced/Healthy，探针/PDB/备份恢复/回滚/IdP 演练全部有证据 |
 | D-07 | 跨 change（`connector-runtime` / `pipeline-kestra-dbt`） | Kafka Connect 与 Kestra 的 host 端口默认值都是 **18086**，两个 profile 无法同时起栈 | 配置（端口冲突） | 端口改到互不冲突值，`services-and-ports.md` 登记，两个 profile 同栈起停通过 |
@@ -49,7 +49,7 @@
 > - **6.1 集成测试与 6.4 遥测已闭合**（2026-11-23）：新增 `-tags=integration` 三个真实实例用例并通过；`ontoaxis_connector_*` 指标原先没接进 registry，已通过装配参数接线并在 Prometheus 抓到序列，Jaeger 采样到 `connectors.runtime.submit` / `kafka connect upsert`；详见 `openspec/changes/connector-runtime/evidence/2026-11-23-integration-and-telemetry.md`。
 > - **Trino 读取已修复**（2026-11-23）：根因是 `iceberg.properties` 的 `local.location=/warehouse` 让本地 FileIO 把 `file:/warehouse/...` 解析成 `/warehouse/warehouse/...`；改为 `local.location=/` 后 `select count(*)` 正常返回；见 `openspec/changes/connector-runtime/evidence/2026-11-23-trino-local-location-fix.md`。三方行数断言已加入 E2E 脚本。
 > - **6.2 三方行数已通过**（2026-11-23）：`--success-only` 干净同步，源表 5 = sink `verified_rows` 5 = Trino 5，作业 `succeeded`；见 `openspec/changes/connector-runtime/evidence/2026-11-23-cdc-e2e-three-way.md`。5.3 仍缺 paused/跨租户与 cleanup.sh 集成；重复写入（rebalance 后重放）仍是已知问题。
-> - D-03 仍为待处置（5.3 与 6.3 部分场景未闭合），任务不勾选。
+> - **更正（2026-11-23）**：上述「仍为待处置」已被同日后续执行关闭——5.3 三方行数与负向矩阵、6.1–6.4 均通过，D-03 已关闭；见 `docs/stages/evidence/stage-2-integration/defects/index.md` 的「D-03 关闭」。
 
 
 ### 1.1 已经排除的原因（不要重复排查）
@@ -179,12 +179,12 @@ docker compose -f deploy/compose/compose.yaml -f deploy/connector-runtime/compos
 
 ### 1.6 收尾任务与证据
 
-- [ ] 5.3 `scripts/connector-runtime-e2e.sh`（创建 Dataset → Connector → 同步 → 轮询 → 三方行数；负向：Connect down/非法配置/paused/跨租户/取消）
-- [ ] 6.1 `go test -tags=integration ./internal/modules/connectors/... ./internal/modules/ingestion/...`
-- [ ] 6.2 E2E 证据：源行数、sink 行数、Trino 查询行数、dataset RID、job `succeeded`
-- [ ] 6.3 失败与负向矩阵（503/400/409/重试耗尽/取消/幂等/跨租户 404）
-- [ ] 6.4 指标/trace 样例移交 `production-delivery`
-- 证据路径：`docs/stages/evidence/stage-2-connector-runtime/`（新建）+ `openspec/changes/connector-runtime/evidence/`
+- [x] 5.3 `scripts/connector-runtime-e2e.sh`（创建 Dataset → Connector → 同步 → 轮询 → 三方行数；负向：Connect down/非法配置/paused/跨租户/取消）。结果：`--success-only` 7/7、默认 18/18、`--with-outage` 10/10；`cleanup.sh` 未在矩阵调用（销毁性 teardown），以幂等复跑与独立清理替代。
+- [x] 6.1 `go test -tags=integration ./internal/modules/connectors/... ./internal/modules/ingestion/...`（3 个真实实例用例通过；`ingestion` 包无 integration 用例，由 E2E 覆盖）
+- [x] 6.2 E2E 证据：源行数、sink 行数、Trino 查询行数（5=5=5）、dataset RID、job `succeeded`
+- [x] 6.3 失败与负向矩阵（503/400/403/重试耗尽/取消/幂等/伪造租户头 403）
+- [x] 6.4 指标/trace 样例移交 `production-delivery`（已抓取样例；告警 firing 未验证，保留为未覆盖）
+- 证据路径：`docs/stages/evidence/stage-2-connector-runtime/README.md`（索引）+ `openspec/changes/connector-runtime/evidence/`
 
 ### 1.7 风险
 

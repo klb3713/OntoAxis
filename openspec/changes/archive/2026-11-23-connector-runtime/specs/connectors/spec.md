@@ -158,3 +158,29 @@
 
 - **WHEN** 运行时提交或状态读取失败
 - **THEN** 对应指标以失败结果标签计数，且不记录凭据
+
+## MODIFIED Requirements
+
+### Requirement: 启动同步
+
+系统 SHALL 允许为 `active` 状态的 Connector 启动同步并返回同步任务标识；`paused` 或 `error` 状态的 Connector MUST 被拒绝，且 MUST NOT 创建同步任务。拒绝错误 MUST 为明确的冲突或拒绝语义：运行时预检在授权层前置时返回 `403`，未进入预检时返回冲突错误。适配器不可用时 MUST 返回不可用错误，MUST NOT 伪造任务标识。
+
+#### Scenario: 活跃连接器启动同步
+
+- **WHEN** 租户对 `active` 状态的 Connector 发起启动同步
+- **THEN** 系统创建同步任务并返回任务标识
+
+#### Scenario: 暂停连接器拒绝同步
+
+- **WHEN** 租户对 `paused` 状态的 Connector 发起启动同步
+- **THEN** 系统返回拒绝错误（`403` 或冲突错误），且不创建同步任务
+
+#### Scenario: 错误状态连接器拒绝同步
+
+- **WHEN** 租户对 `error` 状态的 Connector 发起启动同步
+- **THEN** 系统返回拒绝错误（`403` 或冲突错误），且不创建同步任务
+
+#### Scenario: 同步适配器不可用
+
+- **WHEN** 未配置同步适配器
+- **THEN** 系统返回不可用错误，且不伪造任务标识

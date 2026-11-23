@@ -59,7 +59,8 @@ flowchart TB
 >
 > 状态（2026-11-23 归档）：`stage-2-dependency-governance` 已完成 19/19（含 4 项一致性修正与块外镜像覆盖）并归档为 `2026-11-23-stage-2-dependency-governance`（`openspec/changes/archive/2026-11-23-stage-2-dependency-governance/`），主 spec 写入 `openspec/specs/dependency-governance/spec.md`。Helm 占位 digest 回填等 3 项显式移交，见 §11 台账；当前在途 4 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`。
 >
-> 状态（2026-11-23 归属修正）：`jaeger-v2` 的规划产物已创建，但**不属于 Stage 2 范围**——Stage 2 brief §5 未列入，§2.1 可观测交付与 S2-AC-09 也不要求 Jaeger v2，Stage 2 退出条件 6 只要求 `deps-check` 通过、无过期例外。该 change 改登记到 §12「Stage 外/后续候选」，Stage 2 在途仍为 4 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`。
+> 状态（2026-11-23 归属修正）：`jaeger-v2` 的规划产物已创建，但**不属于 Stage 2 范围**——Stage 2 brief §5 未列入，§2.1 可观测交付与 S2-AC-09 也不要求 Jaeger v2，Stage 2 退出条件 6 只要求 `deps-check` 通过、无过期例外。该 change 改登记到 §12「Stage 外/后续候选」，当时 Stage 2 在途为 4 个 change：`connector-runtime`、`object-search-meilisearch`、`production-delivery`、`stage-2-integration`。
+> 状态（2026-11-23 归档）：`connector-runtime` 已归档为 `2026-11-23-connector-runtime`（真实 CDC 三方行数 5=5=5、负向矩阵 18/18、集成与遥测通过；评审记录见其 `evidence/2026-11-23-connector-runtime-archive-review.md`）。Stage 2 在途 3 个 change：`object-search-meilisearch`、`production-delivery`、`stage-2-integration`。
 
 ## 4. 并行波次与合并门
 
@@ -176,14 +177,14 @@ flowchart TB
 
 **实施进度**：`authorization-openfga-cedar` 已完成 43/43 并归档为 `2026-11-23-authorization-openfga-cedar`；归档证据包含真实 datasets handler + 真实 OpenFGA 集成、29 条负向矩阵、审计一致性、`authz-integration` CI job。其余 change 仍在途，不得因本 change 归档而视为 Stage 2 完成。
 
-`connector-runtime` 已按 Stage 2 实施目标启动：connectors/ingestion 运行时、调度/对账、迁移与 `deploy/connector-runtime/` 资产已实现，单元/race/静态校验通过；真实 Kafka Connect/Trino E2E、`SnapshotVerifier` 装配与 `internal/app` 接线未完成，因此尚未归档。
+`connector-runtime` 已完成实施：connectors/ingestion 运行时、调度/对账、迁移与 `deploy/connector-runtime/` 资产已实现；真实 Kafka Connect/Trino E2E 三方行数 5=5=5、负向矩阵 18/18、集成测试与遥测抓取通过；`internal/app` 接线由 `stage-2-integration` 在提交 `8f3e533` 合并（2.4 已勾选）。归档评审已启动，待负责人确认后归档。
 
 **实施进度更新（2026-11-23）**：`authorization-openfga-cedar` 已归档；`pipeline-kestra-dbt` 已完成 69/69 并归档（`2026-11-23-pipeline-kestra-dbt`）；其余 5 个 change 仍在途。本地单元/静态证据可用，但真实集群/运行时 E2E（CDC、搜索、kind 交付）尚未闭合，不能据此判定 Stage AC 通过。
 
 | change | 任务 | 当前实现边界 |
 | --- | --- | --- |
 | `authorization-openfga-cedar` | 43/43（已归档 2026-11-23） | 核心 authz、策略、9 模块接缝、真实 handler + 真实 OpenFGA 集成、29 条负向矩阵、审计一致性、CI job；见 `openspec/changes/archive/2026-11-23-authorization-openfga-cedar/` |
-| `connector-runtime` | 20/25 | connectors/ingestion runtime、调度/对账、迁移、Compose 资产；真实 Connect/Trino E2E 与 verifier 未闭合 |
+| `connector-runtime` | 25/25 | connectors/ingestion runtime、调度/对账、迁移、Compose 资产；真实 CDC E2E 5=5=5、负向 18/18、集成与遥测通过；待归档确认 |
 | `pipeline-kestra-dbt` | 69/69（已归档 2026-11-23） | DAG/Flow/dbt/HTTP adapter（Kestra v2.0.12）、service 编排、迁移/单测；真实发布/触发/输出血缘/失败/重试/负向/遥测 E2E 已通过；见 `openspec/changes/archive/2026-11-23-pipeline-kestra-dbt/`，证据交接 `docs/stages/evidence/stage-2-pipeline-kestra-dbt/` |
 | `action-temporal` | 55/55（已归档 2026-11-23） | 领域/迁移/repo、Temporal adapter/workflow/worker、审批 REST + UI、proto/幂等/审计/授权接缝、span、真实 Temporal 集成测试与门禁；见 `openspec/changes/archive/2026-11-23-action-temporal/` |
 | `object-search-meilisearch` | 32/52 | search 客户端/consumer/rebuild、outbox、search API、app adapter；真实 Meilisearch/Postgres E2E 未闭合 |

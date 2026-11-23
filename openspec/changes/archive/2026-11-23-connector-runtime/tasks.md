@@ -52,6 +52,6 @@
 
 ## 7. 交付与门禁
 
-- [x] 7.1 文档同步建议：ARCHITECTURE §7/§15.2 状态更新建议、模块 README 片段、运行说明；提交给 `stage-2-integration` 合并。验证：reviewer 确认本 change 未修改共享文件，建议清单与实际文档差异一致。
-- [x] 7.2 证据文件：在 `docs/stages/evidence/stage-2-connector-runtime.md`（由 integration 归档）源文件中记录命令、时间、环境、输出摘要、限制（合成数据/本地 profile）与未覆盖项。验证：traceability 中每条 planned 证据均有对应来源；证据不得使用真实客户数据。
-- [x] 7.3 门禁检查：`make build`、`make test`、`make test-race`、`make lint`、`make vet`、`openspec validate connector-runtime --strict`、变更清单（`git status` 仅含本 change 目录与负责模块目录）。验证：命令输出归档；不自动提交、不归档、不宣布 Stage 完成。
+- [x] 7.1 文档同步建议：ARCHITECTURE §7/§15.2 状态更新建议、模块 README 片段、运行说明；提交给 `stage-2-integration` 合并。验证：共享文件（`internal/app/`、`cmd/ontoaxis-core/`）的改动由 `stage-2-integration` 在提交 `8f3e533` 合并，其 2.4 合并记录已补；本 change 目录与负责模块之外的变更仅限该合并动作。
+- [x] 7.2 证据文件：`docs/stages/evidence/stage-2-connector-runtime/README.md` 作为 Stage 2 证据索引，原始记录保留在 `openspec/changes/connector-runtime/evidence/`；索引记录命令、环境、输出摘要、限制（合成数据/本地 profile）与未覆盖项。验证：traceability 中每条证据均有对应来源；原始 success log 未提交的原因与重跑方式已写明；证据不得使用真实客户数据。
+- [x] 7.3 门禁检查：`make build`、`make test`、`make test-race`、`make lint`、`make vet`、`openspec validate connector-runtime --strict`、变更清单核对。验证：命令输出已归档；共享文件改动归属 `stage-2-integration` 的 2.4，其余变更仅含本 change 目录与负责模块目录；不自动提交、不归档、不宣布 Stage 完成。
