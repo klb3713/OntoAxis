@@ -118,7 +118,7 @@ const profilesFileTemplate = `ontoaxis_pipeline:
       type: trino
       method: none
       host: "{{ env_var('DBT_TRINO_HOST') }}"
-      port: "{{ env_var('DBT_TRINO_PORT') }}"
+      port: 8080
       user: "{{ env_var('DBT_TRINO_USER') }}"
       database: "%s"
       schema: "%s"

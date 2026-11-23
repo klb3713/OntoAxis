@@ -59,6 +59,7 @@ type Repository interface {
 	Ping(ctx context.Context) error
 	CreatePipeline(ctx context.Context, pipeline domain.Pipeline) (domain.Pipeline, error)
 	GetPipeline(ctx context.Context, tenantID, pipelineID string) (domain.Pipeline, error)
+	GetPublishedVersion(ctx context.Context, tenantID, pipelineID string, version int) (domain.PipelineVersion, error)
 	ListPipelines(ctx context.Context, filter PipelineFilter) ([]domain.Pipeline, int, error)
 	UpdatePipeline(ctx context.Context, pipeline domain.Pipeline) (domain.Pipeline, error)
 	DeletePipeline(ctx context.Context, tenantID, pipelineID string, deletedAt time.Time) error

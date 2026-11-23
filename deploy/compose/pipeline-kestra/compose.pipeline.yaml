@@ -2,15 +2,15 @@ name: ontoaxis-pipeline
 services:
   kestra:
     build:
-      context: .
+      context: ./pipeline-kestra
       dockerfile: Dockerfile
     command: server local
     environment:
+      KESTRA_SERVER_BASIC_AUTH_ENABLED: "true"
+      KESTRA_SERVER_BASIC_AUTH_USERNAME: ${KESTRA_BASIC_AUTH_USERNAME:?set KESTRA_BASIC_AUTH_USERNAME}
+      KESTRA_SERVER_BASIC_AUTH_PASSWORD: ${KESTRA_BASIC_AUTH_PASSWORD:?set KESTRA_BASIC_AUTH_PASSWORD}
       KESTRA_CONFIGURATION: |
         kestra:
-          server:
-            basic-auth:
-              enabled: false
           repository:
             type: memory
           queue:
@@ -24,7 +24,6 @@ services:
               enabled: true
               path: /tmp/kestra-tmp
       DBT_TRINO_HOST: trino
-      DBT_TRINO_PORT: "8080"
       DBT_TRINO_USER: ontoaxis
     ports:
       - "18086:8080"
@@ -32,7 +31,7 @@ services:
       trino:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/api/v1/configs"]
+      test: ["CMD-SHELL", "curl -fsS -u \"$${KESTRA_SERVER_BASIC_AUTH_USERNAME}:$${KESTRA_SERVER_BASIC_AUTH_PASSWORD}\" http://localhost:8080/api/v1/configs"]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -40,6 +39,7 @@ services:
     environment:
       ONTOAXIS_KESTRA_URL: http://kestra:8080
       ONTOAXIS_KESTRA_TIMEOUT: 30s
+      ONTOAXIS_KESTRA_API_TOKEN: "basic:${KESTRA_BASIC_AUTH_USERNAME}:${KESTRA_BASIC_AUTH_PASSWORD}"
       ONTOAXIS_PIPELINE_DBT_CATALOG: memory
       ONTOAXIS_PIPELINE_DBT_IMAGE: ontoaxis/pipeline-dbt:local
       ONTOAXIS_ENVIRONMENT: local

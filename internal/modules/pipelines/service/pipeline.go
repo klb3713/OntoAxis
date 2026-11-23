@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -207,7 +208,8 @@ func (m *Manager) PublishPipeline(ctx context.Context, request PublishPipelineRe
 		return domain.Pipeline{}, domain.PipelineVersion{}, err
 	}
 	now := m.now().UTC()
-	nextVersion := pipeline.Version + 1
+	previousVersion := pipeline.Version
+	nextVersion := previousVersion + 1
 
 	flowIR, err := kestra.BuildFlowIR(tenantID, pipelineID, nextVersion, dag, m.environment)
 	if err != nil {
@@ -228,7 +230,8 @@ func (m *Manager) PublishPipeline(ctx context.Context, request PublishPipelineRe
 		paths = append(paths, file.Path)
 	}
 	if err := m.adapter.PublishFiles(ctx, flowIR.Namespace, files); err != nil {
-		return domain.Pipeline{}, domain.PipelineVersion{}, fmt.Errorf("%w: publish dbt files failed", domain.ErrUnavailable)
+		original := fmt.Errorf("%w: publish dbt files failed", domain.ErrUnavailable)
+		return domain.Pipeline{}, domain.PipelineVersion{}, m.failPublish(ctx, original, tenantID, pipelineID, previousVersion, nextVersion, flowIR, paths)
 	}
 	if _, err := m.adapter.RegisterFlow(ctx, kestra.Flow{
 		TenantID:   tenantID,
@@ -238,8 +241,8 @@ func (m *Manager) PublishPipeline(ctx context.Context, request PublishPipelineRe
 		DAG:        pipeline.DAG,
 		FlowYAML:   flowYAML,
 	}); err != nil {
-		_ = m.adapter.DeleteFiles(ctx, flowIR.Namespace, paths)
-		return domain.Pipeline{}, domain.PipelineVersion{}, fmt.Errorf("%w: kestra Flow registration failed", domain.ErrUnavailable)
+		original := fmt.Errorf("%w: kestra Flow registration failed", domain.ErrUnavailable)
+		return domain.Pipeline{}, domain.PipelineVersion{}, m.failPublish(ctx, original, tenantID, pipelineID, previousVersion, nextVersion, flowIR, paths)
 	}
 	version := domain.PipelineVersion{
 		ID:          versionID,
@@ -257,13 +260,91 @@ func (m *Manager) PublishPipeline(ctx context.Context, request PublishPipelineRe
 	pipeline.UpdatedAt = now
 	published, publishedVersion, err := m.repo.PublishPipeline(ctx, pipeline, version)
 	if err != nil {
-		// Best-effort compensation: the version was not committed, so remove the
-		// rendered files. The Flow remains revisioned in Kestra; a later publish
-		// with the same version is an upsert and remains authoritative.
-		_ = m.adapter.DeleteFiles(ctx, flowIR.Namespace, paths)
-		return domain.Pipeline{}, domain.PipelineVersion{}, err
+		return domain.Pipeline{}, domain.PipelineVersion{}, m.failPublish(ctx, err, tenantID, pipelineID, previousVersion, nextVersion, flowIR, paths)
 	}
 	return published, publishedVersion, nil
+}
+
+// failPublish restores the engine to the last published version after any
+// failure that happened after the Flow/files may have been written. The
+// database is authoritative: if the new version was not committed, the old
+// Flow revision and its namespace files must remain what callers see.
+func (m *Manager) failPublish(ctx context.Context, original error, tenantID, pipelineID string, previousVersion, nextVersion int, nextFlow kestra.FlowIR, nextPaths []string) error {
+	if compErr := m.rollbackPublish(ctx, tenantID, pipelineID, previousVersion, nextVersion, nextFlow, nextPaths); compErr != nil {
+		slog.Default().Warn("pipeline publish compensation failed",
+			"tenant_id", tenantID,
+			"pipeline_id", pipelineID,
+			"previous_version", previousVersion,
+			"next_version", nextVersion,
+			"error", compErr.Error())
+		return fmt.Errorf("%w; publish compensation failed: %v", original, compErr)
+	}
+	return original
+}
+
+func (m *Manager) rollbackPublish(ctx context.Context, tenantID, pipelineID string, previousVersion, nextVersion int, nextFlow kestra.FlowIR, nextPaths []string) error {
+	namespace := nextFlow.Namespace
+	if previousVersion <= 0 {
+		var firstErr error
+		if err := m.adapter.DeleteFlow(ctx, kestra.FlowRef{Namespace: namespace, FlowID: nextFlow.FlowID, Revision: nextVersion}); err != nil {
+			firstErr = err
+		}
+		if err := m.adapter.DeleteFiles(ctx, namespace, nextPaths); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		return firstErr
+	}
+	previous, err := m.repo.GetPublishedVersion(ctx, tenantID, pipelineID, previousVersion)
+	if err != nil {
+		return fmt.Errorf("load previous published version: %w", err)
+	}
+	previousDAG, err := domain.ParseDAG(previous.DAG)
+	if err != nil {
+		return fmt.Errorf("parse previous DAG: %w", err)
+	}
+	previousFlow, err := kestra.BuildFlowIR(tenantID, pipelineID, previous.Version, previousDAG, m.environment)
+	if err != nil {
+		return fmt.Errorf("render previous flow: %w", err)
+	}
+	previousYAML, err := kestra.RenderFlowYAML(previousFlow)
+	if err != nil {
+		return fmt.Errorf("render previous flow YAML: %w", err)
+	}
+	previousProject, err := dbt.RenderProject(tenantID, pipelineID, previous.Version, previousDAG, m.dbtCatalog)
+	if err != nil {
+		return fmt.Errorf("render previous dbt project: %w", err)
+	}
+	previousPaths := make(map[string]struct{}, len(previousProject.Files))
+	previousFiles := make([]kestra.File, 0, len(previousProject.Files))
+	for _, file := range previousProject.Files {
+		previousPaths[file.Path] = struct{}{}
+		previousFiles = append(previousFiles, kestra.File{Path: file.Path, Content: file.Content})
+	}
+	removed := make([]string, 0)
+	for _, filePath := range nextPaths {
+		if _, ok := previousPaths[filePath]; !ok {
+			removed = append(removed, filePath)
+		}
+	}
+	var firstErr error
+	if len(removed) > 0 {
+		if err := m.adapter.DeleteFiles(ctx, namespace, removed); err != nil {
+			firstErr = err
+		}
+	}
+	if err := m.adapter.PublishFiles(ctx, namespace, previousFiles); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	if _, err := m.adapter.RegisterFlow(ctx, kestra.Flow{
+		TenantID:   tenantID,
+		PipelineID: pipelineID,
+		Version:    previous.Version,
+		DAG:        previous.DAG,
+		FlowYAML:   previousYAML,
+	}); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return firstErr
 }
 
 // TriggerPipelineRun creates a queued run, records its input lineage, then asks
@@ -518,6 +599,41 @@ func (m *Manager) reconcileRun(ctx context.Context, run domain.PipelineRun) (out
 		update.FailureCode = failureCode
 	}
 	if status == domain.PipelineRunStatusSucceeded {
+		required, artifactErr := m.dbtArtifactRequired(ctx, update)
+		if artifactErr != nil {
+			return m.failRunBeforeOutputs(ctx, update, "run_results_unavailable", "pipeline dbt artifact could not be checked")
+		}
+		if required && m.supportsRunResults() {
+			raw, readerErr := m.readRunResults(ctx, execution.ID)
+			if readerErr != nil {
+				slog.Default().Warn(
+					"pipeline dbt artifact read failed",
+					"tenant_id", update.TenantID,
+					"pipeline_id", update.PipelineID,
+					"run_id", update.ID,
+					"execution_id", execution.ID,
+					"error", readerErr,
+				)
+				return m.failRunBeforeOutputs(ctx, update, "run_results_unavailable", "pipeline dbt artifact is unavailable")
+			}
+			summary, parseErr := dbt.ParseRunResults(raw)
+			if parseErr != nil {
+				return m.failRunBeforeOutputs(ctx, update, "run_results_invalid", "pipeline dbt artifact is invalid")
+			}
+			if summary.Failed > 0 || summary.Total == 0 {
+				return m.failRunBeforeOutputs(ctx, update, "dbt_results_failed", "pipeline dbt results did not all succeed")
+			}
+			slog.Default().Info(
+				"pipeline dbt run results",
+				"tenant_id", update.TenantID,
+				"pipeline_id", update.PipelineID,
+				"run_id", update.ID,
+				"total", summary.Total,
+				"success", summary.Success,
+				"failed", summary.Failed,
+				"skipped", summary.Skipped,
+			)
+		}
 		outputs, outputErr := m.runOutputs(ctx, update)
 		if outputErr != nil {
 			update.Status = domain.PipelineRunStatusRunning
@@ -549,6 +665,68 @@ func (m *Manager) reconcileRun(ctx context.Context, run domain.PipelineRun) (out
 	}
 	updated, updateErr := m.repo.UpdateRunConditional(ctx, update)
 	if updateErr != nil {
+		return run
+	}
+	return updated
+}
+
+// dbtArtifactRequired reports whether the published Pipeline has any dbt task.
+// Non-dbt pipelines have no run_results artifact to reconcile.
+func (m *Manager) dbtArtifactRequired(ctx context.Context, run domain.PipelineRun) (bool, error) {
+	pipeline, err := m.repo.GetPipeline(ctx, run.TenantID, run.PipelineID)
+	if err != nil {
+		return false, err
+	}
+	dag, err := domain.ParseDAG(pipeline.DAG)
+	if err != nil {
+		return false, err
+	}
+	for _, task := range dag.Tasks {
+		if task.Type == domain.TaskTypeDBT {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// readRunResults uses the optional artifact reader implemented by the real
+// engine adapter. The in-memory adapter deliberately does not implement it, so
+// local tests keep their deterministic execution model.
+func (m *Manager) supportsRunResults() bool {
+	_, ok := m.adapter.(interface {
+		GetRunResults(context.Context, string) ([]byte, error)
+	})
+	return ok
+}
+
+func (m *Manager) readRunResults(ctx context.Context, executionID string) ([]byte, error) {
+	reader, ok := m.adapter.(interface {
+		GetRunResults(context.Context, string) ([]byte, error)
+	})
+	if !ok {
+		return nil, kestra.ErrNotConfigured
+	}
+	return reader.GetRunResults(ctx, executionID)
+}
+
+// failRunBeforeOutputs terminalises a run that declared dbt work but whose
+// artifact could not be reconciled. It never writes dataset outputs.
+func (m *Manager) failRunBeforeOutputs(
+	ctx context.Context,
+	run domain.PipelineRun,
+	code, message string,
+) domain.PipelineRun {
+	now := m.now().UTC()
+	update := run
+	update.Status = domain.PipelineRunStatusFailed
+	update.FailureCode = code
+	update.Error = message
+	update.LastReconciledAt = &now
+	update.UpdatedAt = now
+	finished := now
+	update.FinishedAt = &finished
+	updated, err := m.repo.UpdateRunConditional(ctx, update)
+	if err != nil {
 		return run
 	}
 	return updated

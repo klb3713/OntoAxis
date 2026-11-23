@@ -3,7 +3,7 @@
 | id | 来源 | 分类 | 描述 | 状态 | 处置/链接 |
 |---|---|---|---|---|---|
 | D-01 | 2.2 edge-gateway | 跨 change 装配缺陷 | `compose.authz.yaml` 未给 `ontoaxis-core-edge` 注入 authz 环境，edge core 启动失败 | 已修复 | 增加 core-edge authz env；edge smoke 12/0；见 `../compose-smoke.md` |
-| D-02 | 2.5 pipeline-kestra-dbt | 依赖缺失 | 缺少 Kestra profile/服务与 dbt 执行镜像的 Compose 片段，无法启动 E2E | 待处置 | 归属 pipeline-kestra-dbt 的 4.5；需 owner 合并 compose |
+| D-02 | 2.5 pipeline-kestra-dbt | 依赖缺失/环境 | Kestra profile、dbt 镜像与 v2 API 升级；真实 E2E 已完成 | 已关闭 | 证据 `openspec/changes/pipeline-kestra-dbt/evidence/2026-11-23-kestra-v2-upgrade-e2e.md`；13.x 已勾选 |
 | D-03 | 2.4 connector-runtime | 环境/未验证 | Kafka Connect/Debezium profile 仅 YAML 校验，未起容器/未跑 CDC E2E | 待处置 | 见 `deploy/connector-runtime/README.md`；需受控环境 |
 | D-04 | 2.7 object-search-meilisearch | 依赖缺失 | 缺少 Meilisearch Compose profile 与 worker 合并；仅单元/DB-gated 测试 | 待处置 | 需 search profile + worker 合并 |
 | D-05 | 2.8 production-delivery | 环境/未验证 | Helm/ArgoCD 静态渲染通过；kind/k3d 安装、备份恢复、回滚未在集群执行 | 待处置 | 需受控集群环境 |
@@ -42,3 +42,17 @@
 - `kestra/kestra:v0.17.0` 本地启动后 `/api/v1/configs` 200，`/api/v1/flows` GET 405（该版本列表接口不是 GET root），说明认证本身未阻塞旧版本。
 - 0.24 的 `/api/v1/flows` 401 可能是该版本新增的 API 认证过滤器；适配器实际使用 `PUT /api/v1/flows/{namespace}/{id}`、`POST /api/v1/executions/...`，需要在 0.24 上用真实 PUT/Trigger 验证，而不是用 GET 列表判断。
 - 下一步：在 0.24 容器内直接调用适配器的 PUT flow / trigger execution 端点；若仍 401，再降级到 0.17 或改 Kestra 认证配置。
+
+### D-02 根因定位（Kestra v0.24.0，2026-11-23）
+
+- 默认启动 `kestra/kestra:v0.24.0 server local` 时，`GET /api/v1/configs` 返回 `isBasicAuthInitialized:false`；同一实例的 `/api/v1/flows`、`PUT /api/v1/flows/{ns}/{id}`、`POST /api/v1/executions/{ns}/{flow}` 均返回 `401 WWW-Authenticate: Basic`，不是业务接口自身的问题。
+- 通过 `KESTRA_SERVER_BASIC_AUTH_ENABLED=true` + `KESTRA_SERVER_BASIC_AUTH_USERNAME` + `KESTRA_SERVER_BASIC_AUTH_PASSWORD` 启动后，`isBasicAuthInitialized:true`，`curl -u` 可访问 API；仅改 `KESTRA_CONFIGURATION` 的 `kestra.server.basic-auth.enabled`/自定义用户名密码不会初始化 Basic Auth 用户，仍为 401。
+- 认证通过后仍有一个适配器版本差异：Kestra 0.24 的 Flow 创建/更新是 `POST /api/v1/flows/{namespace}`（body 带 `id`、`namespace`、`revision`、`tasks`），`PUT /api/v1/flows/{namespace}/{id}` 返回 404；`POST /api/v1/executions/{namespace}/{flow}` 返回 200。现有 `HTTPAdapter.RegisterFlow` 使用 PUT，需要在适配器内按版本切换为 POST，或固定到端点兼容的版本。
+- 结论：E2E 阻塞由“Basic Auth 未初始化”和“0.24 Flow upsert 端点变化”叠加造成；前者用环境变量初始化本地用户、后者用 POST 端点即可解除。真实 13.x E2E 仍需在改完后重跑，未勾选。
+
+### D-02 关闭：升级 Kestra v2.0.12（2026-11-23）
+- 用户决定升级到 `kestra/kestra:v2.0.12` 并删除旧版本兼容代码/配置。
+- v2 要求 `KESTRA_SERVER_BASIC_AUTH_ENABLED=true` + username/password 初始化 Basic Auth；所有 API 改为 `/api/v1/{tenant}/...`，默认 tenant `main`；Flow upsert 为 `POST /api/v1/main/flows/{namespace}`（YAML body，PUT 405）；文件、触发、查询、取消、搜索接口按 v2 重写。
+- 真实 E2E 已通过：publish 200、trigger 202、run `succeeded`、Kestra execution `SUCCESS`、Trino `memory.oa_t11111111_p01a205e4.build_orders` 可查。证据 `openspec/changes/pipeline-kestra-dbt/evidence/2026-11-23-kestra-v2-upgrade-e2e.md`。
+- 13.1/0.2/0.3 已勾选；13.2–13.7（dataset 输出/血缘、失败/重试/负向、遥测）仍未覆盖。
+- **更正（同日稍后）**：上述"13.2–13.7 仍未覆盖"已被同日后续执行推翻。13.2 输出/血缘、13.3 坏 SQL、13.4 停机 503→恢复重试、13.5 状态回写、13.6 负向、13.7 遥测均已通过并勾选，tasks 69/69；证据见 `docs/stages/evidence/stage-2-pipeline-kestra-dbt/`（`raw/` 下 13.x 原始响应与 metrics/trace 摘录）。D-02 保持"已关闭"，本 change 已按归档流程处理，后续集成 E2E 覆盖归 `stage-2-integration` 7.2。

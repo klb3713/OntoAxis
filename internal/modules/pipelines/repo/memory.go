@@ -133,6 +133,19 @@ func (s *MemoryStore) DeletePipeline(_ context.Context, tenantID, pipelineID str
 	return nil
 }
 
+// GetPublishedVersion returns one immutable published snapshot.
+func (s *MemoryStore) GetPublishedVersion(_ context.Context, tenantID, pipelineID string, version int) (domain.PipelineVersion, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, snapshot := range s.versions[pipelineID] {
+		if snapshot.TenantID != tenantID || snapshot.Version != version {
+			continue
+		}
+		return cloneVersion(snapshot), nil
+	}
+	return domain.PipelineVersion{}, fmt.Errorf("%w: pipeline version %d", domain.ErrNotFound, version)
+}
+
 // PublishPipeline optimistically replaces the Pipeline and appends an
 // immutable version snapshot.
 func (s *MemoryStore) PublishPipeline(_ context.Context, pipeline domain.Pipeline, version domain.PipelineVersion) (domain.Pipeline, domain.PipelineVersion, error) {

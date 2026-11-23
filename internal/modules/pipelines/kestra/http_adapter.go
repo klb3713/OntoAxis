@@ -38,6 +38,9 @@ const (
 	maxResponseBytes     = 4 << 20
 	maxErrorMessageBytes = 300
 	maxBackoffShift      = 5
+	// defaultTenant is Kestra's OSS tenant. Kestra v2 requires the tenant in
+	// every API path; the deployment uses the default tenant.
+	defaultTenant = "main"
 	// searchPageSize is passed as the page size of the run-label lookup. The
 	// upstream pagination parameter and label filter syntax are documented as
 	// spike-pending in the design; this adapter uses the conventional size
@@ -53,9 +56,12 @@ type HTTPConfig struct {
 	BaseURL string
 	// Timeout bounds one HTTP round trip. Defaults to DefaultHTTPTimeout.
 	Timeout time.Duration
-	// APIToken is sent as a bearer token. It is never logged or included in
-	// returned errors (design D12).
+	// APIToken is sent as basic credentials when prefixed with "basic:";
+	// otherwise as a bearer token. It is never logged or included in returned
+	// errors (design D12).
 	APIToken string
+	// Tenant is the Kestra tenant path segment. Empty defaults to "main".
+	Tenant string
 	// Environment is attached to flow and execution labels.
 	Environment string
 	// HTTPClient overrides the default client; tests inject one.
@@ -77,6 +83,7 @@ type HTTPConfig struct {
 type HTTPAdapter struct {
 	baseURL     string
 	apiToken    string
+	tenant      string
 	environment string
 	client      *http.Client
 	clock       func() time.Time
@@ -120,9 +127,14 @@ func NewHTTPAdapter(config HTTPConfig) (*HTTPAdapter, error) {
 	if client == nil {
 		client = &http.Client{Timeout: timeout}
 	}
+	tenant := strings.TrimSpace(config.Tenant)
+	if tenant == "" {
+		tenant = defaultTenant
+	}
 	return &HTTPAdapter{
 		baseURL:     baseURL,
 		apiToken:    strings.TrimSpace(config.APIToken),
+		tenant:      tenant,
 		environment: strings.TrimSpace(config.Environment),
 		client:      client,
 		clock:       clock,
@@ -133,9 +145,13 @@ func NewHTTPAdapter(config HTTPConfig) (*HTTPAdapter, error) {
 	}, nil
 }
 
-// RegisterFlow idempotently upserts the flow definition. Kestra keys flows by
-// (namespace, flow id) and the request body carries the Pipeline version as the
-// revision, so repeating the call is the same PUT (design D14).
+func (a *HTTPAdapter) tenantPath(suffix string) string {
+	return "/api/v1/" + url.PathEscape(a.tenant) + suffix
+}
+
+// RegisterFlow idempotently upserts the flow definition. Kestra v2 accepts the
+// rendered Flow YAML at POST /api/v1/{tenant}/flows; the YAML carries the
+// Pipeline version as the flow revision, so repeating the call is an upsert.
 func (a *HTTPAdapter) RegisterFlow(ctx context.Context, flow Flow) (FlowRef, error) {
 	if a == nil || a.client == nil {
 		return FlowRef{}, ErrNotConfigured
@@ -143,30 +159,17 @@ func (a *HTTPAdapter) RegisterFlow(ctx context.Context, flow Flow) (FlowRef, err
 	if strings.TrimSpace(flow.TenantID) == "" || strings.TrimSpace(flow.PipelineID) == "" {
 		return FlowRef{}, fmt.Errorf("kestra: tenant and pipeline are required")
 	}
+	if len(bytes.TrimSpace(flow.FlowYAML)) == 0 {
+		return FlowRef{}, fmt.Errorf("kestra: rendered flow yaml is required")
+	}
 	ref := FlowRef{
 		Namespace: deriveNamespace(flow.TenantID, flow.PipelineID),
 		FlowID:    deriveFlowID(flow.PipelineID),
 		Revision:  flow.Version,
 	}
-	body := flow.FlowYAML
-	var err error
-	contentType := "application/x-yaml"
-	if len(body) == 0 {
-		body, err = json.Marshal(flowUpsertBody{
-			ID:        ref.FlowID,
-			Namespace: ref.Namespace,
-			Revision:  ref.Revision,
-			Labels:    a.buildLabels(flow.TenantID, flow.PipelineID, flow.Version, flow.DAG, ""),
-			Tasks:     dagTasks(flow.DAG),
-		})
-		if err != nil {
-			return FlowRef{}, fmt.Errorf("kestra: encode flow: %s", a.redact(err.Error()))
-		}
-		contentType = "application/json"
-	}
-	apiPath := "/api/v1/flows/" + url.PathEscape(ref.Namespace) + "/" + url.PathEscape(ref.FlowID)
-	err = a.withRetry(ctx, func(ctx context.Context) error {
-		_, requestErr := a.doOnce(ctx, http.MethodPut, apiPath, nil, body, contentType)
+	apiPath := a.tenantPath("/flows/" + url.PathEscape(ref.Namespace))
+	err := a.withRetry(ctx, func(ctx context.Context) error {
+		_, requestErr := a.doOnce(ctx, http.MethodPost, apiPath, nil, flow.FlowYAML, "application/x-yaml")
 		return requestErr
 	})
 	if err != nil {
@@ -190,14 +193,16 @@ func (a *HTTPAdapter) PublishFiles(ctx context.Context, namespace string, files 
 			return err
 		}
 	}
-	apiPath := "/api/v1/namespaces/" + url.PathEscape(namespace) + "/files"
+	apiPath := a.tenantPath("/namespaces/" + url.PathEscape(namespace) + "/files")
 	for _, file := range files {
 		body, contentType, err := encodeFileUpload(file)
 		if err != nil {
 			return fmt.Errorf("kestra: encode namespace file: %w", err)
 		}
+		query := url.Values{}
+		query.Set("path", file.Path)
 		err = a.withRetry(ctx, func(ctx context.Context) error {
-			_, requestErr := a.doOnce(ctx, http.MethodPost, apiPath, nil, body, contentType)
+			_, requestErr := a.doOnce(ctx, http.MethodPost, apiPath, query, body, contentType)
 			return requestErr
 		})
 		if err != nil {
@@ -221,10 +226,12 @@ func (a *HTTPAdapter) DeleteFiles(ctx context.Context, namespace string, paths [
 			return err
 		}
 	}
+	apiPath := a.tenantPath("/namespaces/" + url.PathEscape(namespace) + "/files")
 	for _, filePath := range paths {
-		apiPath := "/api/v1/namespaces/" + url.PathEscape(namespace) + "/files/" + escapeFilePath(filePath)
+		query := url.Values{}
+		query.Set("path", filePath)
 		err := a.withRetry(ctx, func(ctx context.Context) error {
-			_, requestErr := a.doOnce(ctx, http.MethodDelete, apiPath, nil, nil, "")
+			_, requestErr := a.doOnce(ctx, http.MethodDelete, apiPath, query, nil, "")
 			return requestErr
 		})
 		if err == nil {
@@ -239,6 +246,30 @@ func (a *HTTPAdapter) DeleteFiles(ctx context.Context, namespace string, paths [
 	return nil
 }
 
+// DeleteFlow removes one Flow revision. A missing Flow is treated as already
+// deleted so compensation is idempotent.
+func (a *HTTPAdapter) DeleteFlow(ctx context.Context, ref FlowRef) error {
+	if a == nil || a.client == nil {
+		return ErrNotConfigured
+	}
+	if strings.TrimSpace(ref.Namespace) == "" || strings.TrimSpace(ref.FlowID) == "" {
+		return fmt.Errorf("kestra: namespace and flow id are required")
+	}
+	apiPath := a.tenantPath("/flows/" + url.PathEscape(ref.Namespace) + "/" + url.PathEscape(ref.FlowID))
+	err := a.withRetry(ctx, func(ctx context.Context) error {
+		_, requestErr := a.doOnce(ctx, http.MethodDelete, apiPath, nil, nil, "")
+		return requestErr
+	})
+	if err == nil {
+		return nil
+	}
+	var apiErr *APIError
+	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound {
+		return nil
+	}
+	return fmt.Errorf("kestra: delete flow: %w", err)
+}
+
 // TriggerRun starts one execution labelled with the core-side run identifier.
 // Before retrying a transiently failed POST it first looks for an execution with
 // that label, so a lost response is adopted instead of executed twice.
@@ -251,17 +282,15 @@ func (a *HTTPAdapter) TriggerRun(ctx context.Context, request RunRequest) (RunRe
 	}
 	namespace := deriveNamespace(request.TenantID, request.PipelineID)
 	flowID := deriveFlowID(request.PipelineID)
-	body, err := json.Marshal(triggerBody{
-		Labels: a.buildLabels(request.TenantID, request.PipelineID, request.Version, request.DAG, request.RunID),
-	})
-	if err != nil {
-		return RunResult{}, fmt.Errorf("kestra: encode trigger: %s", a.redact(err.Error()))
+	query := url.Values{}
+	for key, value := range a.buildLabels(request.TenantID, request.PipelineID, request.Version, request.DAG, request.RunID) {
+		query.Add("labels", key+":"+value)
 	}
-	apiPath := "/api/v1/executions/" + url.PathEscape(namespace) + "/" + url.PathEscape(flowID)
+	apiPath := a.tenantPath("/executions/" + url.PathEscape(namespace) + "/" + url.PathEscape(flowID))
 	maxAttempts := a.attemptBudget()
 	var lastErr error
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		payload, requestErr := a.doOnce(ctx, http.MethodPost, apiPath, nil, body, "application/json")
+		payload, requestErr := a.doOnce(ctx, http.MethodPost, apiPath, query, nil, "")
 		if requestErr == nil {
 			if executionID := executionIDFromPayload(payload); executionID != "" {
 				return RunResult{ExecutionID: executionID, Status: executionStatusFromPayload(payload, "queued")}, nil
@@ -348,9 +377,9 @@ func (a *HTTPAdapter) CancelExecution(ctx context.Context, ref ExecutionRef) err
 	if strings.TrimSpace(ref.ID) == "" {
 		return fmt.Errorf("kestra: execution id is required")
 	}
-	apiPath := "/api/v1/executions/" + url.PathEscape(ref.ID) + "/kill"
+	apiPath := a.tenantPath("/executions/" + url.PathEscape(ref.ID) + "/actions/kill")
 	err := a.withRetry(ctx, func(ctx context.Context) error {
-		_, requestErr := a.doOnce(ctx, http.MethodPost, apiPath, nil, nil, "")
+		_, requestErr := a.doOnce(ctx, http.MethodDelete, apiPath, nil, nil, "")
 		return requestErr
 	})
 	if err == nil {
@@ -412,18 +441,6 @@ func IsRetryable(err error) bool {
 	return false
 }
 
-type flowUpsertBody struct {
-	ID        string            `json:"id"`
-	Namespace string            `json:"namespace"`
-	Revision  int               `json:"revision"`
-	Labels    map[string]string `json:"labels"`
-	Tasks     json.RawMessage   `json:"tasks"`
-}
-
-type triggerBody struct {
-	Labels map[string]string `json:"labels"`
-}
-
 func (a *HTTPAdapter) buildLabels(tenantID, pipelineID string, version int, dag json.RawMessage, runID string) map[string]string {
 	labels := map[string]string{
 		labelTenantID:        tenantID,
@@ -439,16 +456,6 @@ func (a *HTTPAdapter) buildLabels(tenantID, pipelineID string, version int, dag 
 		labels[labelRunID] = runID
 	}
 	return labels
-}
-
-// dagTasks forwards the authoring DAG as the flow task payload. The transport
-// seam deliberately does not depend on the flow renderer: a later integration
-// can substitute rendered Flow YAML/JSON without changing the interface.
-func dagTasks(dag json.RawMessage) json.RawMessage {
-	if len(bytes.TrimSpace(dag)) == 0 {
-		return json.RawMessage("null")
-	}
-	return dag
 }
 
 // withRetry runs attempt until it succeeds, fails non-retryably, exhausts the
@@ -513,9 +520,9 @@ func (a *HTTPAdapter) adoptExecution(ctx context.Context, request RunRequest) (E
 
 func (a *HTTPAdapter) searchExecutionByRun(ctx context.Context, tenantID, runID string) (Execution, error) {
 	query := url.Values{}
-	query.Set("labels", labelRunID+":"+runID)
+	query.Set("filters[labels][EQUALS]["+labelRunID+"]", runID)
 	query.Set("size", strconv.Itoa(searchPageSize))
-	payload, err := a.doOnce(ctx, http.MethodGet, "/api/v1/executions", query, nil, "")
+	payload, err := a.doOnce(ctx, http.MethodGet, a.tenantPath("/executions/search"), query, nil, "")
 	if err != nil {
 		return Execution{}, err
 	}
@@ -533,16 +540,103 @@ func (a *HTTPAdapter) searchExecutionByRun(ctx context.Context, tenantID, runID 
 }
 
 func (a *HTTPAdapter) getExecutionOnce(ctx context.Context, executionID string) (Execution, error) {
-	payload, err := a.doOnce(ctx, http.MethodGet, "/api/v1/executions/"+url.PathEscape(executionID), nil, nil, "")
+	payload, err := a.doOnce(ctx, http.MethodGet, a.tenantPath("/executions/"+url.PathEscape(executionID)), nil, nil, "")
 	if err != nil {
 		return Execution{}, err
 	}
 	return decodeExecution(payload)
 }
 
+// GetRunResults downloads the dbt run_results artifact for one execution.
+// Kestra keeps task output files behind the outputs API: first list task-run
+// ids, then read their outputFiles map, then download the artifact bytes. The
+// method prefers the model-run artifact over the test artifact.
+func (a *HTTPAdapter) GetRunResults(ctx context.Context, executionID string) ([]byte, error) {
+	if a == nil || a.client == nil {
+		return nil, ErrNotConfigured
+	}
+	executionID = strings.TrimSpace(executionID)
+	if executionID == "" {
+		return nil, fmt.Errorf("kestra: execution id is required")
+	}
+	escapedExecution := url.PathEscape(executionID)
+	payload, err := a.doOnce(ctx, http.MethodGet, a.tenantPath("/outputs/tasks/"+escapedExecution), nil, nil, "")
+	if err != nil {
+		return nil, err
+	}
+	var taskRuns []struct {
+		TaskRunID string `json:"taskRunId"`
+	}
+	if err := json.Unmarshal(payload, &taskRuns); err != nil {
+		return nil, invalidResponse("malformed task outputs response")
+	}
+	for _, taskRun := range taskRuns {
+		taskRunID := strings.TrimSpace(taskRun.TaskRunID)
+		if taskRunID == "" {
+			continue
+		}
+		outputPayload, outputErr := a.doOnce(
+			ctx,
+			http.MethodGet,
+			a.tenantPath("/outputs/tasks/"+escapedExecution+"/"+url.PathEscape(taskRunID)),
+			nil,
+			nil,
+			"",
+		)
+		if outputErr != nil {
+			return nil, outputErr
+		}
+		var output struct {
+			OutputFiles map[string]string `json:"outputFiles"`
+		}
+		if err := json.Unmarshal(outputPayload, &output); err != nil {
+			return nil, invalidResponse("malformed task run outputs response")
+		}
+		uri := selectRunResultsURI(output.OutputFiles)
+		if uri == "" {
+			continue
+		}
+		query := url.Values{}
+		query.Set("path", uri)
+		raw, downloadErr := a.doOnceAccept(
+			ctx,
+			http.MethodGet,
+			a.tenantPath("/executions/"+escapedExecution+"/file"),
+			query,
+			nil,
+			"",
+			"application/octet-stream",
+		)
+		if downloadErr != nil {
+			return nil, downloadErr
+		}
+		return raw, nil
+	}
+	return nil, ErrNotFound
+}
+
+func selectRunResultsURI(files map[string]string) string {
+	for _, wanted := range []string{"target/run_results.run.json", "target/run_results.json"} {
+		if uri := strings.TrimSpace(files[wanted]); uri != "" {
+			return uri
+		}
+	}
+	return ""
+}
+
 // doOnce performs exactly one HTTP round trip and maps transport and status
 // failures to APIError. Bodies are never included in returned errors.
 func (a *HTTPAdapter) doOnce(ctx context.Context, method, apiPath string, query url.Values, body []byte, contentType string) (payload []byte, err error) {
+	return a.doOnceAccept(ctx, method, apiPath, query, body, contentType, "application/json")
+}
+
+func (a *HTTPAdapter) doOnceAccept(
+	ctx context.Context,
+	method, apiPath string,
+	query url.Values,
+	body []byte,
+	contentType, accept string,
+) (payload []byte, err error) {
 	started := time.Now()
 	defer func() {
 		if a.metrics != nil {
@@ -565,7 +659,9 @@ func (a *HTTPAdapter) doOnce(ctx context.Context, method, apiPath string, query 
 	if err != nil {
 		return nil, &APIError{Code: "invalid_request", Message: "kestra: could not build request"}
 	}
-	request.Header.Set("Accept", "application/json")
+	if accept != "" {
+		request.Header.Set("Accept", accept)
+	}
 	if contentType != "" {
 		request.Header.Set("Content-Type", contentType)
 	}
@@ -602,14 +698,16 @@ func (a *HTTPAdapter) doOnce(ctx context.Context, method, apiPath string, query 
 
 func outboundOperation(method, path string) string {
 	switch {
-	case strings.Contains(path, "/flows/"):
+	case strings.Contains(path, "/flows") && method == http.MethodDelete:
+		return "flows.delete"
+	case strings.Contains(path, "/flows"):
 		return "flows.upsert"
 	case strings.Contains(path, "/files"):
 		if method == http.MethodDelete {
 			return "files.delete"
 		}
 		return "files.publish"
-	case strings.Contains(path, "/executions/") && strings.HasSuffix(path, "/kill"):
+	case strings.Contains(path, "/executions/") && strings.HasSuffix(path, "/actions/kill"):
 		return "executions.cancel"
 	case strings.Contains(path, "/executions/"):
 		return "executions.get"
@@ -978,30 +1076,14 @@ func validateFilePath(filePath string) error {
 	return nil
 }
 
-func escapeFilePath(filePath string) string {
-	segments := strings.Split(filePath, "/")
-	for index := range segments {
-		segments[index] = url.PathEscape(segments[index])
-	}
-	return strings.Join(segments, "/")
-}
-
 // encodeFileUpload builds the multipart body for one namespace file. The file
-// part carries the base name and the "path" field carries the directory so the
-// engine can place the content at its project-relative location. This mirrors
-// the Kestra UI upload shape; the exact upstream field names are part of the
-// spike checklist documented in the change design.
+// part carries the base name; the caller passes the project-relative path as
+// the "path" query parameter (v2 API). The "fileContent" field name is part of
+// the v2 spike checklist documented in the change design.
 func encodeFileUpload(file File) ([]byte, string, error) {
 	var buffer bytes.Buffer
 	writer := multipart.NewWriter(&buffer)
-	directory := path.Dir(file.Path)
-	if directory == "." {
-		directory = ""
-	}
-	if err := writer.WriteField("path", directory); err != nil {
-		return nil, "", err
-	}
-	part, err := writer.CreateFormFile("file", path.Base(file.Path))
+	part, err := writer.CreateFormFile("fileContent", path.Base(file.Path))
 	if err != nil {
 		return nil, "", err
 	}

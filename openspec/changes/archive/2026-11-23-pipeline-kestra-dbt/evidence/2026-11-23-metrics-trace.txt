@@ -1,0 +1,26 @@
+# pipeline-kestra-dbt 13.7 metrics/trace capture
+date: 2026-11-23T09:20+08:00
+
+## metrics (http://127.0.0.1:19090/metrics)
+# HELP ontoaxis_build_info Build version information.
+# TYPE ontoaxis_build_info gauge
+ontoaxis_build_info{commit="unknown",version="0.1.0"} 1
+ontoaxis_http_request_duration_seconds_count{method="POST",route="/api/v1/pipelines/{pipelineID}/runs"} 1
+ontoaxis_http_requests_total{method="POST",route="/api/v1/pipelines/{pipelineID}/runs",status="202"} 1
+ontoaxis_module_ready{module="pipelines"} 1
+
+## forbidden-label scan (expect empty)
+
+## Jaeger trace 434f0692b02322d0e435b394335d3aa7 (HTTP POST /api/v1/pipelines/{pipelineID}/runs)
+traceID 434f0692b02322d0e435b394335d3aa7 spans 11
+postgres update {'db.system': 'postgresql'}
+postgres insert {'db.system': 'postgresql'}
+authz.cedar_eval {}
+postgres select {'db.system': 'postgresql'}
+authz.fga_check {}
+postgres delete {'db.system': 'postgresql'}
+HTTP POST /api/v1/pipelines/{pipelineID}/runs {'http.request.method': 'POST', 'http.response.status_code': 202}
+authz.check {'authz.action': 'pipeline:invoke', 'authz.decision': 'allow'}
+postgres select {'db.system': 'postgresql'}
+postgres insert {'db.system': 'postgresql'}
+postgres select {'db.system': 'postgresql'}

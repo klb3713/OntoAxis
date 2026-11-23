@@ -48,15 +48,17 @@ type Adapter interface {
 
 **HTTP 映射（spike 必须对钉住的 Kestra 版本逐条核对并在证据中记录，不一致只改 client 不改 spec 语义）**：
 
-| 操作 | 方法与路径（待钉版本核对） | 要点 |
+固定版本：`kestra/kestra:v2.0.12`（digest `sha256:b521aff2847161c283450d3c224523b42ea97447d86bde9519576c393d914b76`）。v2 API 全部使用 `/api/v1/{tenant}/...`，默认 tenant `main`；Basic auth 必须通过 `KESTRA_SERVER_BASIC_AUTH_*` 环境变量初始化，`/api/v1/configs` 也需认证。
+
+| 操作 | 方法与路径（v2.0.12） | 要点 |
 | --- | --- | --- |
-| Flow upsert | `PUT /api/v1/flows/{namespace}` 或 `PUT /api/v1/flows/{namespace}/{id}` | body 为 Flow YAML/JSON；同 id 同 revision 幂等 |
-| Flow 查询/删除 | `GET`/`DELETE /api/v1/flows/{namespace}/{id}` | 补偿与漂移检测 |
-| 命名空间文件 | `POST /api/v1/namespaces/{namespace}/files`（multipart）、`DELETE .../files/{path}` | dbt 项目文件，内容哈希去重 |
-| 触发执行 | `POST /api/v1/executions/{namespace}/{flowId}` | body 含 `labels`、inputs；返回 execution id |
-| 查询执行 | `GET /api/v1/executions/{executionId}` | 状态、labels、task outputs/outputFiles |
-| 取消执行 | `POST /api/v1/executions/{executionId}/kill` | 仅内部使用，不暴露 API |
-| 按 labels 查执行 | 执行搜索接口（spike 核对） | 触发中断后按 run 标签接管 |
+| Flow upsert | `POST /api/v1/main/flows/{namespace}` | `Content-Type: application/x-yaml`，body 为完整 Flow YAML；同 id 覆盖为下一 revision；`PUT` 返回 405 |
+| Flow 查询/删除 | `GET`/`DELETE /api/v1/main/flows/{namespace}/{id}` | 删除 404 视为已删除 |
+| 命名空间文件 | `POST /api/v1/main/namespaces/{namespace}/files?path=<uri>`（multipart `fileContent`）、`DELETE ...?path=<uri>` | 路径为 query；上传后 v2 将文件平铺到任务工作目录 |
+| 触发执行 | `POST /api/v1/main/executions/{namespace}/{flowId}?labels=k:v...` | 无 body；返回 execution JSON |
+| 查询执行 | `GET /api/v1/main/executions/{executionId}` | 状态嵌套在 `state.current` |
+| 取消执行 | `DELETE /api/v1/main/executions/{executionId}/actions/kill` | `POST` 返回 405 |
+| 按 labels 查执行 | `GET /api/v1/main/executions/search?filters[labels][EQUALS][ontoaxis.run_id]=<id>&size=N` | 返回 `{"results":[...]}`；触发中断后按 run 标签接管 |
 
 **权衡**：手写 client 需要为每个 Kestra 版本做兼容；用钉死镜像版本 + 契约测试（httptest fixture + 真实脚手架 E2E）覆盖，版本升级成为显式任务。
 
@@ -90,11 +92,11 @@ Flow 任务映射：
 
 | DAG 任务 | Kestra 任务 | 说明 |
 | --- | --- | --- |
-| `dbt` | `io.kestra.plugin.scripts.shell.Commands` | 在受控镜像内 `dbt run --select <model> --project-dir ...`；失败非零退出 |
+| `dbt` | `io.kestra.plugin.scripts.shell.Commands` + `io.kestra.plugin.core.runner.Process` + `namespaceFiles.enabled=true` | 在受控镜像内（已装 dbt-trino）以当前工作目录运行 `dbt run --select <model> --project-dir . --profiles-dir .` 与 `dbt test --select <model> --project-dir . --profiles-dir .`；v2 将 namespace 文件平铺到工作目录；`outputFiles: [target/run_results*.json]` 保存 run/test 产物；失败非零退出 |
 | 无任务 | `io.kestra.plugin.core.flow.Sequential` + `io.kestra.plugin.core.log.Log` | no-op 兼容 |
 | 依赖图 | `io.kestra.plugin.core.flow.Dag`（钉住版本支持时） | 退化方案：按拓扑序 `Sequential`（spike 决定） |
 
-**dbt 项目文件布局**（namespace 文件，按 `(pipeline, version, content_hash)` 幂等上传）：
+**dbt 项目文件布局**（namespace 文件按 `(pipeline, version, content_hash)` 幂等上传；v2 加载到任务工作目录时按文件平铺，故命令使用 `--project-dir .`）：
 
 ```text
 pipeline_<pipeline_hex>/v<version>/
@@ -160,7 +162,7 @@ queued ──accepted──> running ──engine terminal──> succeeded | fa
 
 ### D9: dbt 项目生成与执行环境
 
-**选择**：`pipelines/dbt` 渲染器按 `(pipeline, version, content_hash)` 生成项目；`profiles.yml` 只使用 `{{ env_var('DBT_TRINO_*') }}` 引用，具体值来自部署环境/secret；`dbt_project.yml` 固定 `profile: ontoaxis_pipeline`。目标 catalog 由 `ONTOAXIS_PIPELINE_DBT_CATALOG`（本地默认 `memory`）决定，目标 schema 由租户/Pipeline 派生（`oa_t<tenant8>_p<pipeline8>`），dbt 线程数固定 2。
+**选择**：`pipelines/dbt` 渲染器按 `(pipeline, version, content_hash)` 生成项目；`profiles.yml` 的 host/user/database 只使用 `{{ env_var('DBT_TRINO_*') }}` 引用，具体值来自部署环境/secret；Trino `port` 固定 `8080`（dbt-trino 要求整数，Jinja 字符串会破坏类型）；`dbt_project.yml` 固定 `profile: ontoaxis_pipeline`。目标 catalog 由 `ONTOAXIS_PIPELINE_DBT_CATALOG`（本地默认 `memory`）决定，目标 schema 由租户/Pipeline 派生（`oa_t<tenant8>_p<pipeline8>`），dbt 线程数固定 2。
 
 **执行镜像**：`deploy/compose/` profile fragment 内构建自定义 Kestra 镜像（基线 Kestra 镜像 + 钉住版本的 `dbt-trino`），不使用 Docker socket / DinD，Kestra 任务直接在 worker 进程内执行 `dbt`，命令退出码即失败信号；镜像 Dockerfile 与钉住版本由 `production-delivery` 合并与维护。
 

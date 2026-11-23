@@ -1,12 +1,12 @@
 # Traceability: pipeline-kestra-dbt
 
-> 证据状态约定：`planned` = 计划中、尚未执行；`actual` = 已执行且可复核。本 change 已进入实施：单元/契约/迁移证据为 `actual`，真实 Kestra/Trino/dbt E2E 仍为 `planned`。
+> 证据状态约定：`planned` = 计划中、尚未执行；`actual` = 已执行且可复核。本 change 已进入实施：单元/契约/迁移与 Kestra v2.0.12 真实 E2E（成功/失败/重试/输出血缘/状态回写/负向/遥测）均为 `actual`；证据见 `evidence/` 与 `docs/stages/evidence/stage-2-pipeline-kestra-dbt/`。
 
 ## Stage 2 AC 映射
 
 | Stage AC | 验收要求 | 本 change 覆盖 | 证据（planned / actual） |
 | --- | --- | --- | --- |
-| S2-AC-05 | Pipeline 通过真实 Kestra + dbt 执行：发布 Flow、运行、状态回写、失败重试与 Dataset 输出均可验证 | 发布：ADDED「Authoring DAG contract to Flow generation」「Flow namespace and labels for tenant isolation」「Flow publish and execution trigger」+ MODIFIED「Pipeline publishing and immutable versions」「Kestra adapter boundary」；运行：MODIFIED「Pipeline run entry」「Pipeline run query」+ ADDED「Run status reconciliation and writeback」；失败重试：ADDED「Retry, backoff and compensation」+ 负向矩阵；Dataset 输出：ADDED「Dataset outputs and lineage」+ MODIFIED「Dataset dependency validation」；dbt：ADDED「dbt project and model execution」 | `planned`：tasks.md 13.1–13.7 的真实实例 E2E 输出（compose `pipeline` profile：发布→Kestra Flow/namespace 证据；触发→执行证据；查询→`succeeded` 写回证据；停引擎→503→恢复重试→只递增一次版本的证据；坏 SQL→`failed` 证据；Trino 表与 `run_outputs`/`run_inputs` 证据）；`go test ./internal/modules/pipelines/...` 与 `make test-race` 输出 |
+| S2-AC-05 | Pipeline 通过真实 Kestra + dbt 执行：发布 Flow、运行、状态回写、失败重试与 Dataset 输出均可验证 | 发布：ADDED「Authoring DAG contract to Flow generation」「Flow namespace and labels for tenant isolation」「Flow publish and execution trigger」+ MODIFIED「Pipeline publishing and immutable versions」「Kestra adapter boundary」；运行：MODIFIED「Pipeline run entry」「Pipeline run query」+ ADDED「Run status reconciliation and writeback」；失败重试：ADDED「Retry, backoff and compensation」+ 负向矩阵；Dataset 输出：ADDED「Dataset outputs and lineage」+ MODIFIED「Dataset dependency validation」；dbt：ADDED「dbt project and model execution」 | `actual`：`evidence/2026-11-23-kestra-v2-upgrade-e2e.md`（发布 200、触发 202、run `succeeded`、输出 pipeline `01a205f5-…` 的 `run_outputs` 与 Trino `memory.oa_t11111111_p01a205f5.build_orders`、坏 SQL `failed` 且无输出、停机 503→恢复重试版本只 +1/execution 唯一、状态回写、负向 400/404/409、metrics/trace 无 tenant/凭据）；`actual`（单元/契约/迁移）：`evidence/2026-11-23-pipeline-publish-compensation-unit.md`、`go test ./internal/modules/pipelines/...`、`make test-race`；原始交接：`docs/stages/evidence/stage-2-pipeline-kestra-dbt/` |
 
 ## Requirement 映射
 

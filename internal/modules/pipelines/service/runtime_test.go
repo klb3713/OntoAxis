@@ -111,8 +111,8 @@ func TestPublishWithoutAdapterFailsClosed(t *testing.T) {
 	pipeline := runtimePipeline(t, manager, time.Now())
 	if _, _, err := manager.PublishPipeline(context.Background(), service.PublishPipelineRequest{
 		TenantID: pipeline.TenantID, PipelineID: pipeline.ID,
-	}); err == nil {
-		t.Fatal("publish without adapter should fail")
+	}); err == nil || !errors.Is(err, domain.ErrUnavailable) {
+		t.Fatalf("publish without adapter error = %v, want ErrUnavailable", err)
 	}
 }
 

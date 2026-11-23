@@ -173,6 +173,26 @@ func (s *PostgresStore) DeletePipeline(ctx context.Context, tenantID, pipelineID
 	return nil
 }
 
+// GetPublishedVersion returns one immutable version snapshot for publish
+// compensation. The tenant is part of the predicate in addition to RLS.
+func (s *PostgresStore) GetPublishedVersion(ctx context.Context, tenantID, pipelineID string, version int) (domain.PipelineVersion, error) {
+	var snapshot domain.PipelineVersion
+	var dag []byte
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text, tenant_id::text, pipeline_id::text, version, dag,
+		       published_at, published_by, created_at, updated_at
+		FROM pipeline.versions
+		WHERE tenant_id = $1::uuid AND pipeline_id = $2::uuid AND version = $3`,
+		tenantID, pipelineID, version).Scan(
+		&snapshot.ID, &snapshot.TenantID, &snapshot.PipelineID, &snapshot.Version, &dag,
+		&snapshot.PublishedAt, &snapshot.PublishedBy, &snapshot.CreatedAt, &snapshot.UpdatedAt)
+	if err != nil {
+		return domain.PipelineVersion{}, fmt.Errorf("get pipeline version: %w", mapPostgresError(err))
+	}
+	snapshot.DAG = append(json.RawMessage(nil), dag...)
+	return snapshot, nil
+}
+
 // PublishPipeline atomically locks the definition, increments its version and
 // inserts the immutable snapshot.
 func (s *PostgresStore) PublishPipeline(ctx context.Context, pipeline domain.Pipeline, version domain.PipelineVersion) (domain.Pipeline, domain.PipelineVersion, error) {

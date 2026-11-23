@@ -118,6 +118,9 @@ type Adapter interface {
 	// DeleteFiles removes namespace files as publish compensation. Deleting a
 	// path that no longer exists is not an error.
 	DeleteFiles(ctx context.Context, namespace string, paths []string) error
+	// DeleteFlow removes one Flow revision as publish compensation. Deleting a
+	// Flow that no longer exists is not an error.
+	DeleteFlow(ctx context.Context, ref FlowRef) error
 	// TriggerRun starts one execution. Implementations MUST attach the run
 	// identifier to the execution labels.
 	TriggerRun(ctx context.Context, request RunRequest) (RunResult, error)
@@ -145,6 +148,7 @@ type MemoryAdapter struct {
 	RegisterError        error
 	PublishFilesError    error
 	DeleteFilesError     error
+	DeleteFlowError      error
 	TriggerError         error
 	GetExecutionError    error
 	FindExecutionError   error
@@ -227,6 +231,31 @@ func (a *MemoryAdapter) DeleteFiles(_ context.Context, namespace string, paths [
 	}
 	for _, filePath := range paths {
 		delete(a.files[namespace], filePath)
+	}
+	return nil
+}
+
+// DeleteFlow removes every recorded Flow revision matching the reference.
+// Missing flows are ignored, matching the HTTP adapter's idempotent delete.
+func (a *MemoryAdapter) DeleteFlow(_ context.Context, ref FlowRef) error {
+	if a == nil {
+		return ErrNotConfigured
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.DeleteFlowError != nil {
+		return a.DeleteFlowError
+	}
+	for key, flow := range a.flows {
+		if deriveNamespace(flow.TenantID, flow.PipelineID) != ref.Namespace {
+			continue
+		}
+		if deriveFlowID(flow.PipelineID) != ref.FlowID {
+			continue
+		}
+		if ref.Revision == 0 || flow.Version == ref.Revision {
+			delete(a.flows, key)
+		}
 	}
 	return nil
 }

@@ -149,6 +149,7 @@ func httpTestFlow() Flow {
 		Name:       "orders_daily",
 		Version:    1,
 		DAG:        json.RawMessage(`{"dag_version":2,"tasks":[{"id":"build_orders","type":"dbt","depends_on":[],"model":"build_orders","sql":"select 1"}]}`),
+		FlowYAML:   []byte("id: " + httpTestFlowID + "\nnamespace: " + httpTestNamespace + "\nrevision: 1\ntasks:\n  - id: t1\n    type: io.kestra.plugin.core.log.Log\n    message: ok\n"),
 	}
 }
 
@@ -293,14 +294,6 @@ func TestHTTPAdapterReusesActiveTraceparent(t *testing.T) {
 	}
 }
 
-type httpFlowBody struct {
-	ID        string            `json:"id"`
-	Namespace string            `json:"namespace"`
-	Revision  int               `json:"revision"`
-	Labels    map[string]string `json:"labels"`
-	Tasks     json.RawMessage   `json:"tasks"`
-}
-
 func TestHTTPAdapterRegisterFlowUpserts(t *testing.T) {
 	adapter, log := newHTTPTestAdapter(t, func(w http.ResponseWriter, _ *http.Request, _ []byte) {
 		writeHTTPJSON(w, http.StatusOK, `{}`)
@@ -321,37 +314,21 @@ func TestHTTPAdapterRegisterFlowUpserts(t *testing.T) {
 
 	requests := log.requestsSnapshot()
 	if len(requests) != 2 {
-		t.Fatalf("requests = %d, want one PUT per call (2)", len(requests))
-	}
-	wantLabels := map[string]string{
-		"ontoaxis.tenant_id":        httpTestTenantID,
-		"ontoaxis.pipeline_id":      httpTestPipelineID,
-		"ontoaxis.pipeline_version": "1",
-		"ontoaxis.dag_version":      "2",
-		"ontoaxis.managed_by":       "ontoaxis-core",
-		"ontoaxis.environment":      "test",
+		t.Fatalf("requests = %d, want 2", len(requests))
 	}
 	for index, request := range requests {
-		if request.Method != http.MethodPut {
+		if request.Method != http.MethodPost {
 			t.Fatalf("request %d method = %s", index, request.Method)
 		}
-		wantPath := "/api/v1/flows/" + httpTestNamespace + "/" + httpTestFlowID
+		if got := request.Header.Get("Content-Type"); got != "application/x-yaml" {
+			t.Fatalf("request %d content type = %q", index, got)
+		}
+		wantPath := "/api/v1/main/flows/" + httpTestNamespace
 		if request.EscapedPath != wantPath {
 			t.Fatalf("request %d path = %q, want %q", index, request.EscapedPath, wantPath)
 		}
-		var body httpFlowBody
-		if err := json.Unmarshal(request.Body, &body); err != nil {
-			t.Fatalf("decode body %q: %v", request.Body, err)
-		}
-		if body.ID != httpTestFlowID || body.Namespace != httpTestNamespace || body.Revision != 1 {
-			t.Fatalf("request %d body = %+v", index, body)
-		}
-		if !reflect.DeepEqual(body.Labels, wantLabels) {
-			t.Fatalf("request %d labels = %+v, want %+v", index, body.Labels, wantLabels)
-		}
-		httpTestAssertJSONEqual(t, string(body.Tasks), string(flow.DAG))
-		if index > 0 && !bytes.Equal(requests[0].Body, request.Body) {
-			t.Fatalf("repeated RegisterFlow bodies differ:\n%s\n%s", requests[0].Body, request.Body)
+		if !bytes.Equal(request.Body, flow.FlowYAML) {
+			t.Fatalf("request %d body = %q, want rendered flow yaml", index, request.Body)
 		}
 	}
 }
@@ -381,7 +358,7 @@ func TestHTTPAdapterPublishesFilesAsMultipart(t *testing.T) {
 		if request.Method != http.MethodPost {
 			t.Fatalf("request %d method = %s", index, request.Method)
 		}
-		wantPath := "/api/v1/namespaces/" + httpTestNamespace + "/files"
+		wantPath := "/api/v1/main/namespaces/" + httpTestNamespace + "/files"
 		if request.EscapedPath != wantPath {
 			t.Fatalf("request %d path = %q, want %q", index, request.EscapedPath, wantPath)
 		}
@@ -394,9 +371,18 @@ func TestHTTPAdapterPublishesFilesAsMultipart(t *testing.T) {
 			t.Fatalf("request %d parse multipart: %v", index, err)
 		}
 		paths := form.Value["path"]
-		fileHeaders := form.File["file"]
-		if len(paths) != 1 || len(fileHeaders) != 1 {
+		fileHeaders := form.File["fileContent"]
+		if len(paths) != 0 || len(fileHeaders) != 1 {
 			t.Fatalf("request %d form = path %v files %d", index, paths, len(fileHeaders))
+		}
+		queryPath := request.RawQuery
+		parsedQuery, parseErr := url.ParseQuery(queryPath)
+		if parseErr != nil {
+			t.Fatalf("request %d query: %v", index, parseErr)
+		}
+		queryPaths := parsedQuery["path"]
+		if len(queryPaths) != 1 {
+			t.Fatalf("request %d query path = %v", index, queryPaths)
 		}
 		file, err := fileHeaders[0].Open()
 		if err != nil {
@@ -407,12 +393,12 @@ func TestHTTPAdapterPublishesFilesAsMultipart(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request %d read file: %v", index, err)
 		}
-		uploads = append(uploads, uploaded{path: paths[0], filename: fileHeaders[0].Filename, content: string(content)})
+		uploads = append(uploads, uploaded{path: queryPaths[0], filename: fileHeaders[0].Filename, content: string(content)})
 		_ = form.RemoveAll()
 	}
 	wantUploads := []uploaded{
-		{path: "pipeline_abc/v1", filename: "dbt_project.yml", content: "name: orders"},
-		{path: "pipeline_abc/v1/models", filename: "orders.sql", content: "select 1"},
+		{path: "pipeline_abc/v1/dbt_project.yml", filename: "dbt_project.yml", content: "name: orders"},
+		{path: "pipeline_abc/v1/models/orders.sql", filename: "orders.sql", content: "select 1"},
 	}
 	if !reflect.DeepEqual(uploads, wantUploads) {
 		t.Fatalf("uploads = %+v, want %+v", uploads, wantUploads)
@@ -432,7 +418,7 @@ func TestHTTPAdapterDeleteFiles(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s", r.Method)
 		}
-		if strings.HasSuffix(r.URL.EscapedPath(), "/missing.sql") {
+		if strings.Contains(r.URL.RawQuery, "missing.sql") {
 			writeHTTPJSON(w, http.StatusNotFound, `{"message":"missing"}`)
 			return
 		}
@@ -446,31 +432,61 @@ func TestHTTPAdapterDeleteFiles(t *testing.T) {
 	if len(requests) != len(paths) {
 		t.Fatalf("requests = %d, want %d", len(requests), len(paths))
 	}
-	wantPaths := []string{
-		"/api/v1/namespaces/" + httpTestNamespace + "/files/pipeline_abc/v1/models/orders.sql",
-		"/api/v1/namespaces/" + httpTestNamespace + "/files/missing.sql",
-	}
 	for index, request := range requests {
-		if request.EscapedPath != wantPaths[index] {
-			t.Fatalf("request %d path = %q, want %q", index, request.EscapedPath, wantPaths[index])
+		wantPath := "/api/v1/main/namespaces/" + httpTestNamespace + "/files"
+		if request.EscapedPath != wantPath {
+			t.Fatalf("request %d path = %q, want %q", index, request.EscapedPath, wantPath)
+		}
+		query, err := url.ParseQuery(request.RawQuery)
+		if err != nil || len(query["path"]) != 1 || query["path"][0] != paths[index] {
+			t.Fatalf("request %d query = %q", index, request.RawQuery)
 		}
 	}
 }
 
-type httpTriggerBody struct {
-	Labels map[string]string `json:"labels"`
+func TestHTTPAdapterDeleteFlow(t *testing.T) {
+	adapter, log := newHTTPTestAdapter(t, func(w http.ResponseWriter, r *http.Request, _ []byte) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %s", r.Method)
+		}
+		if strings.HasSuffix(r.URL.EscapedPath(), "/missing") {
+			writeHTTPJSON(w, http.StatusNotFound, `{"message":"missing"}`)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	if err := adapter.DeleteFlow(context.Background(), FlowRef{Namespace: httpTestNamespace, FlowID: httpTestFlowID, Revision: 2}); err != nil {
+		t.Fatalf("DeleteFlow: %v", err)
+	}
+	if err := adapter.DeleteFlow(context.Background(), FlowRef{Namespace: httpTestNamespace, FlowID: "missing", Revision: 2}); err != nil {
+		t.Fatalf("DeleteFlow missing: %v", err)
+	}
+	requests := log.requestsSnapshot()
+	if len(requests) != 2 {
+		t.Fatalf("requests = %d, want 2", len(requests))
+	}
+	want := "/api/v1/main/flows/" + httpTestNamespace + "/" + httpTestFlowID
+	if requests[0].EscapedPath != want {
+		t.Fatalf("path = %q, want %q", requests[0].EscapedPath, want)
+	}
 }
 
 func TestHTTPAdapterTriggerRun(t *testing.T) {
 	adapter, log := newHTTPTestAdapter(t, func(w http.ResponseWriter, r *http.Request, body []byte) {
-		var payload httpTriggerBody
-		if err := json.Unmarshal(body, &payload); err != nil {
-			t.Errorf("decode trigger body: %v", err)
+		if len(body) != 0 {
+			t.Errorf("trigger body = %q, want empty", body)
 		}
-		if got := payload.Labels["ontoaxis.run_id"]; got != "run-9" {
+		labels := map[string]string{}
+		for _, item := range r.URL.Query()["labels"] {
+			key, value, ok := strings.Cut(item, ":")
+			if ok {
+				labels[key] = value
+			}
+		}
+		if got := labels["ontoaxis.run_id"]; got != "run-9" {
 			t.Errorf("run label = %q", got)
 		}
-		writeHTTPJSON(w, http.StatusOK, `{"id":"exec-1","status":"RUNNING"}`)
+		writeHTTPJSON(w, http.StatusOK, `{"id":"exec-1","state":{"current":"RUNNING"}}`)
 	})
 	result, err := adapter.TriggerRun(context.Background(), RunRequest{
 		TenantID:   httpTestTenantID,
@@ -492,13 +508,20 @@ func TestHTTPAdapterTriggerRun(t *testing.T) {
 	if requests[0].Method != http.MethodPost {
 		t.Fatalf("method = %s", requests[0].Method)
 	}
-	wantPath := "/api/v1/executions/" + httpTestNamespace + "/" + httpTestFlowID
+	wantPath := "/api/v1/main/executions/" + httpTestNamespace + "/" + httpTestFlowID
 	if requests[0].EscapedPath != wantPath {
 		t.Fatalf("path = %q, want %q", requests[0].EscapedPath, wantPath)
 	}
-	var payload httpTriggerBody
-	if err := json.Unmarshal(requests[0].Body, &payload); err != nil {
-		t.Fatalf("decode body: %v", err)
+	query, err := url.ParseQuery(requests[0].RawQuery)
+	if err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	labels := map[string]string{}
+	for _, item := range query["labels"] {
+		key, value, ok := strings.Cut(item, ":")
+		if ok {
+			labels[key] = value
+		}
 	}
 	wantLabels := map[string]string{
 		"ontoaxis.tenant_id":        httpTestTenantID,
@@ -509,17 +532,17 @@ func TestHTTPAdapterTriggerRun(t *testing.T) {
 		"ontoaxis.environment":      "test",
 		"ontoaxis.run_id":           "run-9",
 	}
-	if !reflect.DeepEqual(payload.Labels, wantLabels) {
-		t.Fatalf("labels = %+v, want %+v", payload.Labels, wantLabels)
+	if !reflect.DeepEqual(labels, wantLabels) {
+		t.Fatalf("labels = %+v, want %+v", labels, wantLabels)
 	}
 }
 
 func TestHTTPAdapterGetExecutionMapping(t *testing.T) {
 	adapter, log := newHTTPTestAdapter(t, func(w http.ResponseWriter, r *http.Request, _ []byte) {
 		switch r.URL.Path {
-		case "/api/v1/executions/exec-1":
+		case "/api/v1/main/executions/exec-1":
 			writeHTTPJSON(w, http.StatusOK, `{"id":"exec-1","namespace":"`+httpTestNamespace+`","flowId":"`+httpTestFlowID+`","state":{"current":"SUCCESS"},"labels":[{"key":"ontoaxis.run_id","value":"run-9"}],"outputs":{"rows":3,"summary":"ok","empty":null}}`)
-		case "/api/v1/executions/exec-2":
+		case "/api/v1/main/executions/exec-2":
 			writeHTTPJSON(w, http.StatusOK, `{"id":"exec-2","status":"FAILED"}`)
 		default:
 			t.Errorf("unexpected path %q", r.URL.Path)
@@ -593,7 +616,7 @@ func TestHTTPAdapterGetExecutionRetriesTransientFailure(t *testing.T) {
 
 func TestHTTPAdapterFindExecutionByRun(t *testing.T) {
 	adapter, log := newHTTPTestAdapter(t, func(w http.ResponseWriter, r *http.Request, _ []byte) {
-		if got := r.URL.Query().Get("labels"); got != "ontoaxis.run_id:run-9" {
+		if got := r.URL.Query().Get("filters[labels][EQUALS][ontoaxis.run_id]"); got != "run-9" {
 			t.Errorf("labels query = %q", got)
 		}
 		if got := r.URL.Query().Get("size"); got != "100" {
@@ -611,7 +634,7 @@ func TestHTTPAdapterFindExecutionByRun(t *testing.T) {
 	if log.requestCount() != 1 {
 		t.Fatalf("requests = %d, want 1", log.requestCount())
 	}
-	if request := log.requestsSnapshot()[0]; request.Method != http.MethodGet || request.EscapedPath != "/api/v1/executions" {
+	if request := log.requestsSnapshot()[0]; request.Method != http.MethodGet || request.EscapedPath != "/api/v1/main/executions/search" {
 		t.Fatalf("request = %+v", request)
 	}
 }
@@ -639,8 +662,8 @@ func TestHTTPAdapterCancelExecution(t *testing.T) {
 	if len(requests) != 1 {
 		t.Fatalf("requests = %d, want 1", len(requests))
 	}
-	wantPath := "/api/v1/executions/exec-1/kill"
-	if requests[0].Method != http.MethodPost || requests[0].EscapedPath != wantPath {
+	wantPath := "/api/v1/main/executions/exec-1/actions/kill"
+	if requests[0].Method != http.MethodDelete || requests[0].EscapedPath != wantPath {
 		t.Fatalf("request = %+v, want POST %s", requests[0], wantPath)
 	}
 }
@@ -930,4 +953,37 @@ func TestHTTPAdapterRecordsOutboundMetrics(t *testing.T) {
 		}
 	}
 	t.Fatal("expected kestra executions.get success metric")
+}
+
+func TestHTTPAdapterGetRunResults(t *testing.T) {
+	adapter, log := newHTTPTestAdapter(t, func(w http.ResponseWriter, r *http.Request, _ []byte) {
+		switch r.URL.EscapedPath() {
+		case "/api/v1/main/outputs/tasks/exec-1":
+			writeHTTPJSON(w, http.StatusOK, `[{"taskId":"build_orders","taskRunId":"task-run-1"}]`)
+		case "/api/v1/main/outputs/tasks/exec-1/task-run-1":
+			writeHTTPJSON(w, http.StatusOK, `{"outputFiles":{"target/run_results.json":"kestra:///test.json","target/run_results.run.json":"kestra:///run.json"}}`)
+		case "/api/v1/main/executions/exec-1/file":
+			if got := r.URL.Query().Get("path"); got != "kestra:///run.json" {
+				t.Errorf("download path = %q, want run_results.run.json URI", got)
+			}
+			if got := r.Header.Get("Accept"); got != "application/octet-stream" {
+				t.Errorf("download Accept = %q, want application/octet-stream", got)
+			}
+			writeHTTPJSON(w, http.StatusOK, `{"results":[{"unique_id":"model.x","status":"success"}]}`)
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.RequestURI())
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	raw, err := adapter.GetRunResults(context.Background(), "exec-1")
+	if err != nil {
+		t.Fatalf("GetRunResults: %v", err)
+	}
+	if !strings.Contains(string(raw), `"status":"success"`) {
+		t.Fatalf("artifact = %s", raw)
+	}
+	if got := len(log.requestsSnapshot()); got != 3 {
+		t.Fatalf("requests = %d, want 3", got)
+	}
 }

@@ -419,12 +419,30 @@ tasks:
     tasks:
       - id: clean_orders
         type: io.kestra.plugin.scripts.shell.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        namespaceFiles:
+          enabled: true
+        outputFiles:
+          - target/run_results*.json
         commands:
-          - dbt run --select clean_orders --project-dir pipeline_22222222222242228222222222222222/v3 --profiles-dir pipeline_22222222222242228222222222222222/v3
+          - dbt run --select clean_orders --project-dir . --profiles-dir .
+          - cp target/run_results.json target/run_results.run.json
+          - dbt test --select clean_orders --project-dir . --profiles-dir .
+          - cp target/run_results.json target/run_results.test.json
       - id: report
         type: io.kestra.plugin.scripts.shell.Commands
+        taskRunner:
+          type: io.kestra.plugin.core.runner.Process
+        namespaceFiles:
+          enabled: true
+        outputFiles:
+          - target/run_results*.json
         commands:
-          - dbt run --select report --project-dir pipeline_22222222222242228222222222222222/v3 --profiles-dir pipeline_22222222222242228222222222222222/v3
+          - dbt run --select report --project-dir . --profiles-dir .
+          - cp target/run_results.json target/run_results.run.json
+          - dbt test --select report --project-dir . --profiles-dir .
+          - cp target/run_results.json target/run_results.test.json
         dependsOn:
           - clean_orders
 `
@@ -454,10 +472,14 @@ tasks:
 	if cleanOrders.ID != "clean_orders" || report.ID != "report" {
 		t.Fatalf("child order = %q, %q, want topological order", cleanOrders.ID, report.ID)
 	}
-	projectDir := "pipeline_" + flowPipelineHex + "/v3"
-	wantCleanCommand := "dbt run --select clean_orders --project-dir " + projectDir + " --profiles-dir " + projectDir
-	if !reflect.DeepEqual(cleanOrders.Commands, []string{wantCleanCommand}) {
-		t.Fatalf("clean_orders commands = %v, want [%q]", cleanOrders.Commands, wantCleanCommand)
+	wantCleanCommands := []string{
+		"dbt run --select clean_orders --project-dir . --profiles-dir .",
+		"cp target/run_results.json target/run_results.run.json",
+		"dbt test --select clean_orders --project-dir . --profiles-dir .",
+		"cp target/run_results.json target/run_results.test.json",
+	}
+	if !reflect.DeepEqual(cleanOrders.Commands, wantCleanCommands) {
+		t.Fatalf("clean_orders commands = %v, want %v", cleanOrders.Commands, wantCleanCommands)
 	}
 	if !reflect.DeepEqual(report.DependsOn, []string{"clean_orders"}) {
 		t.Fatalf("report dependsOn = %v, want [clean_orders]", report.DependsOn)
@@ -538,7 +560,7 @@ func TestRenderFlowYAMLRootKeyOrder(t *testing.T) {
 	if children == nil || len(children.Content) != 1 {
 		t.Fatalf("wrapper children = %+v, want one dbt task", children)
 	}
-	if got, want := mappingKeys(children.Content[0]), []string{"id", "type", "commands"}; !reflect.DeepEqual(got, want) {
+	if got, want := mappingKeys(children.Content[0]), []string{"id", "type", "taskRunner", "namespaceFiles", "outputFiles", "commands"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("dbt task key order = %v, want %v", got, want)
 	}
 }

@@ -166,13 +166,27 @@ type flowDocument struct {
 // flowTaskDocument is one rendered Kestra task. Commands, dependsOn, message
 // and tasks are omitted when empty so a dbt task and a no-op log task stay
 // minimal.
+// flowTaskRunner selects the in-container runner. The Kestra image already
+// contains dbt-trino, so scripts run through the Process runner instead of
+// requiring a Docker socket.
+type flowTaskRunner struct {
+	Type string `yaml:"type"`
+}
+
+type flowNamespaceFiles struct {
+	Enabled bool `yaml:"enabled"`
+}
+
 type flowTaskDocument struct {
-	ID        string             `yaml:"id"`
-	Type      string             `yaml:"type"`
-	Commands  []string           `yaml:"commands,omitempty"`
-	DependsOn []string           `yaml:"dependsOn,omitempty"`
-	Message   string             `yaml:"message,omitempty"`
-	Tasks     []flowTaskDocument `yaml:"tasks,omitempty"`
+	ID             string              `yaml:"id"`
+	Type           string              `yaml:"type"`
+	TaskRunner     *flowTaskRunner     `yaml:"taskRunner,omitempty"`
+	NamespaceFiles *flowNamespaceFiles `yaml:"namespaceFiles,omitempty"`
+	OutputFiles    []string            `yaml:"outputFiles,omitempty"`
+	Commands       []string            `yaml:"commands,omitempty"`
+	DependsOn      []string            `yaml:"dependsOn,omitempty"`
+	Message        string              `yaml:"message,omitempty"`
+	Tasks          []flowTaskDocument  `yaml:"tasks,omitempty"`
 }
 
 func renderTasks(ir FlowIR) ([]flowTaskDocument, error) {
@@ -186,7 +200,6 @@ func renderTasks(ir FlowIR) ([]flowTaskDocument, error) {
 		return []flowTaskDocument{sequential}, nil
 	}
 
-	projectDir := projectDirectory(ir)
 	children := make([]flowTaskDocument, 0, len(ir.Tasks))
 	for _, task := range ir.Tasks {
 		if strings.TrimSpace(task.ID) == "" {
@@ -197,25 +210,24 @@ func renderTasks(ir FlowIR) ([]flowTaskDocument, error) {
 				"%w: flow task %q has no model to select", domain.ErrInvalidArgument, task.ID,
 			)
 		}
-		command := fmt.Sprintf(
-			"dbt run --select %s --project-dir %s --profiles-dir %s",
-			strings.TrimSpace(task.Model), projectDir, projectDir,
-		)
+		model := strings.TrimSpace(task.Model)
 		children = append(children, flowTaskDocument{
-			ID:        strings.TrimSpace(task.ID),
-			Type:      flowTaskTypeShellCommands,
-			Commands:  []string{command},
+			ID:             strings.TrimSpace(task.ID),
+			Type:           flowTaskTypeShellCommands,
+			TaskRunner:     &flowTaskRunner{Type: "io.kestra.plugin.core.runner.Process"},
+			NamespaceFiles: &flowNamespaceFiles{Enabled: true},
+			OutputFiles:    []string{"target/run_results*.json"},
+			Commands: []string{
+				fmt.Sprintf("dbt run --select %s --project-dir . --profiles-dir .", model),
+				"cp target/run_results.json target/run_results.run.json",
+				fmt.Sprintf("dbt test --select %s --project-dir . --profiles-dir .", model),
+				"cp target/run_results.json target/run_results.test.json",
+			},
 			DependsOn: append([]string(nil), task.DependsOn...),
 		})
 	}
 	sequential.Tasks = children
 	return []flowTaskDocument{sequential}, nil
-}
-
-// projectDirectory is the namespace-files directory of the dbt project for
-// this Pipeline version (design D3): pipeline_<pipeline_hex>/v<version>.
-func projectDirectory(ir FlowIR) string {
-	return "pipeline_" + ir.FlowID + "/v" + strconv.Itoa(ir.Revision)
 }
 
 // orderTasks returns dag.Tasks in a deterministic topological order: ready

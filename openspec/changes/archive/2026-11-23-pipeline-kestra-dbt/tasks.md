@@ -11,8 +11,8 @@
 ## 0. 前置与契约确认
 
 - [x] 0.1 核对依赖 change 状态（datasets/observability/edge-gateway 已归档）与 change map 的目录归属，记录共享文件 patch 清单（验证：变更说明与 change map §5 对照，无越界文件）。
-- [ ] 0.2 Spike：在授权启动的本地环境钉住 Kestra 镜像版本并逐条核对 Flow upsert、namespace files、执行触发/查询/取消、按 labels 查执行、`outputFiles` 下载端点与 dbt 挂载路径（验证：spike 记录含实际请求/响应与版本，写入 design 附录或证据目录）。
-- [ ] 0.3 Spike：确定 dbt 执行方式（自定义 Kestra 镜像内置 dbt-trino vs 容器任务）与钉住版本，确认不使用 Docker socket（验证：镜像 Dockerfile 草案 + 一次 `dbt --version` 输出）。
+- [x] 0.2 Spike：在授权启动的本地环境钉住 Kestra 镜像版本并逐条核对 Flow upsert、namespace files、执行触发/查询/取消、按 labels 查执行、`outputFiles` 下载端点与 dbt 挂载路径（验证：spike 记录含实际请求/响应与版本，写入 design 附录或证据目录）。
+- [x] 0.3 Spike：确定 dbt 执行方式（自定义 Kestra 镜像内置 dbt-trino vs 容器任务）与钉住版本，确认不使用 Docker socket（验证：镜像 Dockerfile 草案 + 一次 `dbt --version` 输出）。
 - [x] 0.4 明确 dbt 目标 catalog/schema 派生规则与 SQL 静态检查边界，写入代码注释与测试夹具（验证：规则表 + 单测通过）。
 
 ## 1. Authoring DAG v1 契约与校验
@@ -50,7 +50,7 @@
 
 - [x] 5.1 发布编排：校验 DAG v1 → 校验输入/输出 dataset → 渲染项目与 Flow（哈希）→ 上传 namespace 文件 → Flow upsert（revision=nextVersion）→ 单事务提交版本快照并递增 `version`/置 `published`（验证：service 单测断言顺序与事务边界）。
 - [x] 5.2 并发发布串行化：`SELECT ... FOR UPDATE` 锁 Pipeline 行，避免重复递增版本（验证：并发发布测试只有一个成功版本推进）。
-- [ ] 5.3 发布补偿：DB 提交失败时回退 Flow 到上一已发布版本、删除新 namespace 文件；首次发布删除 Flow 与文件；补偿失败记录告警且仍返回失败（验证：注入 repo 故障的单测断言补偿调用与 503）。
+- [x] 5.3 发布补偿：DB 提交失败时回退 Flow 到上一已发布版本、删除新 namespace 文件；首次发布删除 Flow 与文件；补偿失败记录告警且仍返回失败（验证：注入 repo 故障的单测断言补偿调用与 503；见 `evidence/2026-11-23-pipeline-publish-compensation-unit.md`）。
 - [x] 5.4 发布失败保持 `version`/`status` 不变、不新增版本记录（验证：失败路径单测与集成断言）。
 
 ## 6. 触发路径与执行引用
@@ -72,7 +72,7 @@
 
 - [x] 8.1 实现 dbt 渲染器：`dbt_project.yml`、`profiles.yml`（仅 `env_var()`）、`models/<task_id>.sql`，按 (pipeline, version, content_hash) 生成（验证：golden 文件 + 确定性断言 + 凭据扫描）。
 - [x] 8.2 模型 schema 派生（`oa_t<tenant8>_p<pipeline8>`）与目标 catalog 配置；发布期拒绝控制范围外显式 `catalog.schema.table` 引用（验证：负向单测）。
-- [ ] 8.3 Flow 任务执行 `dbt run`/`dbt test` 并保存 `target/run_results.json`；非零退出即失败（验证：Flow golden + 集成失败路径）。
+- [x] 8.3 Flow 任务执行 `dbt run`/`dbt test` 并保存 `target/run_results.json`；非零退出即失败（验证：Flow golden + 集成失败路径）。
 - [x] 8.4 对账解析 `run_results.json`：模型级状态、成功计数、失败原因脱敏；产物缺失且声明输出时判失败（验证：解析单测 + 集成）。
 - [x] 8.5 dbt 项目文件上传/删除走 namespace files 并带内容哈希（验证：`httptest` 断言幂等与补偿删除）。
 
@@ -100,19 +100,19 @@
 
 - [x] 12.1 负向矩阵单测：未知任务类型、依赖环、重复 id、不支持 `dag_version`、跨租户读取 404、缺失 dataset 400、输出 dataset 跨租户 400、`per_page=201` 400、幂等异体 409（验证：`go test` 全绿并列出用例清单）。
 - [x] 12.2 引擎失败矩阵：4xx 不重试、超时/5xx 有界重试、持续 503 收敛 503、执行不存在 `execution_not_found`、未知状态不成功（验证：`httptest` 单测矩阵）。
-- [ ] 12.3 发布/触发中断与补偿：文件上传中途失败、DB 提交失败、响应丢失（验证：故障注入单测 + 集成重试 E2E）。
-- [ ] 12.4 降级不伪造：未配置/不可达时 503 且无成功记录；引擎恢复后重试只成功一次（验证：集成断言）。
+- [x] 12.3 发布/触发中断与补偿：文件上传中途失败、DB 提交失败、响应丢失（验证：故障注入单测 + 集成重试 E2E）。
+- [x] 12.4 降级不伪造：未配置/不可达时 503 且无成功记录；引擎恢复后重试只成功一次（验证：集成断言）。
 
 ## 13. 真实实例集成 E2E 与证据
 
-- [ ] 13.1 经授权启动 compose `pipeline` profile（Kestra + Trino memory catalog + dbt 镜像），记录版本、端口、健康检查输出（验证：`docker compose ... config` + 健康检查日志，证据落盘）。
-- [ ] 13.2 成功路径 E2E：创建 dataset → 创建/发布 Pipeline → 触发 → 查询对账为 `succeeded` → 输出与血缘可查 → dbt 表存在于派生 schema（验证：API 响应与 Trino `SHOW TABLES` 证据）。
-- [ ] 13.3 失败路径 E2E：坏 SQL → 执行 FAILED → run `failed`、无输出记录、错误脱敏（验证：响应/DB/日志证据）。
-- [ ] 13.4 失败重试 E2E：停 Kestra → 发布 503 且无版本变化 → 恢复 → 同一请求重试成功且版本只递增一次；触发侧 503→重试→成功且不重复执行（验证：命令日志 + DB 查询证据）。
-- [ ] 13.5 状态回写 E2E：成功后停止 Kestra 再查询仍返回 `succeeded`；对非终态运行引擎不可达返回持久化状态（验证：两次查询对比证据）。
-- [ ] 13.6 负向集成用例：跨租户 404、非法 DAG 400、缺失/跨租户 dataset 400、幂等异体 409（验证：HTTP 状态与错误体证据）。
-- [ ] 13.7 遥测证据：抓取 `/metrics` 相关序列与一次 trace，断言无凭据/tenant label（验证：指标/日志抓取文件）。
-- [ ] 13.8 证据移交：原始输出与命令交 `stage-2-integration` 汇总至 `docs/stages/evidence/stage-2-pipeline-kestra-dbt/`（验证：交接清单与文件路径）。
+- [x] 13.1 经授权启动 compose `pipeline` profile（Kestra + Trino memory catalog + dbt 镜像），记录版本、端口、健康检查输出（验证：`docker compose ... config` + 健康检查日志，证据落盘）。
+- [x] 13.2 成功路径 E2E：创建 dataset → 创建/发布 Pipeline → 触发 → 查询对账为 `succeeded` → 输出与血缘可查 → dbt 表存在于派生 schema（验证：API 响应与 Trino `SHOW TABLES` 证据）。
+- [x] 13.3 失败路径 E2E：坏 SQL → 执行 FAILED → run `failed`、无输出记录、错误脱敏（验证：响应/DB/日志证据）。
+- [x] 13.4 失败重试 E2E：停 Kestra → 发布 503 且无版本变化 → 恢复 → 同一请求重试成功且版本只递增一次；触发侧 503→重试→成功且不重复执行（验证：命令日志 + DB 查询证据）。
+- [x] 13.5 状态回写 E2E：成功后停止 Kestra 再查询仍返回 `succeeded`；对非终态运行引擎不可达返回持久化状态（验证：两次查询对比证据）。
+- [x] 13.6 负向集成用例：跨租户 404、非法 DAG 400、缺失/跨租户 dataset 400、幂等异体 409（验证：HTTP 状态与错误体证据）。
+- [x] 13.7 遥测证据：抓取 `/metrics` 相关序列与一次 trace，断言无凭据/tenant label（验证：指标/日志抓取文件）。
+- [x] 13.8 证据移交：原始输出与命令交 `stage-2-integration` 汇总至 `docs/stages/evidence/stage-2-pipeline-kestra-dbt/`（验证：交接清单与文件路径）。
 
 ## 14. 文档、追溯与门禁
 

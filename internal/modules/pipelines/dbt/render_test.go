@@ -82,7 +82,7 @@ const expectedProfilesFile = `ontoaxis_pipeline:
       type: trino
       method: none
       host: "{{ env_var('DBT_TRINO_HOST') }}"
-      port: "{{ env_var('DBT_TRINO_PORT') }}"
+      port: 8080
       user: "{{ env_var('DBT_TRINO_USER') }}"
       database: "memory"
       schema: "oa_t11111111_paaaaaaaa"
@@ -231,7 +231,7 @@ func TestRenderProjectHasNoCredentials(t *testing.T) {
 	profiles := string(fileByPath(t, project, "profiles.yml").Content)
 	for _, reference := range []string{
 		`host: "{{ env_var('DBT_TRINO_HOST') }}"`,
-		`port: "{{ env_var('DBT_TRINO_PORT') }}"`,
+		`port: 8080`,
 		`user: "{{ env_var('DBT_TRINO_USER') }}"`,
 		"threads: 2",
 	} {
