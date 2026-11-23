@@ -31,7 +31,7 @@ jobs:
       - name: Edge route generation check
         run: make edge-generate-check
       - name: License
-        run: go run github.com/google/go-licenses@v1.6.0 check ./...
+        run: make license-check
 
   authz-integration:
     runs-on: ubuntu-latest
