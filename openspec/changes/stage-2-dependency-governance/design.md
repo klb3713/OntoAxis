@@ -30,7 +30,7 @@
 
 **选择**：`digest_required_from: 2027-01-31`；在此之前缺 digest 只警告。
 
-**理由**：给 18 个 Helm 组件和 12 个 compose 镜像补 digest，需要先逐个决定 tag（等于顺带做一轮版本升级），会掩盖行为变化，也与 `production-delivery` 的在途工作冲突。用日期棘轮把「可复现」变成有期限的强制项，而不是长期例外。
+**理由**：给 21 个 Helm 组件和 14 个 compose 镜像（另有 4 处 Dockerfile 与 3 处 Makefile）补 digest，需要先逐个决定 tag（等于顺带做一轮版本升级），会掩盖行为变化，也与 `production-delivery` 的在途工作冲突。用日期棘轮把「可复现」变成有期限的强制项，而不是长期例外。
 
 ### D5：Helm 占位 digest 登记为到期例外
 

@@ -23,7 +23,8 @@ digest，不使用 latest」），并为 S2-AC-08、S2-AC-11 提供依赖证据�
 | 组件分级与责任归属 | `policy.yaml` 的 tier/owner/review_by；E_UNCLASSIFIED | `make deps-check` 无未分级组件（entries=45, components=29） |
 | 例外登记与到期失效 | `exceptions[].scope/expires/reason`；E_EXCEPTION | 负向用例 2：expires 改到 2020-01-01 触发 E_EXCEPTION |
 | 自动更新通道的合并分级 | `renovate.json` 的 `platform-p0`（automerge=false）与 build-toolchain（仅 patch/digest） | `scripts/deps.py check` 的 E_RENOVATE 双向比对；`renovate.json` JSON 解析通过 |
-| 审计报告与阶段证据 | `scripts/deps.py audit`（Docker Hub / Quay / endoflife.date） | `evidence/2026-11-23-deps-audit.md`，30 个组件行，查询失败标 unknown |
+| 审计报告与阶段证据 | `scripts/deps.py audit`（Docker Hub / Quay / endoflife.date）；例外覆盖行标为「例外覆盖（未验证）」 | `evidence/2026-11-23-deps-audit.md`，30 个组件行，查询失败标 unknown |
+| Helm 版本可审计 | `scripts/deps.py` 的 `extract_helm` 解析 `image.tag`（顺序无关），写入 lock 与审计；缺 tag 报 `W_NOTAG` | `make deps-test`（8 个用例）；临时加 tag 后 lock 出现该字段 |
 | 升级归类 change vs Fast Track | `docs/workflow/DEPENDENCIES.md` §4 | 文档评审；p0 升级路径写入 Stage brief 退出条件 |
 
 ## 4. 显式移交（不在本 change 验证）
@@ -37,6 +38,8 @@ digest，不使用 latest」），并为 S2-AC-08、S2-AC-11 提供依赖证据�
 ## 5. 未覆盖/不声称
 
 - 未验证 kind/k3d 集群内 Helm 渲染结果：本 change 不修改 Helm 模板，digest 仍是占位。
+- **未验证 digest 真伪**：`deps-check` 离线运行，只校验格式与锁一致性；占位 digest 由例外
+  `helm-placeholder-digests` 显式覆盖并在审计中标「例外覆盖（未验证）」，不声称已固定。
 - 未验证 Renovate 实际开 PR 的行为：仓库未启用 Renovate App；配置已就绪，启用属运维动作。
 - 未验证 CI 首次运行结果：`.github/workflows/deps.yml` 只做了本地 YAML 解析。
 - 审计的 `上游最新` 依赖 registry API 当次返回；`unknown` 行不得当作「已是最新」。

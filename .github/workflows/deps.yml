@@ -30,6 +30,9 @@ jobs:
       - name: 校验锁文件、latest 禁令、策略覆盖、例外与 renovate 名单
         run: make deps-check
 
+      - name: 运行 deps 工具回归测试
+        run: make deps-test
+
   audit:
     name: deps-audit
     needs: check

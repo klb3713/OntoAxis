@@ -1,0 +1,122 @@
+# 一致性修正（2026-11-23）
+
+评审在核对 `stage-2-dependency-governance` 时发现 4 处不一致，本文件记录修正内容与可复跑验证。
+只改工具、文档与锁文件行号；不修改 `deploy/helm/` 的 values 内容（所有权属 `production-delivery`）。
+
+## 修正项
+
+| # | 不一致 | 修正 |
+| --- | --- | --- |
+| 1 | `tasks.md` 6.1 写「18 个占位 digest」，baseline/traceability 与 lock 实际为 21 | tasks/proposal/design/`DEPENDENCIES.md` 统一为 21（platform 5 / data 7 / observability 5 / app 4） |
+| 2 | `deps-check` 汇总字段 `placeholders=` 实际统计「被例外 scope 覆盖的条目数」 | 改名为 `exception_covered=`，并新增 `W_EXCEPTION_COVERED` 汇总警告 |
+| 3 | `DEPENDENCIES.md` 要求在 values 补 `tag`，但 `extract_helm` 根本不解析 tag，`_helpers.tpl` 又拒绝带 tag 的 repository | `extract_helm` 改为按组件块解析 repository/tag/digest（顺序无关，引号安全），tag 写入 lock 与审计；文档说明 tag 是独立元数据字段 |
+| 4 | 占位 digest 格式合法、离线无法识别，审计把占位报成 `digest=有`，等于冒充「已固定」 | 审计区分「有」与「例外覆盖（未验证）」；check 对只有 digest 无 tag 的 Helm 引用报 `W_NOTAG`；文档明确离线不验证 digest 真伪 |
+
+## 验证输出
+
+### 1. lock 条目分组（确认 21 个 Helm 组件）
+
+```
+$ python3 - <<'PY'  # 统计 deploy/deps/lock.yaml 按来源分组
+{'Makefile': 3, 'compose': 20, 'connector': 1, 'helm': 21} total= 45
+```
+
+### 2. 工具回归测试
+
+```
+$ make deps-test
+python3 scripts/deps_test.py
+...
+Ran 8 tests in 0.003s
+
+OK
+```
+
+覆盖：tag 在 digest 前/后、repository 缺 digest 仍产出条目、无 image 的组件忽略、
+锁文件 tag 往返与逐字节稳定、例外 scope 前缀匹配、空 scope 不匹配任何来源。
+
+### 3. 门禁通过
+
+```
+$ make deps-check
+summary: entries=45 components=29 exception_covered=21 errors=0 warnings=52 ratchet=2027-01-31
+EXIT=0
+```
+
+警告分类（`python3 scripts/deps.py check --verbose`）：
+
+```
+W_NOTAG=21 W_EXCEPTION_COVERED=1 W_NODIGEST=21 W_FLOATING=9
+```
+
+`W_EXCEPTION_COVERED` 原文：
+
+```
+warn[W_EXCEPTION_COVERED] 例外 helm-placeholder-digests 覆盖 deploy/helm/ 下 21 条引用（到期 2026-12-31），到期后未修复即阻塞
+```
+
+### 4. 负向用例：latest 仍被拒绝
+
+临时把 `deploy/compose/compose.yaml` 的 trino 改成 `:latest`：
+
+```
+error[E_LOCK_STALE] 锁文件与仓库不一致，请执行 make deps-lock
+error[E_LATEST] deploy/compose/compose.yaml:35 trino 使用 latest
+summary: entries=45 components=29 exception_covered=21 errors=2 warnings=53 ratchet=2027-01-31
+EXIT=1
+```
+
+恢复后 `git status` 干净，`make deps-check` 通过。
+
+### 5. 负向/正向用例：chart values 的 tag 可被解析
+
+临时给 `deploy/helm/ontoaxis-platform/values.yaml` 的 keycloak 加 `tag: "26.0"`：
+
+```
+$ python3 scripts/deps.py lock   # 该组件条目出现 tag: "26.0"
+$ python3 scripts/deps.py check --verbose
+error[E_LOCK_STALE] 锁文件与仓库不一致，请执行 make deps-lock
+warn[W_FLOATING] deploy/helm/ontoaxis-platform/values.yaml:88 keycloak 的 tag '26.0' 为浮动 major/minor
+```
+
+验证点：tag 进入锁文件、进入浮动 tag 判定；恢复后 `git status` 干净。
+
+### 6. 锁文件刷新与幂等
+
+Makefile 增加 `deps-test` 后 prometheus 行号 77→80，锁文件随之刷新：
+
+```
+$ make deps-lock
+wrote deploy/deps/lock.yaml (45 entries)
+$ make deps-lock && cp deploy/deps/lock.yaml /tmp/lock1.yaml && make deps-lock && diff /tmp/lock1.yaml deploy/deps/lock.yaml
+lock-idempotent=yes
+```
+
+### 7. 审计口径修正（重新生成 `2026-11-23-deps-audit.md`）
+
+`digest` 列不再把占位报成「有」：
+
+```
+| alertmanager | `v0.27.0` | 例外覆盖（未验证） | v0.35.0 | 落后 minor | p0 | ... | 例外 helm-placeholder-digests |
+| kestra | `v2.0.12` | 有 | v2.0.12 | 一致 | p0 | ... | 例外 helm-placeholder-digests |
+```
+
+19 个组件显示「例外覆盖（未验证）」；kestra、trino 显示「有」是因为 compose/Dockerfile 中存在真实 digest。
+报告由同一工具重新生成，未手工编辑行内容。
+
+### 8. OpenSpec 校验
+
+```
+$ openspec validate --all --strict
+Totals: 19 passed, 0 failed (19 items)
+```
+
+## 遗留（不在本次修正范围）
+
+- `2026-11-23-check.txt` 保留了修正前的输出（含旧字段名 `placeholders=`），作为历史证据不重写；
+  当前口径以本文件与 `make deps-check` 输出为准。
+- Helm values 的 21 个占位 digest 与缺失 tag 仍需 `production-delivery` 在 2026-12-31 前回填（任务 6.1）。
+- **新发现（未修）**：`deploy/helm/ontoaxis-jobs/values.yaml` 的 `backup.image` 在 `components:`
+  块外，`extract_helm` 不解析，因此它是第 22 个 Helm 镜像引用：不进 lock、不进审计、
+  不受 `E_LATEST`/`E_NODIGEST` 约束（只被例外 scope 覆盖）。纳入覆盖属于门禁行为变化，
+  登记为任务 6.4，待 owner 决定是否并入 6.1 一并处理。

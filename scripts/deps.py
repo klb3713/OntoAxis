@@ -148,11 +148,17 @@ def extract_dockerfile(path):
 
 
 def extract_helm(path):
-    entries = []
+    """解析 chart values 的 components 块。
+
+    每个组件按块收集 `repository` / `tag` / `digest` 三个可选标量后再产出条目，
+    因此字段顺序不影响结果（tag 可写在 digest 前后）。`tag` 只是元数据：
+    模板仍按 `repository@digest` 渲染，tag 供审计与 Renovate 判断版本。
+    `repository` 存在但缺 `digest` 时同样产出条目，由 check 报 E_NOTAG/W_NODIGEST，
+    避免「缺 digest 的镜像从清单里消失」。
+    """
+    blocks = []
+    current = None
     in_components = False
-    component = None
-    repository = None
-    repository_line = None
     for lineno, raw in enumerate(read_lines(path), 1):
         line = strip_comment(raw).rstrip()
         if not line.strip():
@@ -166,25 +172,47 @@ def extract_helm(path):
             continue
         comp = re.match(r"^  ([A-Za-z0-9_.-]+):\s*$", line)
         if comp:
-            component = comp.group(1)
-            repository = None
+            current = {
+                "component": comp.group(1),
+                "repository": None,
+                "tag": "",
+                "digest": None,
+                "line": lineno,
+            }
+            blocks.append(current)
             continue
-        repo = re.match(r"^\s+repository:\s*(\S+)\s*$", line)
-        if repo:
-            repository, repository_line = repo.group(1), lineno
+        if current is None:
             continue
-        digest = re.match(r"^\s+digest:\s*(\S+)\s*$", line)
-        if digest and repository:
-            entries.append(
-                {
-                    "source": rel(path),
-                    "line": repository_line,
-                    "service": None,
-                    "helm_component": component,
-                    "ref": repository + "@" + digest.group(1),
-                }
-            )
-            repository = None
+        field = re.match(r"^\s+(repository|tag|digest):\s*(\S+)\s*$", line)
+        if not field:
+            continue
+        key, raw_value = field.group(1), field.group(2)
+        value = str(parse_scalar(raw_value))
+        if key == "repository" and current["repository"] is None:
+            current["repository"] = value
+            current["line"] = lineno
+        elif key == "tag" and not current["tag"]:
+            current["tag"] = value
+        elif key == "digest" and current["digest"] is None:
+            current["digest"] = value
+
+    entries = []
+    for block in blocks:
+        if not block["repository"]:
+            continue
+        ref = block["repository"]
+        if block["digest"]:
+            ref += "@" + block["digest"]
+        entries.append(
+            {
+                "source": rel(path),
+                "line": block["line"],
+                "service": None,
+                "helm_component": block["component"],
+                "ref": ref,
+                "tag": block["tag"],
+            }
+        )
     return entries
 
 
@@ -226,7 +254,8 @@ def collect_entries():
                 "line": item["line"],
                 "component": component_key({**item, "image": image}),
                 "image": image,
-                "tag": tag or "",
+                # Helm values 的 tag 是独立元数据字段，不写在引用里。
+                "tag": tag or item.get("tag") or "",
                 "digest": digest or "",
             }
         )
@@ -350,6 +379,15 @@ def floating_tag(tag):
     return bool(re.fullmatch(r"v?\d+(\.\d+)?(-\w+)?", tag or ""))
 
 
+def exception_covering(policy, entry):
+    """返回覆盖该引用的例外（按 scope 前缀匹配），没有则返回 None。"""
+    for exception in policy["exceptions"]:
+        scope = str(exception.get("scope") or "")
+        if scope and entry["source"].startswith(scope):
+            return exception
+    return None
+
+
 def cmd_lock(args):
     entries = collect_entries()
     text = render_lock(entries)
@@ -437,7 +475,7 @@ def cmd_check(args):
         if committed != expected:
             errors.append("error[E_LOCK_STALE] 锁文件与仓库不一致，请执行 make deps-lock")
 
-    placeholders = 0
+    exception_covered = {}
     for entry in entries:
         name = entry["component"]
         cfg = policy_for(policy, name)
@@ -461,13 +499,17 @@ def cmd_check(args):
                 % (entry["source"], entry["line"], name, tag)
             )
 
-        covering = [
-            exc
-            for exc in policy["exceptions"]
-            if str(exc.get("scope") or "") and entry["source"].startswith(str(exc.get("scope")))
-        ]
-        if covering:
-            placeholders += 1
+        covering = exception_covering(policy, entry)
+        if covering is not None:
+            key = str(covering.get("id"))
+            exception_covered[key] = exception_covered.get(key, 0) + 1
+
+        # Helm 只写 digest 时审计无法判定版本（DEPENDENCIES.md §6 要求补 tag）。
+        if entry["digest"] and not tag and entry["source"].startswith("deploy/helm/"):
+            warnings.append(
+                "warn[W_NOTAG] %s:%d %s 只有 digest 没有 tag，审计无法判定版本"
+                % (entry["source"], entry["line"], name)
+            )
 
         if not entry["digest"]:
             if today >= ratchet:
@@ -481,6 +523,16 @@ def cmd_check(args):
                     % (entry["source"], entry["line"], name, ratchet)
                 )
 
+    # 例外覆盖的条目本身不是错误，但必须可见：否则「大量未知」会被静默当作已固定。
+    for exception in policy["exceptions"]:
+        key = str(exception.get("id"))
+        count = exception_covered.get(key, 0)
+        if count:
+            warnings.append(
+                "warn[W_EXCEPTION_COVERED] 例外 %s 覆盖 %s 下 %d 条引用（到期 %s），到期后未修复即阻塞"
+                % (key, exception.get("scope", "?"), count, exception.get("expires", "?"))
+            )
+
     for line in errors:
         print(line)
     if args.verbose:
@@ -488,8 +540,15 @@ def cmd_check(args):
             print(line)
 
     print(
-        "summary: entries=%d components=%d placeholders=%d errors=%d warnings=%d ratchet=%s"
-        % (len(entries), len(policy["components"]), placeholders, len(errors), len(warnings), ratchet)
+        "summary: entries=%d components=%d exception_covered=%d errors=%d warnings=%d ratchet=%s"
+        % (
+            len(entries),
+            len(policy["components"]),
+            sum(exception_covered.values()),
+            len(errors),
+            len(warnings),
+            ratchet,
+        )
     )
     return 1 if errors else 0
 
@@ -569,11 +628,23 @@ def cmd_audit(args):
     def covered_note(group):
         ids = []
         for entry in group:
-            for exc in policy["exceptions"]:
-                scope = str(exc.get("scope") or "")
-                if scope and entry["source"].startswith(scope):
-                    ids.append(str(exc.get("id")))
+            exception = exception_covering(policy, entry)
+            if exception is not None:
+                ids.append(str(exception.get("id")))
         return "例外 %s" % ",".join(sorted(set(ids))) if ids else ""
+
+    def digest_state(group):
+        """区分「真实 digest」与「只被例外覆盖的占位 digest」，不把占位算成已固定。"""
+        real = [
+            entry
+            for entry in group
+            if entry["digest"] and exception_covering(policy, entry) is None
+        ]
+        if real:
+            return "有"
+        if any(entry["digest"] for entry in group):
+            return "例外覆盖（未验证）"
+        return "无"
 
     rows = []
     for image in sorted(grouped):
@@ -617,7 +688,7 @@ def cmd_audit(args):
             {
                 "name": name,
                 "tag": tag,
-                "digest": "有" if any(entry["digest"] for entry in group) else "无",
+                "digest": digest_state(group),
                 "latest": latest or "unknown",
                 "drift": drift,
                 "tier": cfg.get("tier", "?"),

@@ -19,6 +19,7 @@
 make deps-lock     # 重新抽取并写回 deploy/deps/lock.yaml（改过任何镜像引用后必跑）
 make deps-check    # 离线校验，CI 阻塞项；退出码非 0 即失败
 make deps-audit    # 联网查询上游最新版本与 EOL，输出 markdown（不写文件）
+make deps-test     # 工具自身回归测试（标准库 unittest，不联网）
 ```
 
 需要存档时：
@@ -44,7 +45,8 @@ CI 在 `.github/workflows/deps.yml`：每次 push/PR 跑 `deps-check`；每月 1
 
 顶层 `digest_required_from`：digest 棘轮日期。在此之前缺 digest 只是 warning，
 之后变成 error。当前为 `2027-01-31`，选择该日期而不是立即强制，是因为补齐
-18 个 Helm 与 12 个 compose 的 digest 必须先定 tag，等于顺带升级，会掩盖行为变化。
+21 个 Helm 组件的占位 digest、以及 14 个 compose 镜像 + 4 处 Dockerfile + 3 处 Makefile
+共 21 条完全没有 digest 的引用，都必须先定 tag（等于顺带做一轮版本决策），会掩盖行为变化。
 
 ### 分级与合并规则
 
@@ -59,7 +61,9 @@ CI 在 `.github/workflows/deps.yml`：每次 push/PR 跑 `deps-check`；每月 1
 
 ## 4. 升级一个组件
 
-1. 改部署资产里的 tag（compose / Dockerfile / Makefile），Helm 改 `repository` + `digest`。
+1. 改部署资产里的 tag（compose / Dockerfile / Makefile），Helm 改 `repository` + `digest`，
+   并把版本号写进独立的 `image.tag` 字段（可选，仅作审计与 Renovate 的元数据；模板始终
+   按 `repository@digest` 渲染，`_helpers.tpl` 仍拒绝带 tag 的 repository）。
 2. `make deps-lock` 重新生成锁文件，确认 diff 只有预期条目。
 3. `make deps-check` 通过。
 4. 跑受影响的门禁：`make test`、`make smoke-*`、`pnpm check` 等，按组件归属选择。
@@ -95,8 +99,14 @@ exceptions:
 
 ## 6. 已知缺口
 
-- **Helm 无法审计版本**：values 只有 `repository` + `digest`，没有 tag，审计只能报「无 tag」。
-  例外到期前必须回填真实 digest，并在 values 里补 `tag` 供 Renovate 与审计识别。
+- **Helm 需要额外 `tag` 才能审计版本**：values 只写 `repository` + `digest` 时，工具无法
+  判断版本，`deps-check` 现在会为每条只有 digest、没有 tag 的 Helm 引用报
+  `W_NOTAG`。`image.tag` 已由 `scripts/deps.py` 解析并写入锁文件与审计报告；回填真实
+  digest 时必须同时补 tag。
+- **离线无法验证 digest 真伪**：`deps-check` 不联网，只能校验格式与锁一致性，无法判断
+  digest 是否真实存在于 registry。占位 digest 靠例外 `helm-placeholder-digests` 显式覆盖：
+  `deps-check` 会报 `W_EXCEPTION_COVERED` 列出覆盖条数与到期日，审计报告把这类行标为
+  「例外覆盖（未验证）」，不并入「已固定」；例外到期（2026-12-31）后未回填即阻塞。
 - **GitHub Actions 仍是浮动 tag**（`@v4` 等）。`helpers:pinGitHubActionDigests` 会提 PR 钉到
   SHA，但本 change 不强制门禁。
 - **自有镜像**（`ghcr.io/ontoaxis/*`）由 CI 构建，不走版本升级，审计跳过上游查询。
