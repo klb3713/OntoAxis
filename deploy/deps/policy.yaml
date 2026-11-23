@@ -1,0 +1,154 @@
+# 依赖版本策略：单一真源。
+#
+# 这里手写「必须是什么」，具体「现在是什么」由 `make deps-lock` 写入 lock.yaml。
+# `make deps-check` 离线校验两者一致，并检查 latest 禁令、策略覆盖、例外到期与 digest 棘轮。
+#
+# tier:
+#   p0  平台底座，EOL 前 90 天必须升级，升级走 OpenSpec change
+#   p1  运行时/构建链，跟随 LTS，minor 可走 Fast Track
+#   p2  应用库/自有镜像，按 semver 或提交推进
+# owner: 负责评审升级的 change 或团队，不写个人
+# review_by: 下次必须复核的日期
+# eol_source: endoflife.date 的 slug，audit 据此查 EOL
+# support_until: 上游支持截止（已知时填写）
+
+schema: 1
+digest_required_from: 2027-01-31
+
+defaults:
+  tier: p1
+  owner: production-delivery
+  review_by: 2027-03-31
+
+components:
+  postgres:
+    tier: p0
+    owner: production-delivery
+    review_by: 2027-03-31
+    eol_source: postgresql
+    support_until: 2028-11-30
+  keycloak:
+    tier: p0
+    owner: production-delivery
+    review_by: 2027-01-31
+    eol_source: keycloak
+  trino:
+    tier: p0
+    owner: pipeline-kestra-dbt
+    review_by: 2027-03-31
+  kestra:
+    tier: p0
+    owner: pipeline-kestra-dbt
+    review_by: 2027-03-31
+    support_until: 2027-09-30
+  kafka:
+    tier: p0
+    owner: connector-runtime
+    review_by: 2027-03-31
+  debezium:
+    tier: p0
+    owner: connector-runtime
+    review_by: 2027-03-31
+  apicurio:
+    tier: p0
+    owner: connector-runtime
+    review_by: 2027-03-31
+  nessie:
+    tier: p0
+    owner: connector-runtime
+    review_by: 2027-03-31
+  valkey:
+    tier: p0
+    owner: connector-runtime
+    review_by: 2027-03-31
+    eol_source: valkey
+  seaweedfs:
+    tier: p0
+    owner: connector-runtime
+    review_by: 2027-03-31
+  temporal:
+    tier: p0
+    owner: action-temporal
+    review_by: 2027-02-28
+  temporal-init:
+    tier: p0
+    owner: action-temporal
+    review_by: 2027-02-28
+  temporal-ui:
+    tier: p1
+    owner: action-temporal
+    review_by: 2027-02-28
+  openfga:
+    tier: p0
+    owner: stage-2-integration
+    review_by: 2027-03-31
+  meilisearch:
+    tier: p0
+    owner: object-search-meilisearch
+    review_by: 2027-03-31
+  oa-edge:
+    tier: p0
+    owner: production-delivery
+    review_by: 2027-03-31
+  jaeger:
+    tier: p0
+    owner: stage-2-integration
+    review_by: 2026-12-31
+  prometheus:
+    tier: p0
+    owner: stage-2-integration
+    review_by: 2027-03-31
+    eol_source: prometheus
+  alertmanager:
+    tier: p0
+    owner: stage-2-integration
+    review_by: 2027-03-31
+    eol_source: alertmanager
+  otel-collector:
+    tier: p1
+    owner: stage-2-integration
+    review_by: 2027-03-31
+  perses:
+    tier: p1
+    owner: stage-2-integration
+    review_by: 2027-03-31
+  golang:
+    tier: p1
+    owner: production-delivery
+    review_by: 2027-03-31
+    eol_source: go
+  alpine:
+    tier: p1
+    owner: production-delivery
+    review_by: 2027-03-31
+  eclipse-temurin:
+    tier: p1
+    owner: connector-runtime
+    review_by: 2027-03-31
+  buf:
+    tier: p1
+    owner: production-delivery
+    review_by: 2027-03-31
+  authz-init:
+    tier: p2
+    owner: stage-2-integration
+    review_by: 2027-03-31
+  ontoaxis-core:
+    tier: p2
+    owner: stage-2-integration
+    review_by: 2027-03-31
+  web:
+    tier: p2
+    owner: stage-2-integration
+    review_by: 2027-03-31
+  ontoaxis-search:
+    tier: p2
+    owner: stage-2-integration
+    review_by: 2027-03-31
+
+exceptions:
+  - id: helm-placeholder-digests
+    scope: deploy/helm/
+    owner: production-delivery
+    expires: 2026-12-31
+    reason: Helm values 的 digest 为 deterministic placeholder，回填真实 digest 需先定 tag，移交 production-delivery

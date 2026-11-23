@@ -1,13 +1,13 @@
 SHELL := /bin/bash
 GO ?= go
 BUF ?= buf
-BUF_DOCKER ?= docker run --rm -v "$(CURDIR)":/workspace -w /workspace/proto bufbuild/buf:latest
+BUF_DOCKER ?= docker run --rm -v "$(CURDIR)":/workspace -w /workspace/proto bufbuild/buf:1.75.0
 GO_DOCKER ?= docker run --rm -v "$(CURDIR)":/src -w /src -e GOFLAGS=-buildvcs=false golang:1.26.3
 
-.PHONY: help build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke
+.PHONY: help build test test-race fmt vet lint license-check deps-lock deps-check deps-audit proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke
 
 help:
-	@echo "Targets: build test test-race fmt vet lint license-check proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke"
+	@echo "Targets: build test test-race fmt vet lint license-check deps-lock deps-check deps-audit proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke"
 
 build:
 	$(GO) build ./...
@@ -30,6 +30,17 @@ lint: vet
 license-check:
 	# nexus-proto-annotations 是 Temporal 的传递依赖，模块内无许可证元数据；经负责人批准加路径例外，依赖树其余包仍检查。
 	$(GO) run github.com/google/go-licenses@v1.6.0 check --ignore github.com/nexus-rpc/nexus-proto-annotations ./...
+
+# 依赖版本治理：policy.yaml 是单一真源，lock.yaml 由 deps-lock 生成。
+# check 离线且可在 CI 阻塞；audit 需要网络，结果用 `make deps-audit > report.md` 存档。
+deps-lock:
+	python3 scripts/deps.py lock --write
+
+deps-check:
+	python3 scripts/deps.py check
+
+deps-audit:
+	python3 scripts/deps.py audit
 
 proto-lint:
 	@if command -v $(BUF) >/dev/null 2>&1; then cd proto && $(BUF) lint; else $(BUF_DOCKER) lint; fi

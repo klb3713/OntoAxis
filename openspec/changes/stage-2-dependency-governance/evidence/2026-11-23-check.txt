@@ -1,0 +1,38 @@
+# deps-check 通过输出（2026-11-23）
+
+命令：`python3 scripts/deps.py check --verbose`
+退出码：0
+
+```
+warn[W_NODIGEST] Makefile:4 buf 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] Makefile:5 golang 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] Makefile:77 prometheus 缺少 digest（2027-01-31 起强制）
+warn[W_FLOATING] deploy/compose/action-temporal/Dockerfile:1 golang 的 tag '1.26-alpine' 为浮动 major/minor
+warn[W_NODIGEST] deploy/compose/action-temporal/Dockerfile:1 golang 缺少 digest（2027-01-31 起强制）
+warn[W_FLOATING] deploy/compose/action-temporal/Dockerfile:9 alpine 的 tag '3.20' 为浮动 major/minor
+warn[W_NODIGEST] deploy/compose/action-temporal/Dockerfile:9 alpine 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/action-temporal/compose.temporal.yaml:8 temporal 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/action-temporal/compose.temporal.yaml:27 temporal-init 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/action-temporal/compose.temporal.yaml:36 temporal-ui 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/authz/compose.authz.yaml:6 openfga 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/authz/compose.authz.yaml:13 authz-init 缺少 digest（2027-01-31 起强制）
+warn[W_FLOATING] deploy/compose/compose.yaml:5 postgres 的 tag '16-alpine' 为浮动 major/minor
+warn[W_NODIGEST] deploy/compose/compose.yaml:5 postgres 缺少 digest（2027-01-31 起强制）
+warn[W_FLOATING] deploy/compose/compose.yaml:21 keycloak 的 tag '26.0' 为浮动 major/minor
+warn[W_NODIGEST] deploy/compose/compose.yaml:21 keycloak 缺少 digest（2027-01-31 起强制）
+warn[W_FLOATING] deploy/compose/compose.yaml:96 oa-edge 的 tag 'v3.3' 为浮动 major/minor
+warn[W_NODIGEST] deploy/compose/compose.yaml:96 oa-edge 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/compose.yaml:150 otel-collector 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/compose.yaml:162 jaeger 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/compose.yaml:170 prometheus 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/compose.yaml:188 alertmanager 缺少 digest（2027-01-31 起强制）
+warn[W_NODIGEST] deploy/compose/compose.yaml:198 perses 缺少 digest（2027-01-31 起强制）
+warn[W_FLOATING] deploy/compose/search/Dockerfile:1 golang 的 tag '1.26-alpine' 为浮动 major/minor
+warn[W_NODIGEST] deploy/compose/search/Dockerfile:1 golang 缺少 digest（2027-01-31 起强制）
+warn[W_FLOATING] deploy/compose/search/Dockerfile:9 alpine 的 tag '3.20' 为浮动 major/minor
+warn[W_NODIGEST] deploy/compose/search/Dockerfile:9 alpine 缺少 digest（2027-01-31 起强制）
+warn[W_FLOATING] deploy/compose/search/compose.search.yaml:6 meilisearch 的 tag 'v1.11' 为浮动 major/minor
+warn[W_NODIGEST] deploy/compose/search/compose.search.yaml:6 meilisearch 缺少 digest（2027-01-31 起强制）
+warn[W_FLOATING] deploy/connector-runtime/connect/Dockerfile:35 eclipse-temurin 的 tag '21-jdk' 为浮动 major/minor
+summary: entries=45 components=29 placeholders=21 errors=0 warnings=30 ratchet=2027-01-31
+```

@@ -1,0 +1,272 @@
+# 由 `make deps-lock` 生成，请勿手工编辑。
+entries:
+  - source: Makefile
+    line: 4
+    component: buf
+    image: bufbuild/buf
+    tag: "1.75.0"
+    digest: ""
+  - source: Makefile
+    line: 5
+    component: golang
+    image: golang
+    tag: "1.26.3"
+    digest: ""
+  - source: Makefile
+    line: 77
+    component: prometheus
+    image: prom/prometheus
+    tag: "v3.1.0"
+    digest: ""
+  - source: deploy/compose/action-temporal/Dockerfile
+    line: 1
+    component: golang
+    image: golang
+    tag: "1.26-alpine"
+    digest: ""
+  - source: deploy/compose/action-temporal/Dockerfile
+    line: 9
+    component: alpine
+    image: alpine
+    tag: "3.20"
+    digest: ""
+  - source: deploy/compose/action-temporal/compose.temporal.yaml
+    line: 8
+    component: temporal
+    image: temporalio/auto-setup
+    tag: "1.26.2"
+    digest: ""
+  - source: deploy/compose/action-temporal/compose.temporal.yaml
+    line: 27
+    component: temporal-init
+    image: temporalio/admin-tools
+    tag: "1.26.2"
+    digest: ""
+  - source: deploy/compose/action-temporal/compose.temporal.yaml
+    line: 36
+    component: temporal-ui
+    image: temporalio/ui
+    tag: "2.31.2"
+    digest: ""
+  - source: deploy/compose/authz/compose.authz.yaml
+    line: 6
+    component: openfga
+    image: openfga/openfga
+    tag: "v1.23.0"
+    digest: ""
+  - source: deploy/compose/authz/compose.authz.yaml
+    line: 13
+    component: authz-init
+    image: curlimages/curl
+    tag: "8.10.1"
+    digest: ""
+  - source: deploy/compose/compose.yaml
+    line: 5
+    component: postgres
+    image: postgres
+    tag: "16-alpine"
+    digest: ""
+  - source: deploy/compose/compose.yaml
+    line: 21
+    component: keycloak
+    image: quay.io/keycloak/keycloak
+    tag: "26.0"
+    digest: ""
+  - source: deploy/compose/compose.yaml
+    line: 35
+    component: trino
+    image: trinodb/trino
+    tag: "484"
+    digest: "sha256:2704eb53935af5e582d63d6033e9bf99d20c325e9b0e30b1016ef59a4773979f"
+  - source: deploy/compose/compose.yaml
+    line: 96
+    component: oa-edge
+    image: traefik
+    tag: "v3.3"
+    digest: ""
+  - source: deploy/compose/compose.yaml
+    line: 150
+    component: otel-collector
+    image: otel/opentelemetry-collector-contrib
+    tag: "0.120.0"
+    digest: ""
+  - source: deploy/compose/compose.yaml
+    line: 162
+    component: jaeger
+    image: jaegertracing/all-in-one
+    tag: "1.62.0"
+    digest: ""
+  - source: deploy/compose/compose.yaml
+    line: 170
+    component: prometheus
+    image: prom/prometheus
+    tag: "v3.1.0"
+    digest: ""
+  - source: deploy/compose/compose.yaml
+    line: 188
+    component: alertmanager
+    image: prom/alertmanager
+    tag: "v0.27.0"
+    digest: ""
+  - source: deploy/compose/compose.yaml
+    line: 198
+    component: perses
+    image: persesdev/perses
+    tag: "v0.50.0"
+    digest: ""
+  - source: deploy/compose/pipeline-kestra/Dockerfile
+    line: 1
+    component: kestra
+    image: kestra/kestra
+    tag: "v2.0.12"
+    digest: "sha256:b521aff2847161c283450d3c224523b42ea97447d86bde9519576c393d914b76"
+  - source: deploy/compose/search/Dockerfile
+    line: 1
+    component: golang
+    image: golang
+    tag: "1.26-alpine"
+    digest: ""
+  - source: deploy/compose/search/Dockerfile
+    line: 9
+    component: alpine
+    image: alpine
+    tag: "3.20"
+    digest: ""
+  - source: deploy/compose/search/compose.search.yaml
+    line: 6
+    component: meilisearch
+    image: getmeili/meilisearch
+    tag: "v1.11"
+    digest: ""
+  - source: deploy/connector-runtime/connect/Dockerfile
+    line: 35
+    component: eclipse-temurin
+    image: eclipse-temurin
+    tag: "21-jdk"
+    digest: "sha256:8ad118b146aa92da815b576441acd6b42b38236797ad0b6edc8c200b85bb0734"
+  - source: deploy/helm/ontoaxis-app/values.yaml
+    line: 31
+    component: ontoaxis-core
+    image: ghcr.io/ontoaxis/core
+    tag: ""
+    digest: "sha256:7e55f59af53b572be0e41dcb24d820529d3f0b9b730419d8ee9a69451e1f79b8"
+  - source: deploy/helm/ontoaxis-app/values.yaml
+    line: 96
+    component: web
+    image: ghcr.io/ontoaxis/web
+    tag: ""
+    digest: "sha256:a0ed559da443097c2e904f50aa5f76bbdb83298f6ceb0d9b265d90bd6aff68e4"
+  - source: deploy/helm/ontoaxis-app/values.yaml
+    line: 123
+    component: meilisearch
+    image: docker.io/getmeili/meilisearch
+    tag: ""
+    digest: "sha256:4d3af8ce1b917315c9d05a15649047e66120018e3f0bef8da11c0216b27f8940"
+  - source: deploy/helm/ontoaxis-app/values.yaml
+    line: 154
+    component: ontoaxis-search
+    image: ghcr.io/ontoaxis/search-worker
+    tag: ""
+    digest: "sha256:2f4dfcfe647f881892063592065b97045168701e46a80bedaf1bb062545fedbe"
+  - source: deploy/helm/ontoaxis-data/values.yaml
+    line: 30
+    component: kafka
+    image: docker.io/apache/kafka
+    tag: ""
+    digest: "sha256:6e923e447b1c00a2be6f83331a5e3cf1d684b445eb428e1ebe7e4c3ad63ac04b"
+  - source: deploy/helm/ontoaxis-data/values.yaml
+    line: 57
+    component: debezium
+    image: quay.io/debezium/connect
+    tag: ""
+    digest: "sha256:fbbe5bba8fe10db80de38abfe481d8511303432b64ee536f76f8c30683000921"
+  - source: deploy/helm/ontoaxis-data/values.yaml
+    line: 87
+    component: apicurio
+    image: quay.io/apicurio/apicurio-registry
+    tag: ""
+    digest: "sha256:501f4f4208f2a6b3b095721e4ffe9e04d945530eaf081285307cb1293e62b9ce"
+  - source: deploy/helm/ontoaxis-data/values.yaml
+    line: 114
+    component: kestra
+    image: docker.io/kestra/kestra
+    tag: ""
+    digest: "sha256:6d9a89ab3cc93562ea8326457d216e2f89793d45c709f331e2d2975ebfeb9d13"
+  - source: deploy/helm/ontoaxis-data/values.yaml
+    line: 141
+    component: temporal
+    image: docker.io/temporalio/auto-setup
+    tag: ""
+    digest: "sha256:927f928df7b161304f349df32fbc12ba0571288b86d9da3774134abdb23ad598"
+  - source: deploy/helm/ontoaxis-data/values.yaml
+    line: 175
+    component: trino
+    image: docker.io/trinodb/trino
+    tag: ""
+    digest: "sha256:6912bc29e4819090423dcfb5eab8a1176aebb045f64b270acc417c7a6a4fee5e"
+  - source: deploy/helm/ontoaxis-data/values.yaml
+    line: 213
+    component: nessie
+    image: docker.io/projectnessie/nessie
+    tag: ""
+    digest: "sha256:502350d16c4925efaa6433bf37c5f4d15d74da0effb49c2624d4d956103482bf"
+  - source: deploy/helm/ontoaxis-observability/values.yaml
+    line: 30
+    component: otel-collector
+    image: docker.io/otel/opentelemetry-collector-contrib
+    tag: ""
+    digest: "sha256:6690aa92236a4c6ad2b377feb690bfedf663b2407f58c820291d14e774baf825"
+  - source: deploy/helm/ontoaxis-observability/values.yaml
+    line: 107
+    component: prometheus
+    image: docker.io/prom/prometheus
+    tag: ""
+    digest: "sha256:78b274238b8fb0e4d6313cf833fecc591d1c73478e5eb086763ff34b00a48a44"
+  - source: deploy/helm/ontoaxis-observability/values.yaml
+    line: 161
+    component: alertmanager
+    image: docker.io/prom/alertmanager
+    tag: ""
+    digest: "sha256:c5a530f07ce2acef2582b08a536b79ca819b4320e8b5e192134ca72965c3b8d7"
+  - source: deploy/helm/ontoaxis-observability/values.yaml
+    line: 204
+    component: jaeger
+    image: docker.io/jaegertracing/all-in-one
+    tag: ""
+    digest: "sha256:4de4e8d8935ba6d06c145e122a6a5bed431d18e90aea59f8cb492292db7e5270"
+  - source: deploy/helm/ontoaxis-observability/values.yaml
+    line: 237
+    component: perses
+    image: docker.io/persesdev/perses
+    tag: ""
+    digest: "sha256:25dbe180703aa3e1519a37443248c9911c13b80f1bcf5803a63bf9ff43469479"
+  - source: deploy/helm/ontoaxis-platform/values.yaml
+    line: 45
+    component: postgres
+    image: docker.io/library/postgres
+    tag: ""
+    digest: "sha256:c33545010eb5f1b23e8d7a529f5436d93e933b85c999e6d274ce4102dc538106"
+  - source: deploy/helm/ontoaxis-platform/values.yaml
+    line: 88
+    component: keycloak
+    image: quay.io/keycloak/keycloak
+    tag: ""
+    digest: "sha256:4141bb80f2680f54e6d7b012f489875f09668d6f3f02d54258a50d2efb955663"
+  - source: deploy/helm/ontoaxis-platform/values.yaml
+    line: 139
+    component: openfga
+    image: openfga/openfga
+    tag: ""
+    digest: "sha256:da8fd1f33609a4c1564e03f544c6647f3808530c65280f8610d49442c7742473"
+  - source: deploy/helm/ontoaxis-platform/values.yaml
+    line: 196
+    component: valkey
+    image: docker.io/valkey/valkey
+    tag: ""
+    digest: "sha256:ba84b1f8691d7216992433291e42f7c6e60a1fde971da211e66ce5ef821a0690"
+  - source: deploy/helm/ontoaxis-platform/values.yaml
+    line: 221
+    component: seaweedfs
+    image: docker.io/chrislusf/seaweedfs
+    tag: ""
+    digest: "sha256:a2e154a654507f3abdb52d96a9bc650228555bc63afda0a29b45dfa86f7d2ff1"

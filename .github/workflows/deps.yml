@@ -1,0 +1,49 @@
+name: deps
+
+# 依赖版本治理门禁与月度审计。
+# check 离线运行，PR 与主干都会阻塞；audit 需要网络，按月产出报告作为 Stage 证据。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 1 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: deps-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 校验锁文件、latest 禁令、策略覆盖、例外与 renovate 名单
+        run: make deps-check
+
+  audit:
+    name: deps-audit
+    needs: check
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 查询上游最新版本与 EOL
+        run: make deps-audit > deps-audit.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deps-audit
+          path: deps-audit.md
+          retention-days: 180

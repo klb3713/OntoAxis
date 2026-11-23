@@ -1,0 +1,77 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    "docker:pinDigests",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "Asia/Shanghai",
+  "schedule": ["before 10am on monday"],
+  "labels": ["dependencies"],
+  "rangeStrategy": "pin",
+  "separateMajorMinor": true,
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "description": "P0 平台底座（对应 deploy/deps/policy.yaml tier=p0）：只提 PR，人工评审后合并。不要给这里开 automerge —— Kestra 2.0.0 就是 minor 号里的 breaking。",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "postgres",
+        "quay.io/keycloak/keycloak",
+        "trinodb/trino",
+        "kestra/kestra",
+        "apache/kafka",
+        "quay.io/debezium/connect",
+        "quay.io/apicurio/apicurio-registry",
+        "projectnessie/nessie",
+        "valkey/valkey",
+        "chrislusf/seaweedfs",
+        "temporalio/auto-setup",
+        "temporalio/admin-tools",
+        "openfga/openfga",
+        "getmeili/meilisearch",
+        "traefik",
+        "jaegertracing/all-in-one",
+        "prom/prometheus",
+        "prom/alertmanager"
+      ],
+      "automerge": false,
+      "minimumReleaseAge": "7 days",
+      "groupName": "platform-p0"
+    },
+    {
+      "description": "P1 构建链与工具：patch 与 digest 更新可自动合并，minor 仍走 PR 评审。",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "golang",
+        "alpine",
+        "eclipse-temurin",
+        "bufbuild/buf",
+        "otel/opentelemetry-collector-contrib",
+        "persesdev/perses"
+      ],
+      "matchUpdateTypes": ["patch", "digest"],
+      "automerge": true,
+      "groupName": "build-toolchain"
+    },
+    {
+      "description": "Go 模块：只提 PR。升级后必须 make build && make test。",
+      "matchManagers": ["gomod"],
+      "groupName": "go-modules",
+      "automerge": false
+    },
+    {
+      "description": "前端依赖：只提 PR，需 pnpm check && pnpm test && pnpm build。",
+      "matchManagers": ["npm"],
+      "groupName": "web-dependencies",
+      "automerge": false
+    },
+    {
+      "description": "GitHub Actions 固定到 commit SHA（由 helpers:pinGitHubActionDigests 完成）。",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "automerge": false
+    }
+  ]
+}

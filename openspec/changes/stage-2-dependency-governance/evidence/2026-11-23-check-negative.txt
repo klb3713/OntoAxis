@@ -1,0 +1,22 @@
+# deps-check 负向用例（2026-11-23）
+
+两个用例都在临时改动后恢复原状，恢复后 `make deps-check` 退出码为 0。
+
+## 用例 1：把 trino 改回 `:latest`
+
+```
+python3 scripts/deps.py check
+error[E_LOCK_STALE] 锁文件与仓库不一致，请执行 make deps-lock
+error[E_LATEST] deploy/compose/compose.yaml:35 trino 使用 latest
+summary: entries=45 components=29 placeholders=21 errors=2 warnings=31 ratchet=2027-01-31
+make: *** [deps-check] Error 1
+```
+
+## 用例 2：把例外的 expires 改成 2020-01-01
+
+```
+python3 scripts/deps.py check
+error[E_EXCEPTION] 例外 helm-placeholder-digests 已于 2020-01-01 过期（owner: production-delivery）
+summary: entries=45 components=29 placeholders=21 errors=1 warnings=30 ratchet=2027-01-31
+make: *** [deps-check] Error 1
+```

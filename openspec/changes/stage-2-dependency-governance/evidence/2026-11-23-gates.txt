@@ -1,0 +1,25 @@
+# 门禁与破窗修复验证（2026-11-23）
+
+## openspec validate --all --strict
+
+```
+✓ spec/tenancy
+✓ spec/web-core-workbench
+Totals: 20 passed, 0 failed (20 items)
+```
+
+## lock 幂等
+
+```
+$ make deps-lock && cp deploy/deps/lock.yaml /tmp/lock1.yaml && make deps-lock && diff /tmp/lock1.yaml deploy/deps/lock.yaml
+lock-idempotent=yes
+```
+
+## 破窗 grep
+
+```
+$ grep -rn "buf:latest" Makefile
+（无结果）
+$ grep -rn "trino:latest" deploy/ --include=*.yaml
+（无结果；connector-runtime/README.md 的历史描述不在本 change 写权限内，见遗留项）
+```
