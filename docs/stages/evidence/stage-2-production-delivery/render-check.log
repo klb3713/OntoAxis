@@ -1,0 +1,47 @@
+OntoAxis delivery render check
+------------------------------
+helm: v3.16.4+g7877b45
+PASS deterministic render ontoaxis-platform x kind
+PASS kubeconform ontoaxis-platform x kind
+PASS deterministic render ontoaxis-platform x kind-small
+PASS kubeconform ontoaxis-platform x kind-small
+PASS deterministic render ontoaxis-platform x staging-like
+PASS kubeconform ontoaxis-platform x staging-like
+PASS deterministic render ontoaxis-platform x prod-like
+PASS kubeconform ontoaxis-platform x prod-like
+PASS deterministic render ontoaxis-data x kind
+PASS kubeconform ontoaxis-data x kind
+PASS deterministic render ontoaxis-data x kind-small
+PASS kubeconform ontoaxis-data x kind-small
+PASS deterministic render ontoaxis-data x staging-like
+PASS kubeconform ontoaxis-data x staging-like
+PASS deterministic render ontoaxis-data x prod-like
+PASS kubeconform ontoaxis-data x prod-like
+PASS deterministic render ontoaxis-app x kind
+PASS kubeconform ontoaxis-app x kind
+PASS deterministic render ontoaxis-app x kind-small
+PASS kubeconform ontoaxis-app x kind-small
+PASS deterministic render ontoaxis-app x staging-like
+PASS kubeconform ontoaxis-app x staging-like
+PASS deterministic render ontoaxis-app x prod-like
+PASS kubeconform ontoaxis-app x prod-like
+PASS deterministic render ontoaxis-observability x kind
+PASS kubeconform ontoaxis-observability x kind
+PASS deterministic render ontoaxis-observability x kind-small
+PASS kubeconform ontoaxis-observability x kind-small
+PASS deterministic render ontoaxis-observability x staging-like
+PASS kubeconform ontoaxis-observability x staging-like
+PASS deterministic render ontoaxis-observability x prod-like
+PASS kubeconform ontoaxis-observability x prod-like
+PASS deterministic render ontoaxis-jobs x kind
+PASS kubeconform ontoaxis-jobs x kind
+PASS deterministic render ontoaxis-jobs x kind-small
+PASS kubeconform ontoaxis-jobs x kind-small
+PASS deterministic render ontoaxis-jobs x staging-like
+PASS kubeconform ontoaxis-jobs x staging-like
+PASS deterministic render ontoaxis-jobs x prod-like
+PASS kubeconform ontoaxis-jobs x prod-like
+SKIP PyYAML not available for rendered-output parse; using ruby/grep
+PASS yaml (ruby fallback, 20 file(s))
+------------------------------
+RESULT: PASS

@@ -93,9 +93,9 @@ flowchart TB
 门 G2：
 
 - outbox → Meilisearch 对象搜索 E2E 通过，增量更新与全量重建可复现；
-- Helm/ArgoCD 在 kind/k3d 完成部署，探针/PDB/Secret 生效；
+- Helm/ArgoCD 交付资产在本地 kind 完成部署，探针/PDB/Secret 生效（生产级 GitOps 门控移交 Stage 3）；
 - 备份恢复与镜像回滚演练通过；
-- 生产 IdP 使用非本地 OIDC issuer 完成登录与 token 校验；
+- 生产 IdP 不在 Stage 2 范围（移交 `production-idp-staging`）；
 - 所有 Wave 1 服务的 compose/helm 配置可启动。
 
 ### Wave 3 — 集成
@@ -181,15 +181,19 @@ flowchart TB
 
 **实施进度更新（2026-11-23）**：`authorization-openfga-cedar` 已归档；`pipeline-kestra-dbt` 已完成 69/69 并归档（`2026-11-23-pipeline-kestra-dbt`）；其余 5 个 change 仍在途。本地单元/静态证据可用，但真实集群/运行时 E2E（CDC、搜索、kind 交付）尚未闭合，不能据此判定 Stage AC 通过。
 
+**G1 门禁登记（2026-11-24）**：Wave 1 三个 change `connector-runtime`（25/25）、`pipeline-kestra-dbt`（69/69）、`action-temporal`（55/55）均已归档并有真实实例证据，G1 四项条件满足，负责人确认登记为 `pass`，记录见 [`docs/stages/evidence/stage-2-g1-gate-record.md`](evidence/stage-2-g1-gate-record.md)。G1 pass 仅解锁 Wave 2 实施，不等于 Stage 2 退出；G2 仍待搜索 E2E、kind 部署、备份恢复/回滚与非本地 IdP 验证。
+
+**范围收缩（2026-11-24）**：`production-delivery` 已按「交付资产 + 本地 kind 证据」归档（70/70，10 项显式移出、2 项降级接受、4 项 search 交接快速完成）；S2-AC-08 收窄、S2-AC-10 移出 Stage 2。移出项登记到 §12 的 `production-delivery-hardening` 与 `production-idp-staging`，详见 [`evidence/stage-2-production-delivery-archive-review.md`](evidence/stage-2-production-delivery-archive-review.md)。
+
 | change | 任务 | 当前实现边界 |
 | --- | --- | --- |
 | `authorization-openfga-cedar` | 43/43（已归档 2026-11-23） | 核心 authz、策略、9 模块接缝、真实 handler + 真实 OpenFGA 集成、29 条负向矩阵、审计一致性、CI job；见 `openspec/changes/archive/2026-11-23-authorization-openfga-cedar/` |
 | `connector-runtime` | 25/25 | connectors/ingestion runtime、调度/对账、迁移、Compose 资产；真实 CDC E2E 5=5=5、负向 18/18、集成与遥测通过；待归档确认 |
 | `pipeline-kestra-dbt` | 69/69（已归档 2026-11-23） | DAG/Flow/dbt/HTTP adapter（Kestra v2.0.12）、service 编排、迁移/单测；真实发布/触发/输出血缘/失败/重试/负向/遥测 E2E 已通过；见 `openspec/changes/archive/2026-11-23-pipeline-kestra-dbt/`，证据交接 `docs/stages/evidence/stage-2-pipeline-kestra-dbt/` |
 | `action-temporal` | 55/55（已归档 2026-11-23） | 领域/迁移/repo、Temporal adapter/workflow/worker、审批 REST + UI、proto/幂等/审计/授权接缝、span、真实 Temporal 集成测试与门禁；见 `openspec/changes/archive/2026-11-23-action-temporal/` |
-| `object-search-meilisearch` | 32/52 | search 客户端/consumer/rebuild、outbox、search API、app adapter；真实 Meilisearch/Postgres E2E 未闭合 |
-| `production-delivery` | 29/66 | Helm/ArgoCD/kind/脚本静态资产与语法校验；helm/kind/ArgoCD/备份/回滚/IdP 全部未执行 |
-| `stage-2-integration` | 22/52 | `internal/app`/`cmd` 运行时装配、fail-fast 组合测试、go mod tidy、基础 Compose + OpenFGA 冒烟与重复性完成；Gate G2/kind/全链路 E2E/质量门未闭合 |
+| `object-search-meilisearch` | 51/52 | search 客户端/consumer/rebuild、outbox、search API、app adapter；真实 Meilisearch/Postgres 集成与隔离 E2E 通过；仅剩 8.4 由 `stage-2-integration` 收录 |
+| `production-delivery` | 70/70（**已按收缩范围归档 2026-11-24**） | Helm/ArgoCD 资产、kind 部署、探针/PDB/Secret、备份恢复 L1–L5、两轮真实回滚、本地 IdP 证据；生产级验证移交 `production-delivery-hardening` 与 `production-idp-staging` |
+| `stage-2-integration` | 23/56 | `internal/app`/`cmd` 运行时装配、fail-fast 组合测试、go mod tidy、基础 Compose + OpenFGA 冒烟与重复性完成；Gate G2/kind/全链路 E2E/质量门未闭合 |
 
 ## 11. 依赖治理移交台账（2026-11-23）
 
@@ -217,3 +221,5 @@ flowchart TB
 | change | 内容 | 当前状态 | 归属与前置 | 与 Stage 2 的关系 |
 | --- | --- | --- | --- | --- |
 | `jaeger-v2` | Jaeger v1→v2 迁移：镜像、配置、端口契约、smoke 断言 | 规划完成，0/10 任务，未授权实施 | 待 Stage 3 立项或独立授权；目录 `deploy/compose/`、`deploy/helm/ontoaxis-observability/` 归 `production-delivery` | Stage 2 的 6.1 先钉 v1 真实 digest 并记录 EOL；v2 迁移不在 Stage 2 退出判据内 |
+| `production-delivery-hardening` | GitOps wave 健康门控、真实 `--sync` 回滚、离线完整 bootstrap、verify 正常退出、k3d、烟测全绿、CI runner、完整证据链、多副本探针/PDB | 规划待建（承接 PD 移出项） | Stage 3 候选；owner 待定；目录 `deploy/kind/`、`scripts/delivery-*`、`.github/workflows/` | 不属于 Stage 2；不阻塞 Stage 2 退出 |
+| `production-idp-staging` | 非 localhost TLS fallback + 真实 staging IdP 登录/JWKS/claims 与安全复评（S2-AC-10） | 规划待建（承接 8.6 与 AC-10） | Stage 3 候选；owner 待定；目录 `deploy/kind/tls/`、`deploy/values/staging-like.yaml`、`scripts/delivery-idp-check.sh` | AC-10 已移出 Stage 2；本 change 不在 Stage 2 退出判据内 |

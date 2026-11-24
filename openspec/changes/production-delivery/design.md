@@ -241,3 +241,11 @@ scripts/delivery-*.sh     # 烟测、晋升、回滚、备份/恢复、证据、
 3. web 是否改为运行期配置注入（消除每环境构建）？——属于前端行为变更，留给后续 change。
 4. 对象存储/Meilisearch 备份是否纳入 Stage 3？——当前明确标 residual risk。
 5. 真实外部 secret provider（Vault / AWS Secrets Manager）选择——Stage 2 不连接；实现前需安全与平台团队确认。
+
+## 2026-11-24 范围收缩决定（负责人批准）
+
+- S2-AC-08 收窄为「交付资产 + 本地 kind 证据」，本 change 按该口径归档；生产级 GitOps 门控、k3d、CI runner、完整烟测链移交 `production-delivery-hardening`。
+- S2-AC-10 移出 Stage 2，移交 `production-idp-staging`（Stage 3）；本地合成 IdP 的 8.3/8.4/8.5 仅作技术证据，不作为 AC 通过依据。
+- 5.4/5.8/6.3/6.4/6.5/9.1/9.4/9.5/9.7 标记移出并保留原因；3.3/3.4 降级接受并记录 residual risk（单副本 Recreate）。
+- 11.x search 交付项在归档前快速完成并回填 object-search-meilisearch 7.5/7.6。
+- delta spec 已删除未实现场景（wave 健康门控、k3d 一致性、滚动 PDB、烟测全绿、staging IdP 整组），避免归档后主 spec 固化未实现行为。

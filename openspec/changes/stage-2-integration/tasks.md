@@ -86,6 +86,16 @@
 - [ ] 10.2 确认未自动执行动作：`openspec list` 仍显示本 change 在途、未被归档；Stage 2 brief 状态仍为 `in_progress`（未改为 exited）；未 commit/push 未经确认的内容。验证：命令输出入库。
 - [ ] 10.3 记录残余风险与未决项：把 open questions、未覆盖场景、带 caveat 的 AC 写入报告第 8 节。验证：报告与 traceability 的风险条目一致。
 
+## 11. 接收自 object-search-meilisearch 的交接项（2026-11-24）
+
+来源：`openspec/changes/object-search-meilisearch/handoff/stage-2-integration.md`（证据源文件已备，`docs/stages/evidence/` 归本 change 收录）。本 change 2.7 已完成 object-search 的合并；以下为证据收口与边界声明。
+
+- [ ] 11.1 收录证据源文件到 `docs/stages/evidence/`（清单见交接文件 §1）：集成记录、隔离验证（后端 12 项 / 原生 HTTP 68/68 / 隔离 Compose E2E 73/73）、CI 同参本地日志、手册复现记录；按 AC 组织并写索引。验证：索引内每个路径真实存在，抽查可复跑。回填 object-search-meilisearch 8.4。
+- [ ] 11.2 回填 object-search-meilisearch 8.2 的 GitHub Actions `search-integration` run 链接（本机无 runner，本地同参 exit 0、0 SKIP）。验证：CI job 绿并记录 run URL。
+- [ ] 11.3 记录 object-search 9.1/9.2/9.3 评审签字（评审人 klb3713，2026-11-24）到 Stage 证据索引，附各材料 §4/§5/§6 链接。
+- [ ] 11.4 证据边界声明：明确区分“隔离本地 + 合成数据验证”与“CI/生产验收”，不得把本地通过写成 CI 或生产通过；业务质量阈值仍 `pending-owner-signoff`。
+- 关联既有项：本 change 5.4（Wave 1/2 运行时 profile 含 Meilisearch）、7.2（E2E-04 outbox→Meilisearch→搜索/重建）可复用上述证据。
+
 ## Workflow follow-up
 
 - 本 change 的归档需在评审通过、证据可复核、traceability 一致、`openspec validate --all --strict` 通过后，单独获得授权再执行；不在本 change 的 tracked task 内自动完成。

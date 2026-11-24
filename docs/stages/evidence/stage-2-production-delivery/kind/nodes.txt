@@ -1,0 +1,51 @@
+NAME                          STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION     CONTAINER-RUNTIME
+ontoaxis-kind-control-plane   Ready    control-plane   71m   v1.32.0   172.20.0.2    <none>        Debian GNU/Linux 12 (bookworm)   6.12.72-linuxkit   containerd://1.7.24
+ontoaxis-kind-worker          Ready    <none>          71m   v1.32.0   172.20.0.4    <none>        Debian GNU/Linux 12 (bookworm)   6.12.72-linuxkit   containerd://1.7.24
+ontoaxis-kind-worker2         Ready    <none>          71m   v1.32.0   172.20.0.3    <none>        Debian GNU/Linux 12 (bookworm)   6.12.72-linuxkit   containerd://1.7.24
+argocd                 argocd-application-controller-0                       1/1   Running            0     70m
+argocd                 argocd-applicationset-controller-67666c5649-5t4hw     1/1   Running            0     70m
+argocd                 argocd-dex-server-5bcc8dc775-ffvvp                    1/1   Running            0     70m
+argocd                 argocd-notifications-controller-688cc985d-rrmrk       1/1   Running            0     70m
+argocd                 argocd-redis-75bd8bc56-t8v6b                          1/1   Running            0     70m
+argocd                 argocd-repo-server-594fbd758-xbc7m                    1/1   Running            0     70m
+argocd                 argocd-server-64bb4b4f69-w6zsn                        1/1   Running            0     70m
+envoy-gateway-system   envoy-gateway-8455b6767c-d9w7q                        1/1   Running            0     62m
+envoy-gateway-system   envoy-oa-system-oa-edge-06313739-6d6b44d66b-fzpk6     2/2   Running            0     26m
+external-secrets       external-secrets-7cdf9fc954-zdgkl                     1/1   Running            0     65m
+external-secrets       external-secrets-cert-controller-5cf89f74c7-5c7g9     1/1   Running            0     65m
+external-secrets       external-secrets-webhook-775db5f9cf-7rgfh             1/1   Running            0     65m
+kube-system            coredns-668d6bf9bc-296cj                              1/1   Running            0     71m
+kube-system            coredns-668d6bf9bc-6f65l                              1/1   Running            0     71m
+kube-system            etcd-ontoaxis-kind-control-plane                      1/1   Running            0     71m
+kube-system            kindnet-kbc2x                                         1/1   Running            0     71m
+kube-system            kindnet-qlxfm                                         1/1   Running            0     71m
+kube-system            kindnet-xg2zt                                         1/1   Running            0     71m
+kube-system            kube-apiserver-ontoaxis-kind-control-plane            1/1   Running            0     71m
+kube-system            kube-controller-manager-ontoaxis-kind-control-plane   1/1   Running            0     71m
+kube-system            kube-proxy-b5ptt                                      1/1   Running            0     71m
+kube-system            kube-proxy-wlqgv                                      1/1   Running            0     71m
+kube-system            kube-proxy-znf87                                      1/1   Running            0     71m
+kube-system            kube-scheduler-ontoaxis-kind-control-plane            1/1   Running            0     71m
+local-path-storage     local-path-provisioner-58cc7856b6-c4svn               1/1   Running            0     71m
+oa-app                 meilisearch-79c4775d55-678sr                          1/1   Running            0     56m
+oa-app                 ontoaxis-core-7cf6979cf6-xltft                        1/1   Running            0     3m51s
+oa-app                 ontoaxis-search-5455b4799-94h6j                       1/1   Running            0     40m
+oa-app                 web-8458f7ff6-g4954                                   1/1   Running            0     60m
+oa-data                apicurio-694578fc5c-f76hd                             0/1   ErrImagePull       0     60m
+oa-data                debezium-6fbb948f88-kvz9q                             0/1   ImagePullBackOff   0     60m
+oa-data                kafka-7d8dd66d9f-bdld9                                0/1   ImagePullBackOff   0     60m
+oa-data                kestra-65f56c4868-qfkvt                               0/1   ImagePullBackOff   0     60m
+oa-data                nessie-7fc9f75768-vc8bq                               0/1   ErrImagePull       0     60m
+oa-data                ontoaxis-backup-manual-mht8q                          0/1   Completed          0     13m
+oa-data                postgres-7449557bf-qjbhh                              1/1   Running            0     56m
+oa-data                temporal-86db4c45-kgjv6                               0/1   ImagePullBackOff   0     60m
+oa-data                trino-5c586854dd-k5vj9                                0/1   ImagePullBackOff   0     60m
+oa-observability       alertmanager-5f67778cc6-bdlpw                         0/1   ImagePullBackOff   0     60m
+oa-observability       jaeger-576b774fc4-xbzxd                               0/1   ImagePullBackOff   0     60m
+oa-observability       otel-collector-644bf659c8-nljwz                       0/1   ImagePullBackOff   0     60m
+oa-observability       perses-5855fcb9d-7qscc                                0/1   ImagePullBackOff   0     60m
+oa-observability       prometheus-5756559df5-zwml2                           0/1   ImagePullBackOff   0     60m
+oa-system              keycloak-68f96ff4b7-fz6q8                             1/1   Running            0     34m
+oa-system              openfga-7cdff44d4b-2fqwd                              0/1   Running            0     32m
+oa-system              openfga-85cbc89b59-2nbw7                              1/1   Running            0     42m
+oa-system              openfga-migrate-zx6jk                                 0/1   Completed          0     45m

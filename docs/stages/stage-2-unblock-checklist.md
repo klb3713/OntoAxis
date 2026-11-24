@@ -10,7 +10,7 @@
 | --- | --- | --- | --- | --- |
 | D-03 | `connector-runtime` | source/sink task `RUNNING`、topic 有 snapshot 记录，但 sink lag 不降、Iceberg `snapshots: []`，job 停在 `running` | 代码（路由/提交）+ 校验器缺失 | **已关闭（2026-11-23）**：源行数 = sink 行数 = Trino 查询行数（5=5=5）；job `succeeded`；5.3/6.1–6.4 已勾选 |
 | D-04 | `object-search-meilisearch` | client/consumer/rebuild/worker 已在仓库，但 base compose 无 `search` profile、E2E 脚本与 CI job 缺失 | 配置合并 + 测试/证据 | 对象增删改后搜索结果一致；重建可复现；7.5/8.1–8.4 勾选 |
-| D-05 | `production-delivery` | kind 集群与 ArgoCD 已存在，root app 因 repoURL 占位报 `authentication required`；镜像 digest 落后 3 个提交 | 环境（GitOps 仓库）+ 镜像 | Helm/ArgoCD 部署 Synced/Healthy，探针/PDB/备份恢复/回滚/IdP 演练全部有证据 |
+| D-05 | `production-delivery` | kind 集群与 ArgoCD 已存在，root app 因 repoURL 占位报 `authentication required`；镜像 digest 落后 3 个提交 | 环境（GitOps 仓库）+ 镜像 | **已关闭（2026-11-24，收缩范围）**：独立演练集群 9 应用 Synced/Healthy、探针/PDB/备份恢复 L1–L5、两轮回滚有证据；生产级 GitOps/k3d/CI/真实 IdP 移交 `production-delivery-hardening`、`production-idp-staging`，见 `evidence/stage-2-production-delivery-archive-review.md` |
 | D-07 | 跨 change（`connector-runtime` / `pipeline-kestra-dbt`） | Kafka Connect 与 Kestra 的 host 端口默认值都是 **18086**，两个 profile 无法同时起栈 | 配置（端口冲突） | 端口改到互不冲突值，`services-and-ports.md` 登记，两个 profile 同栈起停通过 |
 
 ## 0.1 已核实的现场（2026-11-23 13:00 左右，只读检查）

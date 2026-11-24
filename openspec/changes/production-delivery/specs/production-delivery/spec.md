@@ -73,11 +73,6 @@
 - **WHEN** 在集群中手工修改 Deployment 或 ConfigMap
 - **THEN** Application 变为 OutOfSync，self-heal 恢复期望状态并记录漂移事件
 
-#### Scenario: wave 顺序阻止并发启动
-
-- **WHEN** platform wave 尚未 Ready
-- **THEN** data/app wave 的应用保持等待，不同时启动依赖未就绪的服务
-
 #### Scenario: 同步失败呈现 Degraded
 
 - **WHEN** 部署因就绪超时或清单错误无法完成
@@ -88,9 +83,9 @@
 - **WHEN** prod-like 环境出现新的提交
 - **THEN** Application 保持 OutOfSync 直到执行显式 sync，自动同步不生效
 
-### Requirement: kind/k3d 可重复安装与诊断
+### Requirement: kind 可重复安装与诊断
 
-系统 SHALL 提供 kind 与 k3d 的一键安装/卸载脚本：创建集群（kind 至少 1 control-plane + 2 workers）、本地镜像仓库、安装 Envoy Gateway 与 ArgoCD、加载镜像并部署全部 chart；安装 MUST 幂等，MUST 在就绪超时后失败并输出事件/describe 诊断；MUST 复用 `deploy/edge` 与 `deploy/observability` 的既有资产，不重复维护路由与告警真源。
+系统 SHALL 提供 kind 的一键安装/卸载脚本：创建集群（至少 1 control-plane + 2 workers）、本地镜像仓库、安装 Envoy Gateway 与 ArgoCD、加载镜像并部署全部 chart；安装 MUST 幂等，MUST 在就绪超时后失败并输出事件/describe 诊断；MUST 复用 `deploy/edge` 与 `deploy/observability` 的既有资产，不重复维护路由与告警真源。
 
 #### Scenario: 干净集群一键安装
 
@@ -112,14 +107,9 @@
 - **WHEN** 执行卸载脚本
 - **THEN** 命名空间、ArgoCD 应用与本地 registry 被清理，主机无残留端口占用
 
-#### Scenario: kind 与 k3d 结果一致
-
-- **WHEN** 分别用 kind 与 k3d 部署同一 digest
-- **THEN** 交付烟测的检查项与结果一致，证据标注实际集群类型
-
 ### Requirement: 探针、资源与 PDB
 
-系统 SHALL 为长期运行组件配置 startup/readiness/liveness 探针（HTTP 组件使用 `/healthz` 与 `/readyz`，MUST NOT 用 `/metrics` 作为存活探针），MUST 设置 requests/limits 与优雅终止（terminationGracePeriodSeconds、preStop），MUST 为关键无状态组件配置 PDB 并保证滚动更新遵守 PDB；就绪失败 MUST 摘除流量但不触发重启。
+系统 SHALL 为长期运行组件配置 startup/readiness/liveness 探针（HTTP 组件使用 `/healthz` 与 `/readyz`，MUST NOT 用 `/metrics` 作为存活探针），MUST 设置 requests/limits 与优雅终止（terminationGracePeriodSeconds、preStop），MUST 为关键无状态组件配置 PDB 并保证 PDB 阻止不满足条件的驱逐；就绪失败 MUST 摘除流量但不触发重启。
 
 #### Scenario: 存活与就绪语义分离
 
@@ -130,11 +120,6 @@
 
 - **WHEN** 对受 PDB 保护的节点执行 drain，可用副本将低于 minAvailable
 - **THEN** 驱逐被拒绝或阻塞，PDB 状态与事件可复核
-
-#### Scenario: 滚动更新遵守 PDB
-
-- **WHEN** 触发一次滚动更新
-- **THEN** 更新期间可用副本不低于 PDB 要求，且更新最终完成
 
 #### Scenario: 资源超限可观察
 
@@ -257,48 +242,9 @@
 - **WHEN** 检查 release manifest 与运行中 Pod 的镜像
 - **THEN** 两者 digest 一致；不一致时烟测失败并报告漂移
 
-### Requirement: 预发 IdP 配置与 claims 映射
-
-系统 SHALL 使用非本地（非 Compose 内置 Keycloak）的 OIDC issuer 完成登录与 token 验证；MUST 校验 issuer、audience、JWKS 签名、exp/nbf，并验证 claims 映射（tenant-id、org-ids、workspace-ids、realm-roles）；非法 audience/issuer/过期/坏签名 token MUST 以 401/403 fail-closed；JWKS 轮换 MUST 不停机；配置 MUST 来自外部密钥与非敏感配置，禁止提交生产密钥或真实用户口令。
-
-#### Scenario: staging issuer 登录成功
-
-- **WHEN** 受控预发测试用户通过 staging issuer 登录
-- **THEN** 登录成功，token 被 core 接受，tenant-id、org-ids、workspace-ids、realm-roles 映射到预期身份上下文
-
-#### Scenario: audience 或 issuer 不匹配
-
-- **WHEN** 使用错误 audience 或来自其他 issuer 的 token
-- **THEN** 请求返回 401，且不建立任何身份上下文
-
-#### Scenario: 过期或坏签名 token
-
-- **WHEN** 使用过期 token 或签名校验失败的 token
-- **THEN** 返回 401，且不产生部分授权或降级放行
-
-#### Scenario: JWKS 轮换不停机
-
-- **WHEN** IdP 轮换签名密钥（新 kid）
-- **THEN** 新 token 被接受，有效期内旧 token 按既有缓存策略可用，服务无需重启
-
-#### Scenario: 本地 Compose Keycloak 不作为证据
-
-- **WHEN** 交付烟测运行在本地 Compose Keycloak 环境
-- **THEN** 结果中 S2-AC-10 标记为 `not passed`，不产生该 AC 的通过证据
-
-#### Scenario: 配置不含密钥值
-
-- **WHEN** 检查 staging IdP 相关 values 与 Secret 引用
-- **THEN** 只出现 issuer/audience/key 名称等非敏感字段与外部密钥引用
-
 ### Requirement: 交付烟测与失败证据
 
 系统 SHALL 提供交付烟测脚本，检查 edge 200、core ready、IdP discovery、ArgoCD 应用 Synced/Healthy、探针/PDB/Secret 生效、最近备份与回滚标记、运行镜像 digest 一致；输出 MUST 含环境、digest、时间与逐项结果，非零退出表示失败；失败 MUST 采集脱敏事件/describe/日志并作为证据；未执行项 MUST 标记 `not passed`。
-
-#### Scenario: 全绿产出可归档结果
-
-- **WHEN** 在部署成功的环境执行烟测
-- **THEN** 退出码为 0，输出包含环境、digest、时间与逐项 pass 结果
 
 #### Scenario: 注入失败后非零退出
 

@@ -1,0 +1,6 @@
+[1;34m[01:27:45][0m discovery: http://127.0.0.1:18083/realms/ontoaxis/.well-known/openid-configuration
+PASS discovery issuer/endpoints/alg consistent
+[1;34m[01:27:45][0m jwks: http://127.0.0.1:18083/realms/ontoaxis/protocol/openid-connect/certs
+PASS JWKS has keys with kid
+PASS test token accepted by core read-only API (HTTP 200)
+idp-check: 3 passed, 0 failed

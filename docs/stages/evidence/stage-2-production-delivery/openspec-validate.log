@@ -1,0 +1,21 @@
+✓ spec/actions
+✓ spec/authorization
+✓ spec/connectors
+✓ spec/dataset-catalog
+✓ spec/dependency-governance
+✓ spec/edge-gateway
+✓ spec/identity-edge
+✓ spec/ingestion
+✓ change/jaeger-v2
+✓ change/object-search-meilisearch
+✓ spec/objects
+✓ spec/observability
+✓ spec/ontology-metadata
+✓ spec/pipelines
+✓ change/production-delivery
+✓ spec/query-surface
+✓ change/stage-2-integration
+  ℹ [INFO] file: skip_specs is set in .openspec.yaml: change declares no spec-level behavior changes, zero deltas accepted
+✓ spec/tenancy
+✓ spec/web-core-workbench
+Totals: 19 passed, 0 failed (19 items)

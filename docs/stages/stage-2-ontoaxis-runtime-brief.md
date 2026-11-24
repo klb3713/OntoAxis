@@ -62,9 +62,9 @@ Stage 2 不再扩展业务模块或页面数量，而是把以下三类仍为占
 | S2-AC-05 | Pipeline 通过真实 Kestra + dbt 执行：发布 Flow、运行、状态回写、失败重试与 Dataset 输出均可验证 |
 | S2-AC-06 | Connector 真实同步：Kafka Connect/Debezium CDC 至少一条链路，最终生成 Dataset 并可查询；Meltano 不在 Stage 2 验收范围 |
 | S2-AC-07 | Meilisearch 对象搜索：outbox 驱动索引更新，对象新增/修改/删除后搜索结果一致；支持全量重建 |
-| S2-AC-08 | 生产交付：kind/k3d 通过 Helm + ArgoCD 部署；探针/PDB/Secret 生效；备份恢复与镜像回滚演练通过 |
+| S2-AC-08 | 生产交付资产与本地 kind 证据：Helm chart + ArgoCD 资产可渲染/同步；探针/PDB/Secret 配置生效；备份恢复与镜像回滚在本地 kind/演练集群演练通过（生产级 GitOps/k3d/CI 验证移交 Stage 3） |
 | S2-AC-09 | 可观测性：edge/core/worker 的 trace 贯通；关键指标、SLO 面板、告警规则和负载基线可复现 |
-| S2-AC-10 | 生产 IdP：使用非本地 Keycloak 的 OIDC issuer/JWKS/claims 映射完成登录与 token 校验；不提交生产密钥 |
+| S2-AC-10 | 生产 IdP（**已移出 Stage 2**，Stage 3 候选）：使用非本地 OIDC issuer/JWKS/claims 映射完成登录与 token 校验；不提交生产密钥。由 `production-idp-staging` 承接 |
 | S2-AC-11 | Stage 2 证据与报告完成：全部 change 归档、`openspec validate --all --strict` 通过、CI 全绿、Stage 退出获负责人确认 |
 
 ## 5. Change 清单
@@ -78,7 +78,7 @@ Stage 2 不再扩展业务模块或页面数量，而是把以下三类仍为占
 | `pipeline-kestra-dbt` | 能力 | Kestra Flow、dbt 项目、运行状态回写 | `internal/modules/pipelines` | `edge-gateway` | Wave 1 |
 | `action-temporal` | 能力 | Temporal workflow/activity、重试/补偿、审批 | `internal/modules/actions` | `edge-gateway`、`authorization-openfga-cedar` | Wave 1 |
 | `object-search-meilisearch` | 能力 | 对象搜索：outbox 索引消费者、Meilisearch 搜索与重建 | `internal/modules/objects`、`internal/platform/search` | `runtime-observability` | Wave 2 |
-| `production-delivery` | Stage 支撑 | Helm/ArgoCD、Secret/PDB、备份恢复、回滚、生产 IdP 验证 | `deploy/`、`config/` | 所有 Wave 1 | Wave 2 |
+| `production-delivery` | Stage 支撑 | Helm/ArgoCD 资产、Secret/PDB、备份恢复、回滚、本地产 IdP 证据（生产 IdP 移出）；已按收缩范围归档 2026-11-24 | `deploy/`、`config/` | 所有 Wave 1 | Wave 2 |
 | `stage-2-integration` | Stage 支撑 | 全栈 E2E、跨模块修复、证据与 Stage 报告 | `cmd`、`internal/app`、`deploy/` | 所有 change | Wave 3 |
 | `stage-2-dependency-governance` | Stage 支撑 | 依赖清单、锁文件门禁、Renovate 分级、月度审计 | `deploy/deps`、`scripts/deps.*`、`.github/workflows/deps.yml` | Stage 1 | Wave 0 |
 
@@ -126,7 +126,7 @@ Stage 2 不再扩展业务模块或页面数量，而是把以下三类仍为占
 1. 所有必需 change 已归档，Stage AC 全部有证据或明确标记未覆盖；
 2. `openspec validate --all --strict` 通过；
 3. `go build ./...`、`go test ./...`、前端 check/build/test、Playwright、`buf lint`/`breaking`、CI 全绿；
-4. Compose 与 kind/k3d 均能启动并按 Stage 2 AC 完成 E2E；
+4. Compose 与 kind 均能启动并按 Stage 2 AC 完成 E2E（k3d 与生产 IdP 不在 Stage 2 退出判据）；
 5. Stage 2 报告、架构文档同步、风险与遗留项记录完成；
 6. 依赖基线可复核：`make deps-check` 通过，最近一次 `make deps-audit` 报告已归档，无过期例外；
 7. 负责人确认 Stage 2 退出；不自动批准、不自动归档、不自动宣布完成。
@@ -137,7 +137,7 @@ Stage 2 不再扩展业务模块或页面数量，而是把以下三类仍为占
 2. **授权**：自托管 OpenFGA + PostgreSQL 负责关系授权；Cedar 负责动作/属性策略；两者边界明确、fail-closed，不重复检查。
 3. **Connector**：Stage 2 只做 Kafka Connect/Debezium CDC；Meltano 后移到 Stage 3。
 4. **Meilisearch**：保留在 Stage 2，但仅做对象搜索；排在 Wave 2，与生产交付并行。
-5. **生产交付**：Stage 2 只在 kind/k3d 与预发环境验证，不接触真实云账号、生产密钥或真实客户数据。
+5. **生产交付**：Stage 2 只在 kind 与本地受控环境验证交付资产，不接触真实云账号、生产密钥或真实客户数据；生产级 GitOps 门控、k3d、CI runner 与真实 staging IdP 后移 Stage 3。
 
 ## 10. 关联文档
 

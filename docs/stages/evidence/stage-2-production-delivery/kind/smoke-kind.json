@@ -1,0 +1,38 @@
+{
+  "env": "kind",
+  "passed": false,
+  "checks": [
+    {
+      "name": "edge-port-forward",
+      "ok": true,
+      "detail": "svc/envoy-oa-system-oa-edge-06313739 (envoy-gateway-system) -> 127.0.0.1:18088"
+    },
+    {
+      "name": "core-healthz",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "core-readyz",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "read-only-api",
+      "ok": true,
+      "detail": "HTTP 401 (auth enforced; set ONTOAXIS_SMOKE_TOKEN to assert 200)"
+    },
+    {
+      "name": "web-root",
+      "ok": false,
+      "detail": "HTTP 404 (want 200)"
+    },
+    {
+      "name": "search-path",
+      "ok": true,
+      "detail": "HTTP 404 (expected one of 404,503)"
+    }
+  ],
+  "started_at": "2026-11-23T17:27:36Z",
+  "finished_at": "2026-11-23T17:27:36Z"
+}

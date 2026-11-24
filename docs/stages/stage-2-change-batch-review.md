@@ -40,3 +40,9 @@ Stage：Stage 2（`in_progress`，2026-11-22 批准）<br>
 4. 最后审 `stage-2-integration` 的装配顺序、共享文件所有权与 E2E 矩阵。
 
 > 本评审包只汇总规划状态；批准某个 change 后才可按其 tasks 实施。Stage 2 退出仍需全部 change 归档、AC 证据与负责人确认。
+
+## 5. 变更记录（2026-11-24，负责人批准）
+
+- `production-delivery` 按收缩范围归档：S2-AC-08 收窄为「交付资产 + 本地 kind 证据」；S2-AC-10 移出 Stage 2，移交 `production-idp-staging`；5.4/5.8/6.3/6.4/6.5/9.1/9.4/9.5/9.7 移出到 `production-delivery-hardening`；3.3/3.4 降级接受并记录 residual risk。
+- 11.1–11.4 search 交付项在归档前完成并回填 `object-search-meilisearch` 7.5/7.6。
+- 决定记录：`docs/stages/evidence/stage-2-production-delivery-archive-review.md`；计划：`docs/stages/stage-2-production-delivery-rescope-plan.md`。

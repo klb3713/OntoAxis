@@ -1,0 +1,19 @@
+FAIL ontoaxis-platform: digest is placeholder (all zeros) — must be replaced
+FAIL ontoaxis-platform: commit not set
+FAIL ontoaxis-data: digest is placeholder (all zeros) — must be replaced
+FAIL ontoaxis-data: commit not set
+FAIL ontoaxis-edge: digest is placeholder (all zeros) — must be replaced
+FAIL ontoaxis-edge: commit not set
+FAIL ontoaxis-observability: digest is placeholder (all zeros) — must be replaced
+FAIL ontoaxis-observability: commit not set
+FAIL ontoaxis-jobs: digest is placeholder (all zeros) — must be replaced
+FAIL ontoaxis-jobs: commit not set
+PASS field-check ontoaxis-platform
+PASS field-check ontoaxis-data
+PASS field-check ontoaxis-core
+PASS field-check ontoaxis-web
+PASS field-check ontoaxis-edge
+PASS field-check ontoaxis-observability
+PASS field-check ontoaxis-jobs
+
+release check FAILED for env='kind'

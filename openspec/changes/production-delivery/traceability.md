@@ -1,61 +1,53 @@
 # Traceability: production-delivery
 
+> 2026-11-24 收缩范围后重写（负责人批准）。本 change 以「交付资产 + 本地 kind 证据」归档；生产级 GitOps 门控、k3d、CI runner 与真实 staging IdP 移交 Stage 3 的后续 change。
+
 ## Stage 2 AC 映射
 
-| Stage AC | 验收要求 | 本 change 覆盖 | 证据（planned/actual） |
+| Stage AC | 验收要求（Stage 2 收缩后口径） | 本 change 覆盖 | 证据与结论 |
 |---|---|---|---|
-| S2-AC-08 | 以 Helm chart + ArgoCD 在 kind/k3d 完成生产化部署：probes/resources/PDB 与 Secret 注入生效，备份/恢复与镜像回滚演练通过 | 全部 12 个 ADDED requirements；重点为 Helm 渲染与摘要、ArgoCD 同步、kind/k3d 安装、探针/资源/PDB、密钥注入、备份/恢复、镜像回滚、交付烟测 | planned：`docs/stages/evidence/stage-2-production-delivery.md`（kind 安装/部署/烟测、probes/PDB/Secret 生效、备份恢复演练、回滚演练、ArgoCD Synced/Healthy）；`deploy/releases/kind.yaml`；`docs/stages/evidence/logs/production-delivery/`；CI `delivery-static` run |
-| S2-AC-10 | 使用非本地 Keycloak OIDC issuer/JWKS/claims 映射完成登录与 Token 验证，且不提交生产密钥 | `预发 IdP 配置与 claims 映射`、`仓库零明文密钥`、`受控环境与安全边界` requirements；staging-like values + `scripts/delivery-idp-check.sh` | planned：staging issuer discovery/登录/claim 映射证据、负向 401 用例、JWKS 轮换记录、安全评审记录、gitleaks 与 secret scan 结果；外部 IdP 不可用时以 fallback 标记 `partial` |
-| S2-AC-11（协作） | Stage 2 证据与报告完成：全部 change 归档、`openspec validate --all --strict` 通过、CI 全绿、Stage 退出获负责人确认 | 本 change 提供证据源文件、CI run 与 `docs/operations/delivery-runbook.md`（ARCHITECTURE §14.7 部署 runbook 要求），由 `stage-2-integration` 汇总 | planned：`docs/stages/evidence/stage-2-production-delivery.md`、CI `delivery-static` run 链接、validate 输出、G2 门禁索引 |
+| S2-AC-08 | 生产交付资产与本地 kind 证据：Helm chart + ArgoCD 资产可渲染/同步；探针/PDB/Secret 配置生效；备份恢复与镜像回滚在本地 kind/演练集群有可复核证据 | Helm 渲染与摘要固定、受控晋升、ArgoCD Synced/Healthy 与漂移自愈、kind 安装与诊断、探针/资源/PDB、密钥注入与轮换、备份恢复 L1–L5、镜像回滚演练、交付烟测失败语义、受控环境边界 | **pass（scope reduced，2026-11-24）**：`docs/stages/evidence/stage-2-production-delivery-kind.md`（3.1 探针、3.2 OOMKilled、3.4 PDB 429、7.1 备份、7.2 恢复、7.4 RPO/RTO、6.7 port-forward 烟测）、`docs/stages/evidence/stage-2-production-delivery.md` §17–§21（GitOps 9 应用全 Synced/Healthy、漂移 45s 自愈、5.9 两轮真实回滚、4.6 轮换、D-PD-13/16 修复）、`dist/delivery/gitops-5/`、`dist/delivery/drill-5.9a|b/`、`dist/delivery/restore-l5.log`、`dist/gates/*.log`。**限制**：单副本 Recreate 的 6 次连接中断、多副本 PDB/滚动验证、k3d、CI runner 不在本口径内。 |
+| S2-AC-10 | 生产 IdP（非本地 OIDC issuer/JWKS/claims 映射完成登录与 token 校验，不提交生产密钥） | 已拆分到 Stage 3 的 `production-idp-staging` change；本 change 只保留本地合成 IdP 与负向/轮换证据，不作为 AC 通过依据 | **not covered（deferred，2026-11-24）**：8.3 本地合成 Keycloak 3 passed、8.4 六项负向全 401、8.5 JWKS 轮换新老 token 200、8.7 安全评审条件通过（`docs/stages/evidence/stage-2-idp-security-review.md`）。因 issuer 为本地/非 TLS fallback，按 Stage 2 收缩决定 **AC-10 移出 Stage 2**，由 `production-idp-staging` 在 Stage 3 验收。 |
+| S2-AC-11（协作） | Stage 2 证据与报告完成：全部 change 归档、`openspec validate --all --strict` 通过、CI 全绿、Stage 退出获负责人确认 | 本 change 提供证据源文件、工作流定义与 runbook | **partial（2026-11-24）**：证据源与 `docs/operations/delivery-runbook.md` 齐全；`openspec validate --all --strict` 19 passed 0 failed；`delivery-static`/`delivery-kind` workflow 已定义但未在 runner 运行（移交 `production-delivery-hardening`）。G2/Stage 退出由 `stage-2-integration` 汇总。 |
 
-说明：S2-AC-08/AC-10 的通过结论由 Stage 2 退出评审依据本 change 证据与 G2 门禁判定；本 change 只提供契约、资产与证据，不自行宣布 AC 通过。
+说明：AC 口径的收缩属 Stage 范围变更，已由负责人于 2026-11-24 批准并记录在 `docs/stages/evidence/stage-2-production-delivery-archive-review.md`。
 
-## Requirement 映射
+## Requirement 映射（归档后 12 条 ADDED Requirement）
 
-| Requirement | 场景 | 预期证据 |
-|---|---|---|
-| 可复现的 Helm 发布单元与镜像摘要固定 | 相同 values 渲染确定；latest/缺 digest 被拒；缺必填密钥引用；未声明环境被拒；chart 校验门禁 | `scripts/delivery-render-check.sh` 两次渲染 sha256 比较；负向渲染输出；kubeconform 结果；CI `delivery-static` |
-| 环境 values 与受控晋升 | digest 晋升写回；缺证据晋升被拒；晋升不触碰密钥；回退上一次晋升 | `scripts/delivery-promote.sh` 输出与提交 diff；来源 env 烟测 JSON；`git revert` + 烟测记录 |
-| ArgoCD 同步与漂移收敛 | 新提交 Synced/Healthy；手工漂移 self-heal；wave 顺序；Degraded；prod-like 手动同步 | `argocd app get/wait` 输出、`argocd app history`、事件与 diff 摘要；`scripts/delivery-drift-check.sh` |
-| kind/k3d 可重复安装与诊断 | 干净集群安装；幂等；镜像失败诊断；卸载清理；kind/k3d 一致 | `deploy/kind/*-up|down.sh` 日志、`verify.sh` 输出、诊断目录、两次安装对比、k3d 同检查项结果 |
-| 探针、资源与 PDB | 存活/就绪分离；PDB 阻止驱逐；滚动更新遵守 PDB；资源超限可观察；优雅终止 | kind 注入故障的事件/Endpoint 变化；`kubectl drain` 输出；`kubectl rollout status`+PDB 状态；OOMKilled 事件；滚动窗口烟测 0 个 5xx |
-| 密钥注入与外部密钥源 | ExternalSecret 同步；缺 key 未就绪；轮换无需重建镜像；store 不可达不回退 | ESO `status`、目标 Secret key 清单（脱敏）、负向用例输出、轮换前后 Pod digest 与烟测；`deploy/argocd/secrets/README.md` |
-| 仓库零明文密钥 | 明文提交阻断；仅引用 values 通过；证据脱敏；本地密钥不入库 | gitleaks 与 `delivery-secret-scan.sh` 输出、命中样例（不含完整值）、`git status` 证据 |
-| 备份与恢复演练 | 备份可恢复；损坏备份被拒；恢复后就绪；manifest 缺字段被拒；RPO/RTO 记录；未覆盖范围标记 | `manifest.json` + sha256 复算；恢复脚本输出与 L1–L5 结果；篡改/截断用例；RPO/RTO 表格；residual risk 记录 |
-| 镜像摘要与回滚 | 坏部署回滚；回滚目标不可用阻断；同 schema 回滚；跨 schema 走恢复；manifest 与运行摘要一致 | `argocd app history`、rollout 事件、`delivery-rollback.sh` 输出与烟测 JSON；`delivery-release-check.sh` 漂移检查；跨 schema 流程记录 |
-| 预发 IdP 配置与 claims 映射 | staging 登录与 claim 映射；audience/issuer 不匹配；过期/坏签名；JWKS 轮换；本地 Keycloak 不作为证据；配置不含密钥 | `delivery-idp-check.sh` 输出（discovery、token 验证与 claims 映射，不记录 token 原文）；负向 401 矩阵；kid 变化记录；本地环境 smoke 的 `not passed` 项 |
-| 交付烟测与失败证据 | 全绿可归档；失败非零退出；未执行项 not passed；证据可复核；同一脚本跨环境 | smoke JSON、diag 目录、evidence 汇总片段、跨 env 输出对比 |
-| 受控环境与安全边界 | 生产凭据被拒绝；证据声明环境；云端步骤标未执行；合成数据 | 脚本拒绝输出、evidence 环境标注、`not executed` 项清单、数据来源声明与评审记录 |
+| Requirement | 场景证据 |
+|---|---|
+| 可复现的 Helm 发布单元与镜像摘要固定 | `scripts/delivery-render-check.sh` 两次渲染 sha256；负向 latest/缺 digest 拒绝；kubeconform 11 valid；`dist/helm-render/`、`dist/gates/*.log` |
+| 环境 values 与受控晋升 | `scripts/delivery-promote.sh` 隔离回归 18/18；`deploy/releases/kind.yaml` 7 镜像 digest；`delivery-release-check.sh` 正向 7/7、负向 rc=1 |
+| ArgoCD 同步与漂移收敛 | 演练集群 root+8 子应用 `Synced/Healthy`；`kubectl scale deploy web --replicas=3` 45s 自愈（`dist/delivery/gitops-5/{apps-final.txt,drift.log}`）；prod-like 无 automated 由 values 校验 |
+| kind 可重复安装与诊断 | `deploy/kind/kind-up.sh` 幂等/registry/隔离网络 8 用例；`kind-up-test.sh` 8/8；坏镜像 `verify.sh` rc=1 + 诊断目录（`dist/delivery/diagnostics-badimage-verify/`） |
+| 探针、资源与 PDB | 3.1 改坏 readiness → Endpoint 摘除不重启；3.2 OOMKilled 137；3.4 Eviction 429 / drain 阻塞；`dist/delivery/diagnostics-oom/describe.txt`、`dist/delivery/pdb-drain/drain.log` |
+| 密钥注入与外部密钥源 | ESO 5 个 ExternalSecret `SecretSynced True`；4.6 数据库口令轮换后 core/openfga 恢复、镜像 digest 不变（`dist/delivery/rotation-4.6/`）；缺失 key 未就绪负向 |
+| 仓库零明文密钥 | `gitleaks detect` no leaks（34 commits）；`delivery-secret-scan.sh` rc=0；证据脱敏 |
+| 备份与恢复演练 | 7.1 CronJob 手动 Job `backup complete sha256=941ccc20…`；7.2 L1–L5 恢复 `dist/delivery/restore-l5.log`；7.3 篡改/截断被拒；7.4 RPO<5s/RTO≈107s；7.5 未覆盖范围标注 |
+| 镜像摘要与回滚 | 5.9a 坏 digest `ErrImagePull→ImagePullBackOff`，回滚 20s 恢复；5.9b readiness 404，回滚 33s 恢复；`dist/delivery/drill-5.9a|b/`；5.6 release manifest 一致性 |
+| 交付烟测与失败证据 | 注入坏镜像 rc=1 + diag；未执行项 `not passed`；JSON 含 environment/digest/overall；`dist/delivery/smoke-20261124.log` |
+| 受控环境与安全边界 | 无生产凭据/客户数据；证据标注环境；云端步骤 `not executed`；`deploy/README.md` 边界清单 |
 
-## 前置依赖与门禁
+## 移交 Stage 3 的后续 change
 
-- Stage 2 Wave 1 G1 门禁尚无 `pass` 记录：实现任务在门禁记录出现前不得执行（tasks 1.1 负责记录来源）。
-- 依赖已归档的 `edge-gateway`（`deploy/edge/generated/`、`deploy/edge/kind/install-envoy-gateway.sh`、`make edge-generate-check`）与 `runtime-observability`（`deploy/observability/` 配置与告警契约）；本 change 不修改其行为契约。
-- 依赖 `object-search-meilisearch` change 的 Meilisearch 重建/重新索引路径，作为备份未覆盖 Meilisearch 时的恢复手段；该 change 尚未归档，证据标注依赖状态。
-- 依赖 Wave 1 各服务（connector-runtime、pipeline-kestra-dbt、action-temporal、authorization-openfga-cedar 等）的 Compose/Helm 配置可启动；G2 要求全部 Wave 1 服务在 compose/helm 配置下可启动。
-- 外部依赖（不阻塞设计、影响证据完整性）：staging IdP 与 claims mapper 可用性；外部 secret provider 连通性（Stage 2 不验证，标 `not executed`）；真实 LoadBalancer/TLS（Stage 3）。
+| change | 承接内容 |
+|---|---|
+| `production-delivery-hardening` | 5.4 wave 健康门控、5.8 真实 `--sync` 回滚、6.3 离线完整 bootstrap、6.4 verify 正常退出、6.5 k3d、9.1 烟测全绿、9.4/9.5 CI runner、9.7 完整证据链、3.3/3.4 多副本增强 |
+| `production-idp-staging` | 8.6 TLS fallback + S2-AC-10 真实 staging IdP 登录/JWKS/claims 与安全复评 |
 
-## 未覆盖 / 后续
+## 未覆盖 / Residual risk
 
-- 不覆盖真实云账号、生产密钥、生产环境或真实客户数据；不做生产切换、多区域 HA/DR、容量规划、自动扩缩容、托管服务选型。
-- 不覆盖公网 TLS 证书、真实 DNS、生产 LoadBalancer；kind/k3d 烟测以 port-forward 验证入口。
-- 对象存储与 Meilisearch 不在 Stage 2 备份范围（依赖重建路径）；Kafka/Kestra/Temporal/Trino/Nessie 视为可重建，不保证备份一致点。
-- 跨 schema 回滚不执行 down migration，要求停机 + 备份恢复；独立迁移 Job（`PreSync` hook）需要 core 增加 migrate 子命令，属后续 change。
-- web 仍按环境构建（构建期 `VITE_OIDC_AUTHORITY`），运行期配置注入留待后续 change。
-- 不改变业务 API/授权判定逻辑与既有 Compose 本地开发默认路径；不替代 `edge-gateway`/`runtime-observability` 能力契约。
-- Argo Rollouts/金丝雀/蓝绿发布、真实外部 secret provider 连通性验证、Stage 3 生产演练不在本 change。
-
-## 受控环境与证据边界
-
-- 允许环境：kind、k3d、staging-like、prod-like（仅渲染验证）。禁止读取真实云账号凭据、生产密钥、真实客户数据。
-- 所有证据必须标注环境类型与 digest、时间；未执行项写 `not passed`/`not executed`，不得写成 `pass`。
-- 本地 Compose Keycloak（`localhost:18083`）不产生 S2-AC-10 证据；使用 fallback 时结论标 `partial` 并说明原因。
+- 不覆盖真实云账号、生产密钥、生产环境、真实客户数据；不做生产切换、多区域 HA/DR、容量规划、自动扩缩容。
+- 单副本 `strategy: Recreate`：滚动期间存在短暂连接中断（6/76），无多副本 PDB 滚动验证。
+- ArgoCD sync-wave 仅控制 Application 创建顺序，不等待子 Application 真实 Healthy（5.4 移交 hardening）。
+- 烟测完整模式未全绿（`read-only-api`、`running-images` kind-load 语义、`idp-discovery`），已提供 `SMOKE_IMAGE_ID_MODE=pinned` 修复但全链路验收移交 hardening。
+- k3d、CI runner、真实 staging IdP 未验证；对象存储/Meilisearch 依赖重建路径，不在备份范围。
+- 工作区变更未推送远端；本地双 kind 集群与 registry 保留。
 
 ## 归档检查
 
-- [ ] tasks 全部勾选且每项有可复核证据（kind/k3d 安装与烟测、备份恢复、回滚、IdP 验证、CI run）
-- [ ] `openspec validate production-delivery --strict` 与 `openspec validate --all --strict` 通过
-- [ ] S2-AC-08/S2-AC-10 有证据且结论标注 pass/partial/not passed；未达成项有明确 residual risk
-- [ ] G2 门禁记录可追溯，`docs/stages/evidence/stage-2-production-delivery.md` 由 stage-2-integration 汇总
-- [ ] `deploy/README.md`、`docs/operations/delivery-runbook.md`、Stage 2 change map 与证据索引已同步
-- [ ] 负责人评审通过（含安全评审），确认未连接真实云、未提交生产密钥、未使用真实客户数据
+- [x] tasks 全部勾选且每项有可复核证据；移出项标注去向 change 与原因
+- [x] `openspec validate production-delivery --strict` 与 `openspec validate --all --strict` 通过
+- [x] S2-AC-08/AC-10 结论已标注 pass（收缩）/ not covered（deferred），未达成项有 residual risk
+- [x] G2 门禁记录可追溯，证据由 `stage-2-integration` 汇总
+- [x] `deploy/README.md`、`docs/operations/delivery-runbook.md`、Stage 2 change map 与证据索引已同步

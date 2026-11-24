@@ -1,0 +1,4 @@
+  # Daily at 02:00 UTC (CronJob schedules are interpreted in the controller's
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+      backoffLimit: 0

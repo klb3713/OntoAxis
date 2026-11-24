@@ -1,0 +1,9 @@
+helm-lint=0
+render-check=0
+shellcheck=0
+actionlint=0
+secret-scan=0
+config-check=0
+openspec-validate=0
+release-check-negative=1
+backup-cronjob=0

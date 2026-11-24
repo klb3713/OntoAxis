@@ -1,0 +1,2 @@
+bash scripts/delivery-config-check.sh
+delivery-config-check: OK
