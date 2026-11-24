@@ -97,7 +97,7 @@ Stage 2 不再扩展业务模块或页面数量，而是把以下三类仍为占
 ### Wave 2 — 搜索与生产交付（2 个并行）
 
 - `object-search-meilisearch`
-- `production-delivery`
+- `production-delivery`（已按收缩范围归档 2026-11-24）
 
 ### Wave 3 — 集成（串行）
 

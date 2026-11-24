@@ -12,7 +12,7 @@
 
 说明：AC 口径的收缩属 Stage 范围变更，已由负责人于 2026-11-24 批准并记录在 `docs/stages/evidence/stage-2-production-delivery-archive-review.md`。
 
-## Requirement 映射（归档后 12 条 ADDED Requirement）
+## Requirement 映射（归档后 11 条 ADDED Requirement）
 
 | Requirement | 场景证据 |
 |---|---|
