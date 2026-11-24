@@ -17,7 +17,7 @@
 
 ## 2. 收录后仍需回填
 
-- [ ] 8.2 的 GitHub Actions run 链接（本机无 runner）
+- [x] 8.2 的 GitHub Actions run 链接：[run 45405474349](https://github.com/klb3713/OntoAxis/actions/runs/45405474349)，job [`search-integration`](https://github.com/klb3713/OntoAxis/actions/runs/45405474349/job/138484907178) success（2026-11-24，草稿 PR #1）
 - [ ] 9.1/9.2/9.3 评审签字记录
 - [ ] 在 Stage 证据中区分“本地合成数据验证”与“生产/CI 验收”，不得把本地通过写成 CI/生产通过
 

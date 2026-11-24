@@ -27,7 +27,7 @@
 ## 4. 尚不 ready / 不能勾选的项（评审须知）
 
 - **9.1/9.2/9.3 已于 2026-11-24 由评审人 klb3713 评审通过并勾选**（结论见各材料 §4/§5/§6 签字表）。
-- 8.2：缺 GitHub Actions run 链接（本地同参已通过）。
+- 8.2：**已关闭**（2026-11-24 真实 CI：[run 45405474349](https://github.com/klb3713/OntoAxis/actions/runs/45405474349) 的 `search-integration` job success；整轮 run 其它 job 失败与搜索无关，详见 tasks.md 8.2）。
 - 7.5/7.6：主 `compose.yaml` 合并、Helm chart 与 kind 评审归 `production-delivery`（见 [handoff/production-delivery.md](handoff/production-delivery.md)）。
 - 8.4：`docs/stages/evidence/` 收录归 `stage-2-integration`（见 [handoff/stage-2-integration.md](handoff/stage-2-integration.md)）。
 - G2 项（kind/k3d 部署、备份恢复、镜像回滚、生产 IdP）均 `not executed`，属 Stage 2 / Wave 2，不在本材料包。

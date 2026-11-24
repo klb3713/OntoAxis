@@ -2,7 +2,7 @@
 
 ## 范围
 
-仅本机隔离环境与合成数据。本记录用于 `object-search-meilisearch` 的变更验证，不是生产验收、Stage G2、CI 或评审签核。不改已有容器、数据库、外部 IdP、共享交付配置。G1 事实见 [Stage 2 G1 记录](../../../../docs/stages/evidence/stage-2-g1-gate-record.md)。
+仅本机隔离环境与合成数据。本记录用于 `object-search-meilisearch` 的变更验证，不是生产验收、Stage G2 或评审签核；第 7 节单独记录一次真实 CI 运行结果（仍非生产/业务验收）。不改已有容器、数据库、外部 IdP、共享交付配置。G1 事实见 [Stage 2 G1 记录](../../../../docs/stages/evidence/stage-2-g1-gate-record.md)。
 
 ## 1. 真实 PostgreSQL、Meilisearch 与 CLI
 
@@ -42,5 +42,15 @@
 ## 6. 待交接与决策
 
 - `production-delivery`：主 Compose 合并和健康判定、Helm/ArgoCD 与 kind 部署审核仍由交付负责人完成；不以隔离脚本替代正式部署。
-- `stage-2-integration`：本记录可供收录；尚未写入共享 Stage 证据目录，CI run 链接待补。
+- `stage-2-integration`：本记录可供收录；尚未写入共享 Stage 证据目录；真实 CI run 链接见 §7（已产出，待收录）。
 - 负责人评审：单类型原地重建与原子语义的边界、可索引字段/敏感属性、数据保留和搜索质量阈值仍需决定；运维与安全评审未签。
+
+## 7. 真实 GitHub Actions 运行（8.2）
+
+- 2026-11-24 将本 change 的代码、脚本、测试、运维手册、评审材料与 `ci.yml` 的 `search-integration` job 提交到分支 `ci/object-search-8.2`（commit `825f59d`，署名 `klb3713 <1397699+klb3713@users.noreply.github.com>`），经草稿 PR #1 触发 `pull_request` 工作流。本机 SSH 22 被阻断，改用 HTTPS + `gh` 凭据推送；**未改 `main`**，PR 保持草稿。
+- 目标 job [`search-integration`](https://github.com/klb3713/OntoAxis/actions/runs/45405474349/job/138484907178) 结论 **success**，两步均绿：
+  - 真实 PostgreSQL 16 + Meilisearch v1.11 service containers 上 `go test -tags=integration -p 1 -count=1 ./internal/platform/search/` `PASS`（含 `TestIntegrationRebuildSummaryStable`、`TestIntegrationRebuildCLIExitAndDigest` 等；`ONTOAXIS_SEARCH_TEST_REQUIRED=1` 已注入，0 SKIP）。
+  - 检索回归门 `bash scripts/search-quality-baseline.sh --strict` `PASS`：6 条查询 `recall@5=1.0000 MRR@10=1.0000`、`corpus_sha256_match=True`、`engineering gate` 已签；业务阈值仍 `UNSIGNED`（`pending-owner-signoff`），本次不作业务验收。
+- 同一 run 中 `build-test`、`frontend`、`authz-integration`、`observability`、`docker` 等 job 亦 success。
+- 整轮 run 结论为 **failure**，失败 job 与搜索无关且可归因，不作为本 change 证据、也不由本 change 修复：`secret-scan`（gitleaks-action Node 运行时崩溃）、`proto`（`proto-breaking` 需 `main` ref，PR 分支无）、`delivery-static`（引用 `scripts/delivery-*.py`，属 `production-delivery` 未提交改动）、`edge`/`compose-smoke`（`main` 上同样失败）。
+- 证据边界：该 run 证明搜索集成在真实 CI runner 与真实依赖容器上可复跑；**不等于** G2（kind/备份回滚/生产 IdP）或业务验收。

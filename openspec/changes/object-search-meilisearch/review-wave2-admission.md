@@ -27,7 +27,7 @@
 
 | # | 评审项 | 结果 | 证据/说明 |
 | --- | --- | --- | --- |
-| C1 | 所有 9.x 之外的未完成任务是否有真实证据 | PostgreSQL/Meilisearch 集成与重建 CLI 已实跑；8.1 隔离 Compose E2E 73/73 通过（2026-11-24 21:07，环境恢复后）；8.2 CI 同参本地实跑 exit 0、0 skip（[日志](evidence/2026-11-24-search-integration-ci-local.log)），仍缺 run 链接；8.3 工程门已签、业务阈值未签核 | [2026-11-24 隔离验证](evidence/2026-11-24-object-search-verification.md) |
+| C1 | 所有 9.x 之外的未完成任务是否有真实证据 | PostgreSQL/Meilisearch 集成与重建 CLI 已实跑；8.1 隔离 Compose E2E 73/73 通过（2026-11-24 21:07，环境恢复后）；8.2 真实 CI run [45405474349](https://github.com/klb3713/OntoAxis/actions/runs/45405474349) 的 `search-integration` job success（集成测试 + 检索回归门，0 SKIP；本地日志 [2026-11-24-search-integration-ci-local.log](evidence/2026-11-24-search-integration-ci-local.log)）；8.3 工程门已签、业务阈值未签核 | [2026-11-24 隔离验证](evidence/2026-11-24-object-search-verification.md) |
 | C2 | 实现是否与 design 一致 | 基本一致；**发现并修复** `--object-type` 重建会覆盖整租户索引的缺陷（`rebuild.go`） | 集成测试 `TestIntegrationRebuildObjectTypePreservesOtherTypes` |
 | C3 | spec delta 与实现是否一致 | R10 已接入真实守卫并校验租户内类型事实，原生 HTTP 与隔离 Compose E2E 矩阵均已通过；单类型重建语义已由 `design.md` D15 决策并在 spec delta 拆为「租户级全量重建收敛」与「单类型修复收敛」，规格与实现一致 | 见 `traceability.md`、`design.md` D15、`specs/object-search/spec.md` |
 | C4 | 测试是否真实（无 fake 冒充） | 集成测试使用真实 PostgreSQL + Meilisearch；未注入变量时 skip，CI 强制要求（`ONTOAXIS_SEARCH_TEST_REQUIRED=1`） | `internal/platform/search/integration_test.go` |
@@ -60,7 +60,7 @@
 | G1 | **已登记通过**，见 §2 |
 | change 评审 | **已评审通过**（2026-11-24，评审人 klb3713，见 §6） |
 | 本轮实施 | **限隔离本地与合成数据验证** |
-| 仍然待办 | 8.2 CI run 链接、7.5/7.6 合并、8.4 收录、G2（kind/备份/回滚/生产 IdP） |
+| 仍然待办 | 7.5/7.6 合并、8.4 收录、G2（kind/备份/回滚/生产 IdP）；8.2 已由真实 CI run 关闭 |
 | 禁止的动作 | 代签评审、把 skip 写成 pass、用本地结果冒充 CI/kind、在阈值未签核时判业务合格 |
 
 ## 6. 签字（2026-11-24 已填）

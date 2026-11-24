@@ -1,7 +1,7 @@
 # 交接待办清单：object-search-meilisearch → production-delivery / stage-2-integration
 
 - 生成日期：2026-11-24（object-search-meilisearch 评审通过后）
-- 状态基线：object-search-meilisearch **48/52**，未勾 7.5 / 7.6 / 8.2 / 8.4；未归档、未 commit。
+- 状态基线：object-search-meilisearch **49/52**，未勾 7.5 / 7.6 / 8.4（8.2 已于 2026-11-24 由真实 CI run 关闭）；未归档、未 commit。
 - 归属依据：`docs/stages/stage-2-change-map.md` 行 116–123（`deploy/` 归 production-delivery；`docs/stages/evidence/` 归 stage-2-integration）。
 - 详细内容见：[production-delivery.md](production-delivery.md)、[stage-2-integration.md](stage-2-integration.md)。
 
@@ -21,7 +21,7 @@
 | # | 待办 | 验收 / 证据 | 回填 |
 | --- | --- | --- | --- |
 | B1 | 收录证据源文件到 `docs/stages/evidence/`（集成记录、隔离验证、CI 本地日志、手册复现） | 索引内路径真实存在、抽查可复跑 | object-search 8.4 |
-| B2 | 回填 GitHub Actions `search-integration` run 链接（本机无 runner） | CI job 绿 + run URL | object-search 8.2 |
+| B2 | ~~回填 GitHub Actions `search-integration` run 链接~~ **已完成 2026-11-24**：[run 45405474349](https://github.com/klb3713/OntoAxis/actions/runs/45405474349) job [138484907178](https://github.com/klb3713/OntoAxis/actions/runs/45405474349/job/138484907178) success（草稿 PR #1，分支 `ci/object-search-8.2`）；Stage 索引只需引用该链接 | CI job 绿 + run URL | object-search 8.2 |
 | B3 | 记录 9.1/9.2/9.3 评审签字（klb3713，2026-11-24）到 Stage 证据索引 | 附各材料 §4/§5/§6 链接 | 证据索引 |
 | B4 | 证据边界声明：本地合成验证 ≠ CI/生产验收；业务质量阈值仍 `pending-owner-signoff` | 报告/索引中可见声明 | 报告 §8 |
 

@@ -6,7 +6,7 @@
 
 | Stage AC | 验收要求 | 本 change 覆盖 | 证据 |
 | --- | --- | --- | --- |
-| S2-AC-07 | Meilisearch 对象搜索：outbox 驱动索引更新，对象新增/修改/删除后搜索结果一致；支持全量重建 | 本地后端覆盖 outbox 消费、增量与整租户重建；部署和 Stage 验收独立 | [2026-11-24 验证记录](evidence/2026-11-24-object-search-verification.md)：真实 PostgreSQL 与 Meilisearch 12 项集成通过；实际 CLI `--verify` 一致时退出 0、同数量内容漂移时退出 1。Compose 在依赖启动阶段超时（首次），经修复本机 Docker 运行时后于 2026-11-24 21:07 隔离 Compose E2E 复跑 73/73 通过；CI run、G2 验收均无结果 |
+| S2-AC-07 | Meilisearch 对象搜索：outbox 驱动索引更新，对象新增/修改/删除后搜索结果一致；支持全量重建 | 本地后端覆盖 outbox 消费、增量与整租户重建；部署和 Stage 验收独立 | [2026-11-24 验证记录](evidence/2026-11-24-object-search-verification.md)：真实 PostgreSQL 与 Meilisearch 12 项集成通过；实际 CLI `--verify` 一致时退出 0、同数量内容漂移时退出 1。Compose 在依赖启动阶段超时（首次），经修复本机 Docker 运行时后于 2026-11-24 21:07 隔离 Compose E2E 复跑 73/73 通过；真实 CI run [45405474349](https://github.com/klb3713/OntoAxis/actions/runs/45405474349) 的 `search-integration` job 绿（8.2）；G2 验收（kind/备份回滚/生产 IdP）仍无结果 |
 | S2-AC-03 | OpenFGA + Cedar：允许/拒绝、跨租户、默认拒绝、审计 | 部分覆盖：授权 change 已归档，搜索使用实际守卫，并按租户加载过滤类型事实 | 处理器回归与 [真实本地 HTTP](evidence/2026-11-24-object-search-verification.md#5-原生进程-http-功能矩阵非-compose) 验证允许、401/403/503、无结果泄漏及恢复；未验证外部 IdP |
 | S2-AC-09 | 可观测：trace/指标/SLO/告警/负载基线 | 部分覆盖：索引事件结果、滞后、重建耗时、搜索 RED 指标与 trace 串接 | 指标端点抓取输出、trace 截图、`make observability-rules-test` 结果（告警规则本体归 `production-delivery`） |
 
@@ -56,7 +56,7 @@ S2-AC-07 拆分核对：
 | `evidence/2026-11-23-object-search-integration.md` | 1.4/4.1/5.1–5.7 真实 PG16+Meilisearch 集成、缺陷修复、go.mod 未改、compose config、评测基线；含 not executed 清单 | 已采集（2026-11-23） |
 | [2026-11-24 隔离验证](evidence/2026-11-24-object-search-verification.md) | 5.5/5.7 真实 CLI、后端集成（12 项）、原生 HTTP 68 项、中文合成基线和隔离 Compose E2E 73 项 | 已采集 |
 | [`scripts/object-search-e2e.sh`](../../../scripts/object-search-e2e.sh) | 8.1 E2E 矩阵 | 预检与离线回归通过；隔离 Compose E2E 73/73（2026-11-24 21:07）|
-| `.github/workflows/ci.yml` `search-integration` | 8.2 CI 必跑 | workflow 已配置；CI 同参本地实跑 exit 0、0 skip（[日志](evidence/2026-11-24-search-integration-ci-local.log)）；**CI run 未执行** |
+| `.github/workflows/ci.yml` `search-integration` | 8.2 CI 必跑 | workflow 已配置；CI 同参本地实跑 exit 0、0 skip（[日志](evidence/2026-11-24-search-integration-ci-local.log)）；**真实 CI run 已执行**：[run 45405474349](https://github.com/klb3713/OntoAxis/actions/runs/45405474349) 的 [`search-integration` job](https://github.com/klb3713/OntoAxis/actions/runs/45405474349/job/138484907178) success（集成测试 PASS + 检索回归门 PASS，0 SKIP） |
 | `fixtures/search/dataset.json`、`fixtures/search/README.md`、`scripts/search-quality-baseline.sh` | 8.3 中文评测 | 已实跑 exit 0；工程回归门 `engineering_gate` 已签并 `--strict` PASS（接 CI）；业务阈值 `pending-owner-signoff` |
 | `deployment-requirements.md` | 7.6 Helm/ArgoCD 要求 | 文档完成；`helm template`/kind **not executed** |
 | `docs/operations/object-search-runbook.md` | 9.1 运维手册 | 文档完成；命令本地复现（[记录](evidence/2026-11-24-object-search-runbook-repro.md)）；**评审通过（klb3713，2026-11-24）** |
@@ -65,7 +65,7 @@ S2-AC-07 拆分核对：
 
 ## 归档检查
 
-- [ ] `tasks.md` 全部勾选，且每项有可复核证据（当前 48/52；仅余 7.5/7.6 交 `production-delivery`、8.2 CI run 链接、8.4 交 `stage-2-integration` 收录）
+- [ ] `tasks.md` 全部勾选，且每项有可复核证据（当前 49/52；仅余 7.5/7.6 交 `production-delivery`、8.4 交 `stage-2-integration` 收录）
 - [ ] 所有 Requirement 的 traceability 状态从 planned 更新为 actual，并链接证据文件
 - [ ] R10（搜索授权过滤）证据可用，或由负责人书面接受延后并记录在 G2/风险
 - [ ] `openspec validate --all --strict` 通过
