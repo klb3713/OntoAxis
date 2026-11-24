@@ -186,7 +186,9 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Start core loop
-        run: docker compose -f deploy/compose/compose.yaml up -d postgres ontoaxis-core
+        # core 采用 fail-closed 授权：必须叠加 authz overlay 并启动 openfga/authz-init，
+        # 否则会以 'ONTOAXIS_AUTHZ_OPENFGA_API_URL is required' 退出。
+        run: docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml up -d postgres openfga authz-init ontoaxis-core
       - name: Wait for readiness
         run: |
           for _ in $(seq 1 60); do
@@ -195,7 +197,7 @@ jobs:
             fi
             sleep 2
           done
-          docker compose -f deploy/compose/compose.yaml logs ontoaxis-core
+          docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml logs ontoaxis-core
           exit 1
       - name: Smoke
         run: |
@@ -203,7 +205,7 @@ jobs:
           curl -fsS http://127.0.0.1:18080/readyz
       - name: Tear down
         if: always()
-        run: docker compose -f deploy/compose/compose.yaml down -v
+        run: docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml down -v
 
   edge:
     runs-on: ubuntu-latest
