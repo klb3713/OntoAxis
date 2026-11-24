@@ -30,4 +30,7 @@ regexes = [
   '''sha256:0{64}''',
   # Shell/env variable indirection, never a literal.
   '''\$\{[A-Za-z_][A-Za-z0-9_]*\}''',
+  # `kubectl --for=condition=Available` 紧邻 external-secrets 命名空间时，
+  # generic-api-key 会把 "condition=Available" 误判为密钥值；这是 kubectl 参数，不是凭据。
+  '''condition=Available''',
 ]
