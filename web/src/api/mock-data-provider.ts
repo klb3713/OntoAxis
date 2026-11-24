@@ -22,6 +22,7 @@ import type {
   ObjectRecord,
   ObjectType,
   Project,
+  PropertyDefinition,
   QueryResult,
   SavedQuery,
 } from "./types";
@@ -260,6 +261,33 @@ export function createMockDataProvider(options: MockDataProviderOptions = {}): D
         return { data: objectType as unknown as TData };
       }
 
+      if (params.resource === "properties") {
+        const objectTypeId = String(values.objectTypeId ?? "").trim();
+        const name = String(values.name ?? "").trim();
+        const displayName = String(values.displayName ?? "").trim();
+        if (!objectTypeId) throw new ApiError({ code: "validation_error", message: "对象类型不能为空", status: 422 });
+        if (!name) throw new ApiError({ code: "validation_error", message: "属性名不能为空", status: 422 });
+        if (!displayName) throw new ApiError({ code: "validation_error", message: "属性名称不能为空", status: 422 });
+        const objectType = db.objectTypes.find((item) => item.id === objectTypeId);
+        if (!objectType) throw new ApiError({ code: "not_found", message: `对象类型不存在：${objectTypeId}`, status: 404 });
+        if (objectType.properties.some((property) => property.name === name)) {
+          throw new ApiError({ code: "conflict", message: `属性已存在：${name}`, status: 409 });
+        }
+        const property: PropertyDefinition = {
+          id: newId("prop"),
+          objectTypeId,
+          name,
+          displayName,
+          description: String(values.description ?? ""),
+          propertyType: String(values.propertyType ?? "string"),
+          required: values.required === true,
+          unique: values.uniqueConstraint === true,
+        };
+        objectType.properties.push(property);
+        objectType.updatedAt = timestamp;
+        return { data: property as unknown as TData };
+      }
+
       if (params.resource === "datasets") {
         const name = String(values.name ?? "").trim();
         const displayName = String(values.displayName ?? "").trim();
@@ -379,13 +407,13 @@ export function createMockDataProvider(options: MockDataProviderOptions = {}): D
         return { data: preview as unknown as TData };
       }
 
-      if (url === "queries/execute" && params.method === "post") {
+      if (url === "query/execute" && params.method === "post") {
         const payload = asRecord(params.payload);
         const result = buildQueryResult(String(payload.sql ?? ""));
         return { data: result as unknown as TData };
       }
 
-      if (url === "queries/explain" && params.method === "post") {
+      if (url === "query/explain" && params.method === "post") {
         const payload = asRecord(params.payload);
         const sql = String(payload.sql ?? "");
         if (!sql.trim()) throw new ApiError({ code: "empty_query", message: "SQL 不能为空", status: 422 });

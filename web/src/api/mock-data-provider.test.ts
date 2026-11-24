@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createFixtureDatabase } from "./fixtures";
 import { createMockDataProvider } from "./mock-data-provider";
-import type { DatasetPreview, Project, QueryResult } from "./types";
+import type { DatasetPreview, ObjectType, Project, PropertyDefinition, QueryResult } from "./types";
 
 function provider() {
   return createMockDataProvider({ database: createFixtureDatabase(), latencyMs: 0 });
@@ -77,7 +77,7 @@ describe("mock DataProvider", () => {
   it("查询执行仅接受 SELECT，并拒绝空 SQL 与缺失表", async () => {
     const { custom } = providerWithCustom();
     const result = await custom<QueryResult>({
-      url: "queries/execute",
+      url: "query/execute",
       method: "post",
       payload: { sql: "SELECT * FROM orders LIMIT 10" },
     });
@@ -85,25 +85,70 @@ describe("mock DataProvider", () => {
     expect(result.data.rows.length).toBeGreaterThan(0);
 
     await expect(
-      custom({ url: "queries/execute", method: "post", payload: { sql: "" } }),
+      custom({ url: "query/execute", method: "post", payload: { sql: "" } }),
     ).rejects.toMatchObject({ status: 422, code: "empty_query" });
 
     await expect(
-      custom({ url: "queries/execute", method: "post", payload: { sql: "DELETE FROM orders" } }),
+      custom({ url: "query/execute", method: "post", payload: { sql: "DELETE FROM orders" } }),
     ).rejects.toMatchObject({ status: 400, code: "unsupported_statement" });
 
     await expect(
-      custom({ url: "queries/execute", method: "post", payload: { sql: "SELECT * FROM missing_table" } }),
+      custom({ url: "query/execute", method: "post", payload: { sql: "SELECT * FROM missing_table" } }),
     ).rejects.toMatchObject({ status: 404, code: "table_not_found" });
   });
 
   it("执行计划返回可读计划文本", async () => {
     const { custom } = providerWithCustom();
     const result = await custom<{ plan: string }>({
-      url: "queries/explain",
+      url: "query/explain",
       method: "post",
       payload: { sql: "SELECT * FROM orders" },
     });
     expect(result.data.plan).toContain("Scan orders");
+  });
+
+  it("为对象类型添加属性后可在详情中看到该属性", async () => {
+    const dataProvider = provider();
+    const result = await dataProvider.create<PropertyDefinition>({
+      resource: "properties",
+      variables: {
+        objectTypeId: "ot_customer",
+        name: "e2e_tier",
+        displayName: "E2E 等级",
+        propertyType: "string",
+        required: false,
+        uniqueConstraint: false,
+      },
+    });
+
+    expect(result.data.name).toBe("e2e_tier");
+    expect(result.data.objectTypeId).toBe("ot_customer");
+    const objectType = await dataProvider.getOne<ObjectType>({ resource: "object-types", id: "ot_customer" });
+    expect(objectType.data.properties.some((property) => property.name === "e2e_tier")).toBe(true);
+  });
+
+  it("添加属性时拒绝空输入、未知对象类型与重复属性", async () => {
+    const dataProvider = provider();
+
+    await expect(
+      dataProvider.create({
+        resource: "properties",
+        variables: { objectTypeId: "ot_customer", name: "", displayName: "空名称" },
+      }),
+    ).rejects.toMatchObject({ status: 422 });
+
+    await expect(
+      dataProvider.create({
+        resource: "properties",
+        variables: { objectTypeId: "missing", name: "tier", displayName: "等级" },
+      }),
+    ).rejects.toMatchObject({ status: 404 });
+
+    await expect(
+      dataProvider.create({
+        resource: "properties",
+        variables: { objectTypeId: "ot_customer", name: "tier", displayName: "等级" },
+      }),
+    ).rejects.toMatchObject({ status: 409 });
   });
 });
