@@ -27,6 +27,7 @@ type RebuildClient interface {
 	UpsertDocuments(ctx context.Context, uid string, docs []Document) (string, error)
 	DeleteDocuments(ctx context.Context, uid string, ids []string) (string, error)
 	Search(ctx context.Context, uid string, req SearchRequest) (SearchResult, error)
+	ListDocuments(ctx context.Context, uid string, offset, limit int) (DocumentPage, error)
 	SwapIndexes(ctx context.Context, pairs [][2]string) error
 	WaitTask(ctx context.Context, uid, taskUID string, timeout time.Duration) error
 }
@@ -39,6 +40,7 @@ type Summary struct {
 	StartedAt time.Time     `json:"started_at"`
 	Duration  time.Duration `json:"duration"`
 	Verified  bool          `json:"verified"`
+	Digest    string        `json:"digest,omitempty"`
 }
 
 // Rebuilder rebuilds a tenant index out-of-band: it indexes into a staging
@@ -81,9 +83,9 @@ func NewRebuilder(
 	}
 }
 
-// Rebuild indexes all live objects of a tenant (optionally limited to one
-// object type) into a staging index, swaps it with the active index, replays
-// the outbox window, and optionally verifies the document count.
+// Rebuild refreshes all live objects of a tenant via a staging index swap,
+// or repairs one object type in place. After replaying the outbox window it
+// can verify the document count and content of the requested scope.
 func (r *Rebuilder) Rebuild(ctx context.Context, tenantID uuid.UUID, objectTypeID *uuid.UUID, verify bool) (summary Summary, err error) {
 	startedAt := time.Now().UTC()
 	summary = Summary{TenantID: tenantID, StartedAt: startedAt}
@@ -101,7 +103,7 @@ func (r *Rebuilder) Rebuild(ctx context.Context, tenantID uuid.UUID, objectTypeI
 		version = defaultSearchIndexVersion
 	}
 	indexUID := IndexName(version, tenantID.String())
-	stagingUID := StagingIndexName(indexUID, startedAt.Unix())
+	stagingUID := StagingIndexName(indexUID, startedAt.UnixNano())
 	summary.IndexUID = indexUID
 
 	defer func() {
@@ -114,6 +116,15 @@ func (r *Rebuilder) Rebuild(ctx context.Context, tenantID uuid.UUID, objectTypeI
 		}
 	}()
 
+	if objectTypeID != nil {
+		if err = r.rebuildObjectType(ctx, tenantID, *objectTypeID, indexUID, verify, &summary); err != nil {
+			summary.Duration = time.Since(startedAt)
+			return summary, err
+		}
+		summary.Duration = time.Since(startedAt)
+		return summary, nil
+	}
+
 	cleanupStaging := true
 	defer func() {
 		if cleanupStaging {
@@ -124,7 +135,7 @@ func (r *Rebuilder) Rebuild(ctx context.Context, tenantID uuid.UUID, objectTypeI
 	if err = r.client.EnsureIndex(ctx, stagingUID, SettingsJSON()); err != nil {
 		return summary, fmt.Errorf("search rebuild: ensure staging index: %w", err)
 	}
-	documents, err := r.indexTenantObjects(ctx, tenantID, objectTypeID, indexUID, stagingUID)
+	documents, err := r.indexTenantObjects(ctx, tenantID, objectTypeID, indexUID, stagingUID, nil)
 	if err != nil {
 		return summary, err
 	}
@@ -146,7 +157,8 @@ func (r *Rebuilder) Rebuild(ctx context.Context, tenantID uuid.UUID, objectTypeI
 		return summary, err
 	}
 	if verify {
-		if err = r.verifyTenantCount(ctx, tenantID, objectTypeID, indexUID); err != nil {
+		summary.Digest, err = r.verifyDocuments(ctx, tenantID, nil, indexUID)
+		if err != nil {
 			return summary, err
 		}
 		summary.Verified = true
@@ -155,18 +167,119 @@ func (r *Rebuilder) Rebuild(ctx context.Context, tenantID uuid.UUID, objectTypeI
 	return summary, nil
 }
 
+// rebuildObjectType refreshes the documents of one object type in place. A
+// type-scoped rebuild must not replace the whole tenant index: unlike a full
+// rebuild it indexes straight into the live index and deletes only documents
+// that no longer exist in the database, leaving the other object types
+// untouched. Using the staging/swap path here would publish a partial index
+// and silently drop every other type.
+func (r *Rebuilder) rebuildObjectType(
+	ctx context.Context,
+	tenantID, objectTypeID uuid.UUID,
+	indexUID string,
+	verify bool,
+	summary *Summary,
+) error {
+	if err := r.client.EnsureIndex(ctx, indexUID, SettingsJSON()); err != nil {
+		return fmt.Errorf("search rebuild: ensure index: %w", err)
+	}
+	indexedIDs, err := r.indexedObjectIDs(ctx, tenantID, objectTypeID, indexUID)
+	if err != nil {
+		return err
+	}
+	seen := make(map[string]struct{}, len(indexedIDs))
+	documents, err := r.indexTenantObjects(ctx, tenantID, &objectTypeID, indexUID, indexUID, seen)
+	if err != nil {
+		return err
+	}
+	summary.Documents = documents
+
+	stale := make([]string, 0)
+	for _, id := range indexedIDs {
+		if _, ok := seen[id]; !ok {
+			stale = append(stale, id)
+		}
+	}
+	if len(stale) > 0 {
+		taskUID, err := r.client.DeleteDocuments(ctx, indexUID, stale)
+		if err != nil {
+			return fmt.Errorf("search rebuild: delete stale documents: %w", err)
+		}
+		if taskUID != "" {
+			if err := r.client.WaitTask(ctx, indexUID, taskUID, rebuildWaitTimeout(r.config)); err != nil {
+				return fmt.Errorf("search rebuild: wait delete task: %w", err)
+			}
+		}
+	}
+	if err := r.replayOutbox(ctx, tenantID, summary.StartedAt); err != nil {
+		return err
+	}
+	version := r.config.IndexVersion
+	if version == "" {
+		version = defaultSearchIndexVersion
+	}
+	if err := r.recordIndexState(ctx, tenantID, version, indexUID, summary.StartedAt); err != nil {
+		return err
+	}
+	if verify {
+		digest, err := r.verifyDocuments(ctx, tenantID, &objectTypeID, indexUID)
+		if err != nil {
+			return err
+		}
+		summary.Digest, summary.Verified = digest, true
+	}
+	return nil
+}
+
+// indexedObjectIDs pages through the live index documents of one object type.
+// It fails closed when the type has more documents than the pagination window
+// instead of deleting documents it could not enumerate.
+func (r *Rebuilder) indexedObjectIDs(
+	ctx context.Context,
+	tenantID, objectTypeID uuid.UUID,
+	indexUID string,
+) ([]string, error) {
+	filter := fmt.Sprintf(`%s AND object_type_id = "%s"`, TenantFilter(tenantID.String()), objectTypeID.String())
+	const pageSize = 1000
+	var ids []string
+	for offset := 0; ; offset += pageSize {
+		result, err := r.client.Search(ctx, indexUID, SearchRequest{
+			Q:      "",
+			Filter: filter,
+			Limit:  pageSize,
+			Offset: offset,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("search rebuild: list indexed documents for object type %s: %w", objectTypeID, err)
+		}
+		if result.EstimatedTotalHits > MaxTotalHits {
+			return nil, fmt.Errorf(
+				"search rebuild: object type %s has %d indexed documents, above the %d pagination window; rebuild the whole tenant instead",
+				objectTypeID, result.EstimatedTotalHits, MaxTotalHits,
+			)
+		}
+		for _, hit := range result.Hits {
+			ids = append(ids, hit.ID)
+		}
+		if len(result.Hits) < pageSize || int64(offset+len(result.Hits)) >= result.EstimatedTotalHits {
+			return ids, nil
+		}
+	}
+}
+
 func (r *Rebuilder) indexTenantObjects(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	objectTypeID *uuid.UUID,
 	indexUID, stagingUID string,
+	seen map[string]struct{},
 ) (int64, error) {
 	var (
 		lastID    = uuid.Nil
 		documents int64
 	)
 	for {
-		objects, nextID, err := r.scanObjectBatch(ctx, tenantID, objectTypeID, lastID)
+		objects, nextID, err := scanObjectBatch(ctx, r.pool, tenantID, objectTypeID, lastID)
 		if err != nil {
 			return documents, err
 		}
@@ -180,6 +293,9 @@ func (r *Rebuilder) indexTenantObjects(
 				return documents, fmt.Errorf("search rebuild: build document %s: %w", object.ID, err)
 			}
 			docs = append(docs, document)
+			if seen != nil {
+				seen[document.ID] = struct{}{}
+			}
 		}
 		taskUID, err := r.client.UpsertDocuments(ctx, stagingUID, docs)
 		if err != nil {
@@ -198,8 +314,13 @@ func (r *Rebuilder) indexTenantObjects(
 	}
 }
 
-func (r *Rebuilder) scanObjectBatch(
+type objectBatchQuerier interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+}
+
+func scanObjectBatch(
 	ctx context.Context,
+	db objectBatchQuerier,
 	tenantID uuid.UUID,
 	objectTypeID *uuid.UUID,
 	after uuid.UUID,
@@ -213,7 +334,7 @@ WHERE tenant_id = $1 AND deleted_at IS NULL`
 		query = columns + ` AND object_type_id = $2 AND id > $3 ORDER BY id LIMIT $4`
 		args = []any{tenantID, *objectTypeID, after, rebuildBatchSize}
 	}
-	rows, err := r.pool.Query(ctx, query, args...)
+	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, uuid.Nil, fmt.Errorf("search rebuild: scan objects: %w", err)
 	}
@@ -287,11 +408,14 @@ ON CONFLICT (tenant_id, index_version) DO UPDATE SET
 	return nil
 }
 
-// Verify checks that the active index document count matches the database for
-// the tenant. It returns an error on any mismatch or backend failure.
+// Verify checks the count and content of active index documents against the
+// database. It returns an error on any mismatch or backend failure.
 func (r *Rebuilder) Verify(ctx context.Context, tenantID uuid.UUID) error {
 	if r == nil {
 		return fmt.Errorf("search verify: nil rebuilder")
+	}
+	if tenantID == uuid.Nil {
+		return fmt.Errorf("search verify: tenant id is empty")
 	}
 	if r.pool == nil {
 		return fmt.Errorf("search verify: nil pool")
@@ -304,41 +428,8 @@ func (r *Rebuilder) Verify(ctx context.Context, tenantID uuid.UUID) error {
 		version = defaultSearchIndexVersion
 	}
 	indexUID := IndexName(version, tenantID.String())
-	return r.verifyTenantCount(ctx, tenantID, nil, indexUID)
-}
-
-func (r *Rebuilder) verifyTenantCount(ctx context.Context, tenantID uuid.UUID, objectTypeID *uuid.UUID, indexUID string) error {
-	dbCount, err := r.countDBObjects(ctx, tenantID, objectTypeID)
-	if err != nil {
-		return err
-	}
-	result, err := r.client.Search(ctx, indexUID, SearchRequest{
-		Q:      "",
-		Filter: TenantFilter(tenantID.String()),
-		Limit:  1,
-		Offset: 0,
-	})
-	if err != nil {
-		return fmt.Errorf("search verify: query index: %w", err)
-	}
-	if result.EstimatedTotalHits != dbCount {
-		return fmt.Errorf("search verify: tenant %s document count mismatch: database=%d index=%d", tenantID, dbCount, result.EstimatedTotalHits)
-	}
-	return nil
-}
-
-func (r *Rebuilder) countDBObjects(ctx context.Context, tenantID uuid.UUID, objectTypeID *uuid.UUID) (int64, error) {
-	query := `SELECT count(*) FROM object_data.objects WHERE tenant_id = $1 AND deleted_at IS NULL`
-	args := []any{tenantID}
-	if objectTypeID != nil {
-		query += ` AND object_type_id = $2`
-		args = append(args, *objectTypeID)
-	}
-	var count int64
-	if err := r.pool.QueryRow(ctx, query, args...).Scan(&count); err != nil {
-		return 0, fmt.Errorf("search verify: count database objects: %w", err)
-	}
-	return count, nil
+	_, err := r.verifyDocuments(ctx, tenantID, nil, indexUID)
+	return err
 }
 
 func (r *Rebuilder) deleteIndexBestEffort(indexUID string) {

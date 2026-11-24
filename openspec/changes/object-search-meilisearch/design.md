@@ -5,9 +5,9 @@
 - 对象实例当前只存 PostgreSQL JSONB（`object_data.objects`，含 `tenant_id`、`object_type_id`、`properties`、`version`、`deleted_at`），列表接口只做类型过滤与分页；仓库没有搜索运行时，也没有任何 outbox 生产者或消费者（`jobs.outbox` 仅有表定义）。
 - ARCHITECTURE §5.3 指定 Meilisearch 承载对象搜索；§14.4 要求业务表与 `jobs.outbox` 同事务、消费端按事件幂等、至少一次、重试上限与退避、死信保留 ≥14 天、跨模块副作用不在请求线程同步调用外部系统。
 - `runtime-observability` 已归档：`observability` 包提供 telemetry 初始化、HTTP RED 指标、DB tracing；`httpserver` 已内建 request ID、metrics、trace 中间件。
-- `authorization-boundary.md` 已定稿但未实现，且 `authorization-openfga-cedar` 按负责人决定暂不创建；授权契约规定业务模块只能调用平台授权守卫，不得自写角色/同租户放行判断，不得 fail-open。本 change 只接缝，不实现授权。
+- `authorization-openfga-cedar` 已归档。业务模块必须调用平台授权守卫，不自写角色/同租户放行判断，不得 fail-open。本 change 只接入守卫并提供租户内对象类型事实，不实现授权引擎。
 - `module.Module` 接口只有 `Name/Dependencies/Migrate/RegisterRoutes/Ready`，没有后台任务生命周期钩子；`internal/app/` 与 `cmd/` 由 `stage-2-integration` 拥有，`deploy/compose/`、`deploy/helm/` 由 `production-delivery` 拥有。
-- 当前 Wave 2 准入未满足：change map 没有 G1 `pass` 记录，Wave 1 changes 均未开始。本 change 只能停留在规划态。
+- [G1 已登记通过](../../../docs/stages/evidence/stage-2-g1-gate-record.md)。当前实施范围为隔离本地环境与合成数据验证；不包含外部 IdP、交付验收或 G2 签核。
 
 ## Goals
 
@@ -148,6 +148,14 @@
 - 对象属性的可索引范围属于数据治理决策：本轮先按敏感键排除执行，若安全/数据治理评审要求更严的白名单投影，另开 change 收紧（索引映射版本升级 + 重建）。
 - 租户注销时删除索引、索引访问审计：记为后续运维手册与 change 的输入，不在本 change 实现。
 
+### D15 单类型重建：原地收敛（非原子）决策记录
+
+- 现象：`Rebuild(tenant, objectTypeID!=nil)` 在线上索引原地 upsert 并删除 stale（`internal/platform/search/rebuild.go:170-232`），明确不使用暂存/swap——因为按类型构建的暂存索引只含该类型，swap 会丢掉其他类型。
+- 决策（2026-11-24，负责人批准）：把原「按租户（可选对象类型）…原子切换」拆为两条——**租户级全量重建**保持暂存+swap 原子；**单类型重建**定义为修复式收敛：允许短暂部分可见、失败可幂等重跑、MUST 不影响其他类型、超分页窗口 fail-closed。规格 delta 已同步拆分（`specs/object-search/spec.md`「租户级全量重建收敛」「单类型修复收敛」）。
+- 理由：按类型原子需改成按 (租户,类型) 索引 + 别名扇出（成本高、要迁移），或每次借道整租户 swap（大租户代价高）；单类型修复属低频运维操作，原地收敛可接受且零业务代码改动。
+- 触发重新评估的条件：出现「某类型必须秒级原子生效、且租户索引巨大不能整租户重建」的硬需求 → 开新 change 实现按类型原子（推荐 `_gen` 代际过滤或按类型索引别名）。
+- 运维要求：单类型命令在手册中标明「修复/收敛」而非「全量重建」；执行前确认 outbox 已追平，执行后跑 `--verify`。
+
 ## 部署片段（交 `production-delivery` 合并）
 
 `deploy/compose/compose.yaml` 新增 `search` profile（缺省不启动）：
@@ -199,8 +207,8 @@ core 服务增加 `ONTOAXIS_SEARCH_ENABLED=${ONTOAXIS_SEARCH_ENABLED:-false}`、
 
 ## Risks / Trade-offs
 
-- **授权守卫未实现**（`authorization-openfga-cedar` 暂未创建）→ 授权过滤需求无可执行证据；禁止用替身/放行实现。缓解：先完成租户隔离与索引一致性证据，授权证据标记 blocked，需负责人决定 G2 是否接受延后。
-- **Wave 2 准入未满足**（change map 无 G1 `pass`，Wave 1 未开始）→ 立即实施会破坏 wave admission。缓解：规划态冻结，开工前记录 G1 门与评审授权。
+- **本地授权结果不覆盖交付环境** → 原生进程已验证 Keycloak/OpenFGA/Cedar，但不能替代 Compose 与外部 IdP 验证；G2 前另行取证且不得 fail-open。
+- **授权范围扩大** → G1 通过并不授权生产、真实数据或共享环境变更。当前以隔离本地合成验证为限，超出范围须另行确认。
 - **跨 owner 文件依赖**（`internal/app`、`deploy/compose`、evidence）→ 全链路 E2E 需他人合并。缓解：提前提交 patch/片段，G2 前核对交接清单。
 - **索引数据可能包含敏感属性** → 属性原文进入搜索引擎有泄漏面。缓解：不索引原始属性、敏感键排除、长度上限、按租户索引、仅集群内访问；数据治理评审未通过前不上线；后续可收紧为白名单投影。
 - **中文检索质量未验证** → 召回/排序可能不达业务预期。缓解：固定评测集与基线，阈值签核后才判合格；不达标可按映射/排序规则迭代，不改契约。
@@ -222,7 +230,7 @@ core 服务增加 `ONTOAXIS_SEARCH_ENABLED=${ONTOAXIS_SEARCH_ENABLED:-false}`、
 
 - 授权证据取舍：在授权守卫实现前，Stage 2 是否接受「租户隔离 + 一致性」证据、把授权过滤标记为 blocked？需负责人决定，直接影响 G2 与归档条件。
 - 授权守卫的最终形态与签名（中间件 vs 服务接口）以 `authorization-openfga-cedar` 契约为准；若守卫以中间件提供，搜索路由的调用点需相应调整。
-- 中文检索验收阈值与评测集来源需业务/负责人签核（召回、排序偏好）；未签核前不得判定合格。
+- 中文检索验收阈值与评测集来源需业务/负责人签核（召回、排序偏好）；未签核前不得判定合格。2026-11-24：工程回归门 `engineering_gate` 已签（冻结语料 + 不低于基线，CI `--strict`），业务阈值与代表性语料仍待签核。
 - Meilisearch 固定版本、许可证、资源规格与备份策略需 `production-delivery` 与安全评审确认（本 change 只固定契约测试版本）。
 - 对象属性进入全文索引的数据治理边界需安全/数据治理评审确认；本轮按 D5/D14 的敏感键排除与长度上限执行。
 - worker 是否纳入 Helm/ArgoCD、备份恢复与生产 HA 范围，由 `production-delivery` 在 G2 前确认。

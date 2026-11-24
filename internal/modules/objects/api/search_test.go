@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	"github.com/klb3713/ontoaxis/internal/modules/objects/domain"
 	"github.com/klb3713/ontoaxis/internal/platform/authn"
 	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/authz/authtest"
@@ -90,6 +92,7 @@ type searchErrorEnvelope struct {
 	Error struct {
 		Code      string `json:"code"`
 		Message   string `json:"message"`
+		RequestID string `json:"request_id"`
 		Retryable bool   `json:"retryable"`
 	} `json:"error"`
 }
@@ -176,9 +179,8 @@ func TestSearchRejectsInvalidParameters(t *testing.T) {
 	for i := 0; i < maxSearchObjectTypes+1; i++ {
 		tooManyTypes.Add("object_type_id", uuid.New().String())
 	}
-	validTwoTypes := url.Values{"q": []string{"trail"}}
-	validTwoTypes.Add("object_type_id", uuid.New().String())
-	validTwoTypes.Add("object_type_id", uuid.New().String())
+	typeOne, typeTwo := uuid.New(), uuid.New()
+	validTwoTypes := url.Values{"q": []string{"trail"}, "object_type_id": []string{typeOne.String(), typeTwo.String()}}
 
 	cases := []struct {
 		name   string
@@ -222,7 +224,7 @@ func TestSearchRejectsInvalidParameters(t *testing.T) {
 	// Sanity check that the helper used for the "too many" case is otherwise a
 	// valid request: two object types are accepted by the parser.
 	backend := &fakeSearchBackend{}
-	h := NewHandler(fakeService{}, WithSearch(backend, authtest.Guard(), true))
+	h := NewHandler(fakeService{}, WithSearch(backend, authtest.Guard(), true), WithObjectTypeReader(tenantSearchObjectTypes(tenantID, typeOne, typeTwo)))
 	rec := doSearchRequest(t, newSearchRouter(h), searchTenantContext(tenantID), "/search?"+validTwoTypes.Encode(), nil)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 for two valid object types; body = %s", rec.Code, rec.Body.String())
@@ -391,7 +393,7 @@ func TestSearchParsesFiltersAndSort(t *testing.T) {
 	}
 	backend := &fakeSearchBackend{response: SearchResponse{Items: []SearchHit{}, Total: 0, Truncated: true}}
 	guard := authtest.Guard()
-	h := NewHandler(fakeService{}, WithSearch(backend, guard, true))
+	h := NewHandler(fakeService{}, WithSearch(backend, guard, true), WithObjectTypeReader(tenantSearchObjectTypes(tenantID, typeOne, typeTwo)))
 	rec := doSearchRequest(t, newSearchRouter(h), searchTenantContext(tenantID), "/search?"+params.Encode(), nil)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body = %s", rec.Code, rec.Body.String())
@@ -461,13 +463,12 @@ func TestSearchTenantScopeAuthorizationFact(t *testing.T) {
 }
 
 func TestSearchMultipleObjectTypesAllMustAllow(t *testing.T) {
-	params := url.Values{"q": []string{"trail"}}
-	params.Add("object_type_id", uuid.New().String())
-	params.Add("object_type_id", uuid.New().String())
+	tenantID, typeOne, typeTwo := uuid.New(), uuid.New(), uuid.New()
+	params := url.Values{"q": []string{"trail"}, "object_type_id": []string{typeOne.String(), typeTwo.String()}}
 	backend := &fakeSearchBackend{response: SearchResponse{Items: []SearchHit{}}}
 	guard := &denyAtGuard{}
-	h := NewHandler(fakeService{}, WithSearch(backend, guard, true))
-	rec := doSearchRequest(t, newSearchRouter(h), searchTenantContext(uuid.New()), "/search?"+params.Encode(), nil)
+	h := NewHandler(fakeService{}, WithSearch(backend, guard, true), WithObjectTypeReader(tenantSearchObjectTypes(tenantID, typeOne, typeTwo)))
+	rec := doSearchRequest(t, newSearchRouter(h), searchTenantContext(tenantID), "/search?"+params.Encode(), nil)
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403; body = %s", rec.Code, rec.Body.String())
 	}
@@ -476,6 +477,157 @@ func TestSearchMultipleObjectTypesAllMustAllow(t *testing.T) {
 	}
 	if backend.calls != 0 {
 		t.Fatalf("backend calls = %d, want 0", backend.calls)
+	}
+}
+
+type searchObjectTypeReaderFunc func(context.Context, uuid.UUID, uuid.UUID) (ObjectTypeFact, error)
+
+func (f searchObjectTypeReaderFunc) GetObjectTypeFact(ctx context.Context, tenantID, objectTypeID uuid.UUID) (ObjectTypeFact, error) {
+	return f(ctx, tenantID, objectTypeID)
+}
+
+func tenantSearchObjectTypes(owner uuid.UUID, ids ...uuid.UUID) ObjectTypeReader {
+	return searchObjectTypeReaderFunc(func(_ context.Context, tenantID, typeID uuid.UUID) (ObjectTypeFact, error) {
+		if tenantID == owner {
+			for _, id := range ids {
+				if id == typeID {
+					return ObjectTypeFact{ID: id.String(), TenantID: owner.String()}, nil
+				}
+			}
+		}
+		return ObjectTypeFact{}, domain.ErrNotFound
+	})
+}
+
+// contextTupleSearchFGA models can_read for tenant members without any stored
+// tuples. Crucially, it trusts the resource-to-tenant edge sent by the real
+// authorizer, just as OpenFGA does. It never allows unconditionally.
+type contextTupleSearchFGA struct {
+	checks []authz.CheckInput
+	err    error
+}
+
+func (f *contextTupleSearchFGA) Startup(context.Context) error { return nil }
+func (f *contextTupleSearchFGA) Close() error                  { return nil }
+
+func (f *contextTupleSearchFGA) Check(_ context.Context, input authz.CheckInput) (authz.CheckResult, error) {
+	f.checks = append(f.checks, input)
+	if f.err != nil {
+		return authz.CheckResult{}, f.err
+	}
+	if input.Relation == "can_read" && strings.HasPrefix(input.Object, "object_type:") {
+		for _, member := range input.ContextualTuples {
+			if member.User != input.User || member.Relation != "member" || !strings.HasPrefix(member.Object, "tenant:") {
+				continue
+			}
+			for _, edge := range input.ContextualTuples {
+				if edge.User == member.Object && edge.Relation == "tenant" && edge.Object == input.Object {
+					return authz.CheckResult{Allowed: true}, nil
+				}
+			}
+		}
+	}
+	return authz.CheckResult{}, nil
+}
+
+func TestSearchObjectTypeAuthorizationUsesTenantFacts(t *testing.T) {
+	tenantA, tenantB := uuid.New(), uuid.New()
+	typeA, typeB, unknown := uuid.New(), uuid.New(), uuid.New()
+	types := map[uuid.UUID]uuid.UUID{typeA: tenantA, typeB: tenantB}
+	const requestID = "req-search-type-authz"
+	cases := []struct {
+		name       string
+		ids        []uuid.UUID
+		roles      []string
+		noReader   bool
+		readerErr  error
+		badFact    ObjectTypeFact
+		guardErr   error
+		status     int
+		code       string
+		message    string
+		wantChecks int
+	}{
+		{name: "local type", ids: []uuid.UUID{typeA}, roles: []string{"viewer"}, status: http.StatusOK, wantChecks: 1},
+		{name: "foreign type", ids: []uuid.UUID{typeB}, roles: []string{"viewer"}, status: http.StatusForbidden, code: "forbidden", message: "permission denied"},
+		{name: "local and foreign types", ids: []uuid.UUID{typeA, typeB}, roles: []string{"viewer"}, status: http.StatusForbidden, code: "forbidden", message: "permission denied"},
+		{name: "unknown type", ids: []uuid.UUID{unknown}, roles: []string{"viewer"}, status: http.StatusForbidden, code: "forbidden", message: "permission denied"},
+		{name: "role denied", ids: []uuid.UUID{typeA}, status: http.StatusForbidden, code: "forbidden", message: "permission denied", wantChecks: 1},
+		{name: "reader missing", ids: []uuid.UUID{typeA}, roles: []string{"viewer"}, noReader: true, status: http.StatusServiceUnavailable, code: "unavailable", message: "authorization temporarily unavailable"},
+		{name: "reader error", ids: []uuid.UUID{typeA}, roles: []string{"viewer"}, readerErr: fmt.Errorf("private database detail"), status: http.StatusServiceUnavailable, code: "unavailable", message: "authorization temporarily unavailable"},
+		{name: "reader returned wrong ID", ids: []uuid.UUID{typeA}, roles: []string{"viewer"}, badFact: ObjectTypeFact{ID: unknown.String(), TenantID: tenantA.String()}, status: http.StatusServiceUnavailable, code: "unavailable", message: "authorization temporarily unavailable"},
+		{name: "reader returned foreign fact", ids: []uuid.UUID{typeB}, roles: []string{"viewer"}, badFact: ObjectTypeFact{ID: typeB.String(), TenantID: tenantB.String()}, status: http.StatusForbidden, code: "forbidden", message: "permission denied"},
+		{name: "guard timeout", ids: []uuid.UUID{typeA}, roles: []string{"viewer"}, guardErr: context.DeadlineExceeded, status: http.StatusServiceUnavailable, code: "unavailable", message: "authorization temporarily unavailable", wantChecks: 1},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := authn.WithTenantContext(context.Background(), authn.TenantContext{
+				TenantID: tenantA, UserID: uuid.New(), Roles: tc.roles,
+			})
+			ctx = observability.WithRequestID(ctx, requestID)
+			fga := &contextTupleSearchFGA{err: tc.guardErr}
+			authorizer, err := authz.New(ctx, authz.Options{
+				Config: authz.Config{
+					OpenFGAApiURL: "http://openfga.invalid", OpenFGAStoreID: "store-test", OpenFGAModelID: "model-test",
+					OpenFGATimeout: time.Second, DecisionTimeout: time.Second, SourceCommit: "test-commit",
+				},
+				FGAClient: fga, AuditWriter: io.Discard,
+			})
+			if err != nil {
+				t.Fatalf("create real authorization guard: %v", err)
+			}
+			t.Cleanup(func() {
+				if err := authorizer.Close(); err != nil {
+					t.Errorf("close authorizer: %v", err)
+				}
+			})
+			backend := &fakeSearchBackend{}
+			opts := []Option{WithSearch(backend, authz.NewGuard(authorizer), true)}
+			if !tc.noReader {
+				opts = append(opts, WithObjectTypeReader(searchObjectTypeReaderFunc(func(_ context.Context, tenantID, typeID uuid.UUID) (ObjectTypeFact, error) {
+					if tenantID != tenantA {
+						t.Fatalf("lookup tenant = %s, want request tenant %s", tenantID, tenantA)
+					}
+					if tc.readerErr != nil || tc.badFact != (ObjectTypeFact{}) {
+						return tc.badFact, tc.readerErr
+					}
+					if types[typeID] != tenantID {
+						return ObjectTypeFact{}, fmt.Errorf("scoped lookup: %w", domain.ErrNotFound)
+					}
+					return ObjectTypeFact{ID: typeID.String(), TenantID: types[typeID].String()}, nil
+				})))
+			}
+			params := url.Values{"q": []string{"trail"}}
+			for _, id := range tc.ids {
+				params.Add("object_type_id", id.String())
+			}
+			rec := doSearchRequest(t, newSearchRouter(NewHandler(fakeService{}, opts...)), ctx, "/search?"+params.Encode(), nil)
+			if rec.Code != tc.status {
+				t.Fatalf("status = %d, want %d; body = %s", rec.Code, tc.status, rec.Body.String())
+			}
+			if len(fga.checks) != tc.wantChecks {
+				t.Fatalf("FGA checks = %d, want %d", len(fga.checks), tc.wantChecks)
+			}
+			if tc.wantChecks == 0 && rec.Header().Get(authz.DecisionHeader) != "" {
+				t.Fatalf("unexpected decision header before authorization: %v", rec.Header())
+			}
+			if tc.status == http.StatusOK {
+				if backend.calls != 1 {
+					t.Fatalf("backend calls = %d, want 1", backend.calls)
+				}
+				return
+			}
+			if backend.calls != 0 {
+				t.Fatalf("backend calls = %d, want 0", backend.calls)
+			}
+			var body map[string]json.RawMessage
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || len(body) != 1 || body["error"] == nil {
+				t.Fatalf("want only the error envelope; body = %s, error = %v", rec.Body.String(), err)
+			}
+			if envelope := decodeSearchError(t, rec); envelope.Error.Code != tc.code || envelope.Error.Message != tc.message || envelope.Error.RequestID != requestID {
+				t.Fatalf("unexpected error body: %s", rec.Body.String())
+			}
+		})
 	}
 }
 

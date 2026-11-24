@@ -43,7 +43,7 @@ func WithDecisionGuard(guard authz.DecisionGuard) Option {
 }
 
 // WithObjectTypeReader installs the tenant-scoped object type loader used to
-// authorize object creation and object type-filtered lists.
+// authorize object creation and object type-filtered lists and searches.
 func WithObjectTypeReader(reader ObjectTypeReader) Option {
 	return func(h *Handler) { h.objectTypes = reader }
 }

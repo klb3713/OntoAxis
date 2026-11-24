@@ -129,6 +129,9 @@ func (f *fakeRebuildClient) DeleteDocuments(_ context.Context, indexUID string, 
 func (f *fakeRebuildClient) Search(_ context.Context, _ string, _ SearchRequest) (SearchResult, error) {
 	return SearchResult{}, nil
 }
+func (f *fakeRebuildClient) ListDocuments(context.Context, string, int, int) (DocumentPage, error) {
+	return DocumentPage{}, nil
+}
 func (f *fakeRebuildClient) SwapIndexes(_ context.Context, _ [][2]string) error { return nil }
 func (f *fakeRebuildClient) WaitTask(_ context.Context, indexUID, taskUID string, _ time.Duration) error {
 	f.waitIndex = indexUID

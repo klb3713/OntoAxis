@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/klb3713/ontoaxis/internal/modules/objects/domain"
 	"github.com/klb3713/ontoaxis/internal/platform/authn"
 	"github.com/klb3713/ontoaxis/internal/platform/authz"
 	"github.com/klb3713/ontoaxis/internal/platform/httperr"
@@ -151,15 +152,18 @@ func (h *Handler) searchObjects(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		// With object type filters the read action is checked in the scope of
-		// every requested object type. All decisions must allow; the first
-		// denial writes the 403 response and no backend call is made.
+		// Resolve every scope first so a mixed-tenant filter cannot produce a
+		// partial authorization result or a decision header for an allowed type.
+		facts := make([]authz.ResourceFact, 0, len(req.ObjectTypeIDs))
 		for _, objectTypeID := range req.ObjectTypeIDs {
-			if !authz.AuthorizeHTTP(w, r, h.searchGuard, searchAction, authz.ResourceFact{
-				Type:     resourceTypeObjectType,
-				ID:       objectTypeID.String(),
-				TenantID: tc.TenantID.String(),
-			}) {
+			fact, ok := h.loadSearchObjectTypeFact(w, r, tc.TenantID, objectTypeID)
+			if !ok {
+				return
+			}
+			facts = append(facts, fact)
+		}
+		for _, fact := range facts {
+			if !authz.AuthorizeHTTP(w, r, h.searchGuard, searchAction, fact) {
 				return
 			}
 		}
@@ -196,6 +200,33 @@ func (h *Handler) searchObjects(w http.ResponseWriter, r *http.Request) {
 		Truncated: response.Truncated,
 		RequestID: searchRequestID(r),
 	})
+}
+
+// loadSearchObjectTypeFact loads the trusted tenant edge for the shared guard.
+// A type missing from this tenant and a cross-tenant type are intentionally
+// indistinguishable to the caller.
+func (h *Handler) loadSearchObjectTypeFact(w http.ResponseWriter, r *http.Request, tenantID, objectTypeID uuid.UUID) (authz.ResourceFact, bool) {
+	if h.objectTypes == nil {
+		authz.WriteHTTPError(w, r, &authz.Error{Reason: authz.ReasonInternalError})
+		return authz.ResourceFact{}, false
+	}
+	fact, err := h.objectTypes.GetObjectTypeFact(r.Context(), tenantID, objectTypeID)
+	switch {
+	case errors.Is(err, domain.ErrNotFound):
+		authz.WriteHTTPError(w, r, &authz.Error{Reason: authz.ReasonNoRelationship})
+		return authz.ResourceFact{}, false
+	case err != nil || fact.ID != objectTypeID.String() || fact.TenantID == "":
+		authz.WriteHTTPError(w, r, &authz.Error{Reason: authz.ReasonInternalError})
+		return authz.ResourceFact{}, false
+	case fact.TenantID != tenantID.String():
+		authz.WriteHTTPError(w, r, &authz.Error{Reason: authz.ReasonNoRelationship})
+		return authz.ResourceFact{}, false
+	}
+	return authz.ResourceFact{
+		Type:     resourceTypeObjectType,
+		ID:       fact.ID,
+		TenantID: fact.TenantID,
+	}, true
 }
 
 // parseSearchRequest validates and normalizes the search query parameters. It

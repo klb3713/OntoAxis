@@ -44,6 +44,59 @@ jobs:
       - name: Authz real OpenFGA integration
         run: go test -tags=integration -run 'TestAuthorizerWithRealOpenFGA|TestDatasetHandlerWithRealOpenFGA' -v ./internal/platform/authz/ ./internal/modules/datasets/api/
 
+  # Object search integration: real PostgreSQL schema/migrations, real
+  # Meilisearch task semantics, rebuild/swap/replay/verify paths. The tests are
+  # build-tagged `integration` and skip when ONTOAXIS_SEARCH_TEST_* is absent,
+  # so CI sets ONTOAXIS_SEARCH_TEST_REQUIRED=1 to make a missing service fatal.
+  search-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ontoaxis
+          POSTGRES_PASSWORD: ontoaxis
+          POSTGRES_DB: ontoaxis
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U ontoaxis -d ontoaxis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      meilisearch:
+        image: getmeili/meilisearch:v1.11
+        env:
+          MEILI_MASTER_KEY: ontoaxis-ci-search-master-key
+          MEILI_ENV: development
+          MEILI_NO_ANALYTICS: "true"
+        ports:
+          - 17701:7700
+        options: >-
+          --health-cmd "curl -fsS http://127.0.0.1:7700/health"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26'
+          cache: true
+      - name: Object search real PostgreSQL + Meilisearch integration
+        env:
+          ONTOAXIS_SEARCH_TEST_REQUIRED: "1"
+          ONTOAXIS_SEARCH_TEST_DATABASE_URL: postgres://ontoaxis:ontoaxis@127.0.0.1:55432/ontoaxis?sslmode=disable
+          ONTOAXIS_SEARCH_TEST_MEILISEARCH_URL: http://127.0.0.1:17701
+          ONTOAXIS_SEARCH_TEST_API_KEY: ontoaxis-ci-search-master-key
+        run: go test -tags=integration -count=1 -p 1 -timeout 15m -v ./internal/platform/search/
+      - name: Object search retrieval regression gate (synthetic fixture)
+        env:
+          MEILI_URL: http://127.0.0.1:17701
+          MEILI_API_KEY: ontoaxis-ci-search-master-key
+        run: bash scripts/search-quality-baseline.sh --strict
+
   secret-scan:
     runs-on: ubuntu-latest
     steps:
@@ -173,3 +226,47 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f deploy/compose/compose.yaml --profile edge down -v
+
+  # Static delivery gate: chart rendering, schema validation, shell/action lint and
+  # config drift. No cluster required; runs on every push/PR.
+  delivery-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install delivery tools
+        run: |
+          tmp=$(mktemp -d)
+          curl -fsSLo "$tmp/helm.tgz" https://get.helm.sh/helm-v3.16.4-linux-amd64.tar.gz
+          tar -xzf "$tmp/helm.tgz" -C "$tmp"
+          sudo install -m 0755 "$tmp/linux-amd64/helm" /usr/local/bin/helm
+          curl -fsSLo "$tmp/kubeconform.tgz" https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz
+          tar -xzf "$tmp/kubeconform.tgz" -C "$tmp" kubeconform
+          sudo install -m 0755 "$tmp/kubeconform" /usr/local/bin/kubeconform
+          curl -fsSLo "$tmp/actionlint.tgz" https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz
+          tar -xzf "$tmp/actionlint.tgz" -C "$tmp" actionlint
+          sudo install -m 0755 "$tmp/actionlint" /usr/local/bin/actionlint
+          sudo apt-get update
+          sudo apt-get install -y shellcheck python3-yaml
+          /usr/bin/python3 -c 'import yaml'
+      - name: Helm lint, deterministic render and schema matrix
+        run: PATH="/usr/bin:$PATH" bash scripts/delivery-render-check.sh --require-schema
+      - name: Offline delivery regression tests
+        run: |
+          PYTHONDONTWRITEBYTECODE=1 python3 scripts/delivery-smoke-test.py
+          bash scripts/delivery-release-flow-test.sh
+          bash deploy/kind/render-gitops-root-test.sh
+          bash deploy/kind/kind-up-test.sh
+      - name: ShellCheck
+        run: shellcheck scripts/delivery-*.sh deploy/kind/*.sh
+      - name: actionlint
+        run: actionlint -color
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Edge generation + delivery config drift
+        run: make edge-generate-check delivery-config-check

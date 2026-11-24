@@ -33,6 +33,6 @@ Stage 1 的对象实例只存在于 PostgreSQL JSONB 中：`/api/v1/objects` 只
 - 不改 `objects` 表结构与既有迁移；新增仅属于搜索的 schema 表，由 worker 启动迁移。
 - 共享文件交接（不直接改，由 owner 合并）：`internal/app/` 模块装配（owner `stage-2-integration`）、`deploy/compose/` 的 `search` profile 片段与 Helm 部署要求（owner `production-delivery`）、`docs/stages/evidence/` 证据收录（owner `stage-2-integration`）。
 - 依赖 `runtime-observability`（已归档）：复用 telemetry 约定、HTTP RED 指标与 DB tracing，不修改其平台包。
-- 依赖授权守卫接缝：`authorization-openfga-cedar` 定义的守卫尚未创建（负责人决定暂不创建），因此授权过滤只能在守卫落地后接入并取证，见 design 的阻塞说明。对象搜索自身 **不得** 实现角色/租户放行判断（违反授权边界单一判定点约束）。
+- 依赖授权守卫接缝：`authorization-openfga-cedar` 已归档；对象搜索必须调用同一平台守卫，不自行实现角色/租户放行。租户内对象类型事实用于构造守卫输入，不替代授权判定。
 - 无新增 Go 依赖，`go.mod`/`go.sum` 不变；无 `web/` 改动；新增本地端口 18086（Meilisearch）与 worker 健康/指标端口。
-- 门禁：本 change 属 Stage 2 Wave 2；change map 未记录 G1 `pass`，Wave 1 change 均未开始，因此当前只能处于规划态，实施需先满足 wave admission 与评审授权。
+- 门禁：本 change 属 Stage 2 Wave 2；[G1 已登记通过](../../../docs/stages/evidence/stage-2-g1-gate-record.md)。当前仅获准在隔离本地环境使用合成数据补齐验证，change 评审和 G2 尚未通过。

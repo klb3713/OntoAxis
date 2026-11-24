@@ -157,6 +157,7 @@ func runRebuild(ctx context.Context, cfg Config, logger *slog.Logger) error {
 		"documents", summary.Documents,
 		"duration", summary.Duration.String(),
 		"verified", summary.Verified,
+		"digest", summary.Digest,
 	)
 	return nil
 }

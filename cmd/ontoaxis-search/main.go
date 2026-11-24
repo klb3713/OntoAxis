@@ -56,7 +56,7 @@ func run(args []string) error {
 	flags.SetOutput(os.Stderr)
 	tenant := flags.String("tenant", "", "tenant UUID (rebuild)")
 	objectType := flags.String("object-type", "", "optional object type UUID filter (rebuild)")
-	verify := flags.Bool("verify", false, "verify document counts after rebuild")
+	verify := flags.Bool("verify", false, "verify document counts and content digest after rebuild")
 	limit := flags.Int("limit", 100, "maximum dead-letter events to replay")
 	flags.Usage = func() {
 		_, _ = fmt.Fprintf(flags.Output(), "usage: ontoaxis-search <consume|rebuild|replay|migrate> [flags]\n")

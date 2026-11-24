@@ -312,6 +312,55 @@ func (c *Client) Search(ctx context.Context, uid string, req SearchRequest) (Sea
 	}, nil
 }
 
+// DocumentPage reports exact document pagination, independent of search hits.
+type DocumentPage struct {
+	Documents []Document
+	Total     int
+}
+
+// ListDocuments reads a page of complete index documents, including fields
+// hidden from search results.
+func (c *Client) ListDocuments(ctx context.Context, uid string, offset, limit int) (DocumentPage, error) {
+	const op = "list_documents"
+	if strings.TrimSpace(uid) == "" || offset < 0 || limit <= 0 {
+		return DocumentPage{}, Errorf(ErrInvalid, op, "invalid index or page bounds")
+	}
+	query := url.Values{"offset": {strconv.Itoa(offset)}, "limit": {strconv.Itoa(limit)}}
+	var response struct {
+		Results []json.RawMessage `json:"results"`
+		Offset  *int              `json:"offset"`
+		Limit   *int              `json:"limit"`
+		Total   *int              `json:"total"`
+	}
+	path := "/indexes/" + url.PathEscape(uid) + "/documents?" + query.Encode()
+	if err := c.do(ctx, op, http.MethodGet, path, nil, &response); err != nil {
+		return DocumentPage{}, err
+	}
+	if response.Results == nil || response.Offset == nil || *response.Offset != offset ||
+		response.Limit == nil || *response.Limit != limit || response.Total == nil || *response.Total < 0 ||
+		len(response.Results) != min(limit, max(0, *response.Total-offset)) {
+		return DocumentPage{}, Errorf(ErrUnavailable, op, "inconsistent document pagination")
+	}
+	page := DocumentPage{Total: *response.Total, Documents: make([]Document, 0, len(response.Results))}
+	for _, raw := range response.Results {
+		var fields map[string]json.RawMessage
+		var doc Document
+		if err := json.Unmarshal(raw, &fields); err != nil || len(fields) != 8 {
+			return DocumentPage{}, Errorf(ErrUnavailable, op, "unexpected index document fields")
+		}
+		for _, name := range [...]string{"id", "tenant_id", "object_type_id", "display_name", "properties_text", "version", "created_at", "updated_at"} {
+			if value := fields[name]; len(value) == 0 || bytes.Equal(value, []byte("null")) {
+				return DocumentPage{}, Errorf(ErrUnavailable, op, "missing index document field")
+			}
+		}
+		if err := json.Unmarshal(raw, &doc); err != nil {
+			return DocumentPage{}, Errorf(ErrUnavailable, op, "invalid index document field type")
+		}
+		page.Documents = append(page.Documents, doc)
+	}
+	return page, nil
+}
+
 // WaitTask polls a Meilisearch task until it succeeds, fails, or the timeout
 // elapses. Failed tasks map to ErrInvalid for document/request validation
 // errors and ErrUnavailable otherwise.
