@@ -37,3 +37,11 @@
 - [ ] 创建 search chart，`helm template` 通过
 - [ ] kind 部署评审通过
 - [ ] 回填 7.5/7.6 勾选与证据链接
+
+## 4. 附带发现：CI `edge` job 的 `ontoaxis-core` 启动失败（与搜索无关）
+
+- 现象：`ci` 工作流 `edge` job 在 `docker compose --profile edge up -d` 时 core 容器 `exited (1)`，导致依赖服务一并失败。
+- 根因：`deploy/compose/compose.yaml` 的 base 文件不含授权依赖，edge job 原命令未叠加 `deploy/compose/authz/compose.authz.yaml`，core 因 fail-closed 校验直接退出：
+  `{"level":"ERROR","msg":"startup failed","error":"load authorization config: ONTOAXIS_AUTHZ_OPENFGA_API_URL is required"}`。
+- 处理（2026-11-24，已在本分支 `ci.yml` 修正，未改 `deploy/compose/`）：`edge` job 的 up/logs/down 命令统一叠加 authz overlay，并显式启动 `openfga`、`authz-init`；`docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml --profile edge config -q` 已 exit 0。
+- 请 `production-delivery` 复核该 CI 变更是否与其 edge 交付口径一致（`deploy/compose/` 归属方）；若后续改用其他 authz 注入方式，请同步本 job。

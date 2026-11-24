@@ -99,6 +99,11 @@ jobs:
 
   secret-scan:
     runs-on: ubuntu-latest
+    # gitleaks-action 通过 REST 列出 PR commits；默认 GITHUB_TOKEN 只有
+    # contents:read，访问 /pulls/{n}/commits 会 403（Resource not accessible by integration）。
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -206,7 +211,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Start edge stack
-        run: docker compose -f deploy/compose/compose.yaml --profile edge up -d --build postgres keycloak ontoaxis-core ontoaxis-core-edge oa-edge
+        run: docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml --profile edge up -d --build postgres keycloak openfga authz-init ontoaxis-core ontoaxis-core-edge oa-edge
       - name: Wait for edge and Keycloak
         run: |
           for _ in $(seq 1 90); do
@@ -218,7 +223,7 @@ jobs:
             fi
             sleep 2
           done
-          docker compose -f deploy/compose/compose.yaml --profile edge logs --tail=120
+          docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml --profile edge logs --tail=120
           exit 1
       - name: Edge smoke (positive/negative/fail-closed)
         run: EDGE_TEST_FAIL_CLOSED=1 scripts/edge-smoke.sh
@@ -226,10 +231,10 @@ jobs:
         run: deploy/edge/kind/verify.sh
       - name: Dump logs on failure
         if: failure()
-        run: docker compose -f deploy/compose/compose.yaml --profile edge logs --tail=150
+        run: docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml --profile edge logs --tail=150
       - name: Tear down
         if: always()
-        run: docker compose -f deploy/compose/compose.yaml --profile edge down -v
+        run: docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml --profile edge down -v
 
   # Static delivery gate: chart rendering, schema validation, shell/action lint and
   # config drift. No cluster required; runs on every push/PR.
