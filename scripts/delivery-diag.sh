@@ -15,7 +15,13 @@ mkdir -p "$OUT"
 NAMESPACES="${DIAG_NAMESPACES:-argocd external-secrets oa-system oa-app oa-data oa-observability}"
 
 redact() {
-  sed -E 's/((token|password|passwd|passphrase|secret|authorization|bearer|access[_-]?key|secret[_-]?key)[A-Za-z0-9_.-]*[[:space:]]*[:=][[:space:]]*)[^[:space:]",}]+/\1<redacted>/Ig'
+  # Two passes:
+  #  1. key=value / key: value forms (tokens, passwords, DSN keys, ...);
+  #  2. credentials embedded in URIs, e.g. postgres://user:pw@host - a bare
+  #     "postgres://ontoaxis:pg-local-pass@..." line has no `password=` marker,
+  #     so the first rule alone would leak the dump's connection string.
+  sed -E     -e 's/((token|password|passwd|passphrase|secret|authorization|bearer|access[_-]?key|secret[_-]?key)[A-Za-z0-9_.-]*[[:space:]]*[:=][[:space:]]*)[^[:space:]",}]+/\1<redacted>/Ig' \
+    -e 's#([a-zA-Z][a-zA-Z0-9+.-]*://)[^:/@[:space:]]+:[^@[:space:]]+@#\1<redacted>@#g'
 }
 
 run_get() {

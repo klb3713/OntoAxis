@@ -24,6 +24,19 @@ backup:
   image:
     repository: docker.io/library/postgres
     digest: sha256:6fea524445be83b661e89d8c10d4280535e3ec8af116d4f0a9395d28adf67872
+  # Restricted PodSecurity compliance (required in oa-data: enforce=restricted).
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
   # Secret created by External Secrets Operator from external keys. Values only
   # carry name + key names, never literal credentials.
   secretName: ontoaxis-backup-secrets

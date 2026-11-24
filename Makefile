@@ -8,6 +8,21 @@ GO_DOCKER ?= docker run --rm -v "$(CURDIR)":/src -w /src -e GOFLAGS=-buildvcs=fa
 
 help:
 	@echo "Targets: build test test-race fmt vet lint license-check deps-lock deps-check deps-audit deps-test deps-resolve deps-actions-check proto-lint proto-breaking generate generate-check edge-generate edge-generate-check docker-build compose-up compose-down smoke observability-rules-test observability-smoke"
+	@echo ""
+	@echo "Delivery targets (see docs/operations/delivery-runbook.md):"
+	@echo "  delivery-lint          shellcheck/actionlint on delivery scripts"
+	@echo "  delivery-render        render all charts to dist/render"
+	@echo "  delivery-render-check  render determinism + manifest checks"
+	@echo "  delivery-config-check  edge generate-check + config checks"
+	@echo "  delivery-smoke         smoke test a deployed env (--env kind|staging-like|prod-like)"
+	@echo "  delivery-diag          collect diagnostics for a namespace"
+	@echo "  delivery-backup        run an on-demand backup Job"
+	@echo "  delivery-restore       validate L1-L4 (RESTORE_CONTEXT and BACKUP_DIR required)"
+	@echo "  delivery-idp-check     verify OIDC discovery/JWKS/token against core"
+	@echo "  delivery-promote       promote a release manifest (requires passing smoke JSON)"
+	@echo "  delivery-rollback      roll back to the previous release manifest"
+	@echo "  delivery-kind-up       create the local kind cluster + registry"
+	@echo "  delivery-kind-down     delete the local kind cluster"
 
 build:
 	$(GO) build ./...
@@ -123,7 +138,7 @@ delivery-backup:
 	kubectl -n oa-data create job --from=cronjob/ontoaxis-backup backup-manual-$$(date -u +%Y%m%dT%H%M%SZ)
 
 delivery-restore:
-	bash scripts/delivery-restore.sh --manifest $${MANIFEST:?set MANIFEST=/path/to/manifest.json}
+	bash scripts/delivery-restore.sh --context "$${RESTORE_CONTEXT:?set RESTORE_CONTEXT}" --backup-dir "$${BACKUP_DIR:?set BACKUP_DIR=/path/to/backup}"
 
 delivery-idp-check:
 	bash scripts/delivery-idp-check.sh --issuer $${OIDC_ISSUER:-http://127.0.0.1:18088/realms/ontoaxis} --core-url $${OIDC_CORE_URL:-http://127.0.0.1:18088}

@@ -15,6 +15,9 @@ paths = [
   '''deploy/argocd/secrets/.*\.yaml$''',
   # Env template with keys only (no values).
   '''\.env\..*\.example$''',
+  # Bootstrap script maps secret key names to environment variable names only;
+  # it never contains a credential value.
+  '''scripts/delivery-secrets-bootstrap\.sh$''',
   # Documentation.
   '''docs/.*\.md$''',
 ]

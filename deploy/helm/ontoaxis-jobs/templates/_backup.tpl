@@ -14,11 +14,13 @@ template:
     restartPolicy: Never
     serviceAccountName: {{ .Values.backup.serviceAccount.name | default "ontoaxis-backup" }}
     securityContext:
-      fsGroup: 999
+      {{- toYaml .Values.backup.podSecurityContext | nindent 6 }}
     containers:
       - name: backup
         image: {{ include "ontoaxis.image" (dict "image" .Values.backup.image) }}
         imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+        securityContext:
+          {{- toYaml .Values.backup.containerSecurityContext | nindent 10 }}
         command: ["/bin/sh", "-c", "/opt/backup/backup.sh"]
         env:
           - name: PGHOST

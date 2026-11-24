@@ -1,236 +1,134 @@
 #!/usr/bin/env bash
-# delivery-restore.sh — restore a backup into an isolated oa-restore namespace
-# and sanity-check it, without touching the live environment.
-#
-# Steps: validate manifest + sha256 (refuse a corrupted dump), create oa-restore
-# and an independent Postgres, pg_restore, check goose version and representative
-# row counts, optionally start core read-only, then clean up.
-#
-# Usage:
-#   scripts/delivery-restore.sh --backup-dir dist/backups/<id>
-#   scripts/delivery-restore.sh --dump path/to/db.dump --manifest path/to/manifest.json
-# Options: --keep (do not delete oa-restore), --core-image <ref>
+# Restore a synthetic backup in a dedicated local kind/k3d namespace (L1–L4).
+# Usage: delivery-restore.sh --context CONTEXT --backup-dir DIR [--keep]
+#        delivery-restore.sh --context CONTEXT --dump FILE --manifest FILE
+# --core-image is rejected until a genuinely read-only core path is available.
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-BACKUP_DIR=""
-DUMP=""
-MANIFEST=""
-KEEP=0
-CORE_IMAGE="${RESTORE_CORE_IMAGE:-}"
-
+backup_dir=""; dump=""; manifest=""; context=""; keep=0; core_image="${RESTORE_CORE_IMAGE:-}"
+die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 while [ $# -gt 0 ]; do
   case "$1" in
-    --backup-dir) BACKUP_DIR="${2:-}"; shift 2 ;;
-    --dump) DUMP="${2:-}"; shift 2 ;;
-    --manifest) MANIFEST="${2:-}"; shift 2 ;;
-    --core-image) CORE_IMAGE="${2:-}"; shift 2 ;;
-    --keep) KEEP=1; shift ;;
-    -h|--help) grep -E '^# ' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *) echo "unknown argument: $1" >&2; exit 2 ;;
+    --backup-dir|--dump|--manifest|--context|--core-image)
+      if [ "$#" -lt 2 ] || [ -z "$2" ] || [[ "$2" == --* ]]; then die "missing argument for $1"; fi
+      case "$1" in
+        --backup-dir) backup_dir="$2" ;; --dump) dump="$2" ;; --manifest) manifest="$2" ;;
+        --context) context="$2" ;; --core-image) core_image="$2" ;;
+      esac
+      shift 2 ;;
+    --keep) keep=1; shift ;;
+    -h|--help) printf '%s\n' 'usage: delivery-restore.sh --context CONTEXT --backup-dir DIR [--keep]' '       delivery-restore.sh --context CONTEXT --dump FILE --manifest FILE'; exit 0 ;;
+    *) die "unknown argument: $1" ;;
   esac
 done
-
-log() { printf '\033[1;34m[%s]\033[0m %s\n' "$(date +%H:%M:%S)" "$*"; }
-warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*" >&2; }
-die() { printf 'error: %s\n' "$*" >&2; exit 1; }
-
-if [ -n "$BACKUP_DIR" ]; then
-  [ -d "$BACKUP_DIR" ] || die "backup dir not found: $BACKUP_DIR"
-  [ -z "$MANIFEST" ] && MANIFEST="$BACKUP_DIR/manifest.json"
-  if [ -z "$DUMP" ]; then
-    DUMP="$(ls -1 "$BACKUP_DIR"/*.dump 2>/dev/null | head -n1 || true)"
-    [ -z "$DUMP" ] && [ -f "$BACKUP_DIR/dump" ] && DUMP="$BACKUP_DIR/dump"
-  fi
+[ -z "$core_image" ] || die 'L5 not executed: core has startup migrations and no enforced read-only mode; refusing --core-image'
+if [ -n "$backup_dir" ]; then
+  dump="${dump:-$backup_dir/ontoaxis.dump}"
+  manifest="${manifest:-$backup_dir/manifest.json}"
 fi
-[ -n "$MANIFEST" ] && [ -f "$MANIFEST" ] || die "manifest not found (use --backup-dir or --manifest)"
-[ -n "$DUMP" ] && [ -f "$DUMP" ] || die "dump not found (use --backup-dir or --dump)"
+if [ ! -f "$dump" ] || [ ! -f "$manifest" ]; then die 'provide an existing dump and manifest'; fi
 
-# 1. Validate manifest fields.
-eval "$(python3 - "$MANIFEST" <<'PY'
-import json, sys, shlex
-doc = json.load(open(sys.argv[1], encoding="utf-8"))
-for k in ("backup_id", "sha256", "size_bytes", "schema_version", "pg_version", "image_digest"):
-    v = doc.get(k, "")
-    print(f"{k}={shlex.quote(str(v))}")
+preflight="$(python3 -E - "$manifest" "$dump" <<'PY'
+from datetime import datetime
+import hashlib
+import json
+from pathlib import Path
+import re
+import sys
+
+try:
+    meta = json.loads(Path(sys.argv[1]).read_text())
+    dump = Path(sys.argv[2])
+    assert re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", meta["backup_id"]), "invalid backup_id"
+    date = meta["created_at"]
+    if re.fullmatch(r"\d{8}T\d{6}Z", date):
+        datetime.strptime(date, "%Y%m%dT%H%M%SZ")
+    else:
+        assert datetime.fromisoformat(date.replace("Z", "+00:00")).tzinfo is not None, "timestamp needs timezone"
+    assert type(meta["size_bytes"]) is int and meta["size_bytes"] > 0, "invalid size_bytes"
+    assert re.fullmatch(r"[1-9]\d*", str(meta["schema_version"])), "invalid schema_version"
+    assert re.fullmatch(r"\d{1,2}\.\d{1,2}(?:\.\d{1,2})?", meta["pg_version"]), "invalid pg_version"
+    ref = meta["image_digest"]
+    assert re.fullmatch(r"(?:[a-z0-9.-]+(?::\d+)?/)?(?:[a-z0-9._-]+/)*(?:postgres)@sha256:[0-9a-f]{64}", ref), "backup requires a pinned Postgres image"
+    assert not ref.endswith("0" * 64), "placeholder Postgres digest"
+    assert re.fullmatch(r"[0-9a-f]{64}", meta["sha256"]), "invalid sha256"
+    assert dump.stat().st_size == meta["size_bytes"], "backup size mismatch"
+    h = hashlib.sha256()
+    with dump.open("rb") as f:
+        assert f.read(5) == b"PGDMP", "not a Postgres custom dump"
+        f.seek(0)
+        for block in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(block)
+    assert h.hexdigest() == meta["sha256"], "backup SHA-256 mismatch"
+    print(meta["schema_version"], ref)
+except (AssertionError, ValueError, KeyError, TypeError, OSError) as exc:
+    sys.exit(f"backup preflight failed: {exc if isinstance(exc, AssertionError) else 'invalid manifest or dump'}")
 PY
-)"
-[ -n "$sha256" ] || die "manifest missing sha256"
-log "backup_id=${backup_id:-unknown} schema_version=${schema_version:-?} pg_version=${pg_version:-?}"
+)" || die 'restore stopped before touching Kubernetes'
+read -r schema pg_image <<< "$preflight"
+printf '%s\n' 'L1: backup metadata, size, format and SHA-256 verified'
+case "$context" in kind-ontoaxis-kind|k3d-ontoaxis-k3d) ;; *) die 'specify the approved local kind-ontoaxis-kind or k3d-ontoaxis-k3d context' ;; esac
+# Do not interpret arbitrary images from a backup as executable workloads.
+case "$pg_image" in localhost:5000/library/postgres@*|localhost:5000/postgres@*) ;; *) die 'backup Postgres image is not in the approved local registry' ;; esac
+command -v kubectl >/dev/null || die 'kubectl not found'
+k() { kubectl --context "$context" "$@"; }
+server="$(k config view --minify -o 'jsonpath={.clusters[0].cluster.server}')"
+[[ "$server" =~ ^https://(127\.0\.0\.1|localhost):[0-9]+$ ]] || die 'restore requires a loopback Kubernetes API'
+NS="oa-restore-$(python3 -c 'import secrets; print(secrets.token_hex(6))')"
+export PG_IMAGE="$pg_image"
+created=0
+cleanup() {
+  rc=$?
+  trap - EXIT
+  if [ "$created" -eq 1 ]; then
+    if [ "$keep" -eq 1 ]; then
+      printf 'restore namespace retained: %s\n' "$NS" >&2
+    elif ! k delete namespace "$NS" --wait=true --timeout=60s >/dev/null; then
+      printf 'error: could not clean restore namespace %s\n' "$NS" >&2
+      rc=1
+    fi
+  fi
+  exit "$rc"
+}
+trap cleanup EXIT
+k create namespace "$NS" >/dev/null
+created=1
 
-# 2. Verify sha256 (refuse corrupted dump).
-if command -v shasum >/dev/null 2>&1; then
-  actual="$(shasum -a 256 "$DUMP" | awk '{print $1}')"
-elif command -v sha256sum >/dev/null 2>&1; then
-  actual="$(sha256sum "$DUMP" | awk '{print $1}')"
-else
-  die "no shasum/sha256sum available to verify the dump"
+# No Service or published port. Password is generated into a Secret (stdin);
+# SQL is run only over the socket of the temporary Pod, never against the source.
+python3 - <<'PY' | k -n "$NS" create -f - >/dev/null
+import json
+import secrets
+print(json.dumps(dict(apiVersion="v1", kind="Secret", metadata=dict(name="restore-postgres"),
+                      stringData=dict(password=secrets.token_hex(32)))))
+PY
+python3 - <<'PY' | k -n "$NS" create -f - >/dev/null
+import json
+import os
+pod = dict(apiVersion="v1", kind="Pod", metadata=dict(name="restore-postgres"), spec=dict(
+    automountServiceAccountToken=False, restartPolicy="Never", containers=[dict(
+        name="postgres", image=os.environ["PG_IMAGE"], args=["-c", "listen_addresses="],
+        env=[dict(name="POSTGRES_PASSWORD", valueFrom=dict(secretKeyRef=dict(name="restore-postgres", key="password")))],
+        readinessProbe=dict(exec={"command": ["pg_isready", "-U", "postgres"]}, periodSeconds=2))]))
+print(json.dumps(pod))
+PY
+k -n "$NS" wait --for=condition=Ready pod/restore-postgres --timeout=180s >/dev/null
+if ! k -n "$NS" exec -i restore-postgres -- sh -c 'umask 077; cat > /tmp/ontoaxis.dump' < "$dump"; then
+  die 'could not transfer dump to restore pod'
 fi
-[ "$actual" = "$sha256" ] || die "refusing corrupted dump: sha256 mismatch (want ${sha256}, got ${actual})"
-log "dump sha256 verified"
-
-if [ -n "$size_bytes" ]; then
-  actual_size="$(wc -c <"$DUMP" | tr -d ' ')"
-  [ "$actual_size" = "$size_bytes" ] || warn "size mismatch (manifest=${size_bytes} actual=${actual_size})"
-fi
-
-# 3. Cluster + isolated namespace.
-command -v kubectl >/dev/null 2>&1 || die "kubectl not found"
-kubectl cluster-info >/dev/null 2>&1 || die "no Kubernetes cluster reachable"
-
-NS="${RESTORE_NAMESPACE:-oa-restore}"
-kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
-log "namespace '$NS' ready"
-
-# 4. Independent Postgres (trust auth; restore-only, never exposed).
-PG_IMAGE="postgres:${pg_version:-16}"
-cat <<EOF | kubectl apply -f - >/dev/null
-apiVersion: v1
-kind: Service
-metadata:
-  name: ontoaxis-restore-postgres
-  namespace: ${NS}
-spec:
-  selector:
-    app: ontoaxis-restore-postgres
-  ports:
-    - port: 5432
-      targetPort: 5432
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ontoaxis-restore-postgres
-  namespace: ${NS}
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ontoaxis-restore-postgres
-  template:
-    metadata:
-      labels:
-        app: ontoaxis-restore-postgres
-    spec:
-      containers:
-        - name: postgres
-          image: ${PG_IMAGE}
-          env:
-            - name: POSTGRES_HOST_AUTH_METHOD
-              value: trust
-            - name: POSTGRES_DB
-              value: postgres
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-          ports:
-            - containerPort: 5432
-          volumeMounts:
-            - name: data
-              mountPath: /var/lib/postgresql/data
-      volumes:
-        - name: data
-          emptyDir: {}
-EOF
-kubectl -n "$NS" rollout status deployment/ontoaxis-restore-postgres --timeout=240s
-POD="$(kubectl -n "$NS" get pod -l app=ontoaxis-restore-postgres -o jsonpath='{.items[0].metadata.name}')"
-[ -n "$POD" ] || die "restore Postgres pod not found"
-for _ in $(seq 1 60); do
-  if kubectl -n "$NS" exec "$POD" -- pg_isready -U postgres >/dev/null 2>&1; then break; fi
-  sleep 1
+remote_hash="$(k -n "$NS" exec restore-postgres -- sha256sum /tmp/ontoaxis.dump)"
+local_hash="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["sha256"])' "$manifest")"
+[ "${remote_hash%% *}" = "$local_hash" ] || die 'dump changed during transfer'
+k -n "$NS" exec restore-postgres -- pg_restore --list /tmp/ontoaxis.dump >/dev/null || die 'pg_restore could not read dump index'
+printf '%s\n' 'L2: pg_restore archive index verified'
+k -n "$NS" exec restore-postgres -- pg_restore --exit-on-error --single-transaction --no-owner --no-privileges -U postgres -d postgres /tmp/ontoaxis.dump >/dev/null || die 'pg_restore failed; restored database not verified'
+sql() { k -n "$NS" exec restore-postgres -- psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres -tAqc "$1"; }
+actual="$(sql 'SELECT version_id FROM goose_db_version ORDER BY id DESC LIMIT 1')"
+[ "$actual" = "$schema" ] || die 'restored goose schema version does not match manifest'
+printf 'L3: restored goose schema version %s\n' "$actual"
+for table in core.organizations ontology.object_types object_data.objects; do
+  count="$(sql "SELECT count(*) FROM $table")"
+  [[ "$count" =~ ^[0-9]+$ ]] || die "could not get row count: $table"
+  printf 'L4: %s count=%s\n' "$table" "$count"
 done
-
-# 5. pg_restore.
-log "copying dump into restore pod"
-kubectl -n "$NS" cp "$DUMP" "$POD:/tmp/restore.dump" >/dev/null
-log "running pg_restore"
-set +e
-kubectl -n "$NS" exec "$POD" -- pg_restore -U postgres -d postgres --clean --if-exists --no-owner --no-privileges /tmp/restore.dump
-restore_rc=$?
-set -e
-if [ "$restore_rc" -gt 1 ]; then
-  die "pg_restore failed (rc=$restore_rc)"
-elif [ "$restore_rc" -eq 1 ]; then
-  warn "pg_restore completed with warnings (rc=1)"
-else
-  log "pg_restore completed"
-fi
-
-# 6. Goose schema version.
-gv="$(kubectl -n "$NS" exec "$POD" -- psql -U postgres -d postgres -tAc \
-  "select version_id from goose_db_version order by id desc limit 1" 2>/dev/null | tr -d '[:space:]' || true)"
-if [ -n "$gv" ]; then
-  log "goose latest version_id=${gv} (manifest schema_version=${schema_version:-?})"
-  if [ -n "$schema_version" ] && [ "$gv" != "$schema_version" ]; then
-    warn "goose version (${gv}) != manifest schema_version (${schema_version})"
-  fi
-else
-  warn "could not read goose_db_version (table may be in a different database)"
-fi
-
-# 7. Representative row counts.
-QUERIES="${RESTORE_ROWCOUNT_QUERIES:-select 'organizations', count(*) from organizations;select 'object_types', count(*) from object_types;select 'objects', count(*) from objects;}"
-log "representative row counts:"
-IFS=';' read -r -a qs <<<"$QUERIES"
-for q in "${qs[@]}"; do
-  [ -z "${q// /}" ] && continue
-  if out="$(kubectl -n "$NS" exec "$POD" -- psql -U postgres -d postgres -tAc "$q" 2>&1)"; then
-    echo "  ${q} -> ${out}"
-  else
-    warn "row-count query failed: ${q} (${out})"
-  fi
-done
-
-# 8. Optional: start core in read-only mode against the restored DB.
-if [ -n "$CORE_IMAGE" ]; then
-  log "starting core (read-only) against restored DB: ${CORE_IMAGE}"
-  cat <<EOF | kubectl apply -f - >/dev/null
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ontoaxis-restore-core
-  namespace: ${NS}
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ontoaxis-restore-core
-  template:
-    metadata:
-      labels:
-        app: ontoaxis-restore-core
-    spec:
-      containers:
-        - name: core
-          image: ${CORE_IMAGE}
-          env:
-            - name: ONTOAXIS_DATABASE_URL
-              value: postgres://postgres@ontoaxis-restore-postgres:5432/postgres?sslmode=disable
-            - name: ONTOAXIS_READ_ONLY
-              value: "true"
-          ports:
-            - containerPort: 8080
-EOF
-  if kubectl -n "$NS" rollout status deployment/ontoaxis-restore-core --timeout=180s; then
-    kubectl -n "$NS" port-forward deployment/ontoaxis-restore-core 18089:8080 >/dev/null 2>&1 &
-    pf=$!
-    for _ in $(seq 1 30); do
-      if curl -fsS http://127.0.0.1:18089/healthz >/dev/null 2>&1; then log "restore core /healthz OK"; break; fi
-      sleep 0.5
-    done
-    kill "$pf" 2>/dev/null || true
-  else
-    warn "restore core did not become ready"
-  fi
-else
-  log "no --core-image/RESTORE_CORE_IMAGE; skipping core read-only start"
-fi
-
-# 9. Cleanup.
-if [ "$KEEP" -eq 1 ]; then
-  log "keeping namespace '$NS' (--keep)"
-else
-  log "deleting namespace '$NS'"
-  kubectl delete namespace "$NS" --wait=false || warn "namespace delete request failed"
-fi
-
-log "restore verification complete"
+printf '%s\n' 'L1–L4 completed; L5 not executed (no core deployed). This is not full recovery acceptance.'

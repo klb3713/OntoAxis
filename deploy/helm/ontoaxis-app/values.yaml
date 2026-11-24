@@ -30,6 +30,17 @@ components:
     image:
       repository: ghcr.io/ontoaxis/core
       digest: sha256:7e55f59af53b572be0e41dcb24d820529d3f0b9b730419d8ee9a69451e1f79b8
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 100
+      runAsGroup: 100
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
     ports:
       - name: http
         containerPort: 8080
@@ -94,10 +105,21 @@ components:
     namespace: oa-app
     image:
       repository: ghcr.io/ontoaxis/web
-      digest: sha256:a0ed559da443097c2e904f50aa5f76bbdb83298f6ceb0d9b265d90bd6aff68e4
+      digest: sha256:b0ff694e5d1164650b63b5885b067ad3022461dacd37971df6a01471ff66467e
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 101
+      runAsGroup: 101
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
     ports:
       - name: http
-        containerPort: 80
+        containerPort: 8080
     service:
       enabled: true
       type: ClusterIP
@@ -153,6 +175,17 @@ components:
     image:
       repository: ghcr.io/ontoaxis/search-worker
       digest: sha256:2f4dfcfe647f881892063592065b97045168701e46a80bedaf1bb062545fedbe
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
     ports:
       - name: http
         containerPort: 8080

@@ -1,7 +1,7 @@
 # App-of-apps root for kind / staging-like environments.
 #
-# This Application points at deploy/argocd/apps/ (Directory recurse) so any child
-# Application YAML committed there is synced. Child Applications carry the sync
+# This Application points at deploy/argocd/apps/ (non-recursive) so only direct
+# child Application YAML is synced. Child Applications carry the sync
 # waves (-10 namespaces, -5 secrets, 0 platform, 1 data, 2 app, 3 edge,
 # 4 observability, 5 jobs).
 #
@@ -27,7 +27,7 @@ spec:
     targetRevision: main
     path: deploy/argocd/apps
     directory:
-      recurse: true
+      recurse: false
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

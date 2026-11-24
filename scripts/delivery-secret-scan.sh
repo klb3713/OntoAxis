@@ -34,11 +34,13 @@ log "gitleaks not found; using conservative grep fallback"
 # manifests, kind scripts, delivery scripts). This deliberately does NOT scan
 # pre-existing dev fixtures (deploy/compose, internal/ test data, .github) which
 # contain intentional local-only credentials.
-FALLBACK_ROOTS=""
+FALLBACK_ROOTS=()
 for d in deploy/argocd deploy/values deploy/releases deploy/kind scripts; do
-  [ -d "$ROOT/$d" ] && FALLBACK_ROOTS="$FALLBACK_ROOTS $ROOT/$d"
+  if [ -d "$ROOT/$d" ]; then
+    FALLBACK_ROOTS+=("$ROOT/$d")
+  fi
 done
-[ -n "$FALLBACK_ROOTS" ] || { log "no scan roots found"; exit 0; }
+[ "${#FALLBACK_ROOTS[@]}" -gt 0 ] || { log "no scan roots found"; exit 0; }
 
 KEYVAL='(password|passwd|passphrase|secret|token|api[_-]?key)[[:space:]]*[:=][[:space:]]*["'\'']?[^[:space:]"'\'']{8,}'
 DSN='://[^/[:space:]"'\'']+:[^/@[:space:]"'\'']+@'
@@ -48,7 +50,7 @@ hits="$(grep -RInE \
   --exclude='*.example' --exclude='*.md' --exclude='go.sum' \
   --exclude='delivery-secret-scan.sh' --exclude='delivery-secrets-bootstrap.sh' \
   --exclude='edge-smoke*.sh' \
-  -e "$KEYVAL" -e "$DSN" $FALLBACK_ROOTS 2>/dev/null \
+  -e "$KEYVAL" -e "$DSN" "${FALLBACK_ROOTS[@]}" 2>/dev/null \
   | grep -vE 'secretKeyRef|remoteRef|valueFrom|REDACTED|<redacted>|REPLACE_ME|\$\{|sha256:' \
   | grep -vE '[[:space:]:=][A-Z][A-Z0-9_]{3,}[[:space:]"]*$' \
   | grep -vE ':[[:space:]]*[a-z][a-z0-9.-]+[[:space:]]*$' || true)"

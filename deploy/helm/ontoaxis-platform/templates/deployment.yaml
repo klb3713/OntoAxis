@@ -4,6 +4,7 @@
 {{- $res := $c.resources | default $.Values.global.defaultResources }}
 {{- $replicas := $c.replicas | default $.Values.global.defaultReplicas }}
 {{- $mount := and $c.configMap $c.configMap.enabled $c.configMap.mountPath }}
+{{- $persist := and $c.persistence $c.persistence.enabled }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -83,11 +84,17 @@ spec:
           {{- if $c.probes }}
           {{- include "ontoaxis.probes" (dict "probes" $c.probes "root" $) | nindent 10 }}
           {{- end }}
-          {{- if $mount }}
+          {{- if or $mount $persist }}
           volumeMounts:
+            {{- if $mount }}
             - name: config
               mountPath: {{ $c.configMap.mountPath }}
               readOnly: true
+            {{- end }}
+            {{- if $persist }}
+            - name: data
+              mountPath: {{ required (printf "ontoaxis: %s persistence.mountPath is required" $name) $c.persistence.mountPath }}
+            {{- end }}
           {{- end }}
           {{- if $c.preStop }}
           lifecycle:
@@ -95,11 +102,18 @@ spec:
               exec:
                 command: ["/bin/sh", "-c", {{ printf "sleep %d" (int $c.preStop.sleepSeconds) | quote }}]
           {{- end }}
-      {{- if $mount }}
+      {{- if or $mount $persist }}
       volumes:
+        {{- if $mount }}
         - name: config
           configMap:
             name: {{ $c.configMap.name | default (printf "%s-config" $name) }}
+        {{- end }}
+        {{- if $persist }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ $c.persistence.claimName | default (printf "%s-data" $name) }}
+        {{- end }}
       {{- end }}
       {{- with $c.nodeSelector }}
       nodeSelector:

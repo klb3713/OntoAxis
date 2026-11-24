@@ -11,9 +11,31 @@ global:
       cpu: 250m
       memory: 256Mi
   oidc:
-    issuer: http://localhost:18083/realms/ontoaxis
+    # Browser + port-forwarded token endpoint use 127.0.0.1:18083, and the
+    # issuer must match the token `iss` claim byte-for-byte.
+    issuer: http://127.0.0.1:18083/realms/ontoaxis
     audience: ontoaxis-api
-    jwksUrl: ""
+    # Pods resolve Keycloak in-cluster; the host-side URL is not routable from
+    # inside a pod, so pin JWKS to the Service DNS name.
+    jwksUrl: http://keycloak.oa-system.svc.cluster.local:8080/realms/ontoaxis/protocol/openid-connect/certs
   secretStore:
-    name: ontoaxis-kubernetes-store
+    name: ontoaxis-kind
     kind: ClusterSecretStore
+
+# GitOps wave -5 owns the kind Secrets, including keys shared by charts.
+# Chart-level owners are disabled here so ESO never reconciles the same target twice.
+components:
+  postgres:
+    externalSecret: {enabled: false}
+  keycloak:
+    externalSecret: {enabled: false}
+  openfga:
+    externalSecret: {enabled: false}
+  seaweedfs:
+    externalSecret: {enabled: false}
+  trino:
+    externalSecret: {enabled: false}
+  ontoaxis-core:
+    externalSecret: {enabled: false}
+backup:
+  externalSecret: {enabled: false}

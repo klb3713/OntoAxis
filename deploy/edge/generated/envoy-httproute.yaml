@@ -3,8 +3,9 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
     annotations:
-        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+        ontoaxis.dev/route-table-sha256: 8fb953d6aecd054fcdd9b6cfe1ea2222366553b82d4d19d1799cb5e1c4a33279
     name: oa-edge
+    namespace: oa-system
 spec:
     gatewayClassName: eg
     listeners:
@@ -16,14 +17,16 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
     annotations:
-        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+        ontoaxis.dev/route-table-sha256: 8fb953d6aecd054fcdd9b6cfe1ea2222366553b82d4d19d1799cb5e1c4a33279
     name: oa-edge-public
+    namespace: oa-system
 spec:
     parentRefs:
         - name: oa-edge
     rules:
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           matches:
             - path:
@@ -31,6 +34,7 @@ spec:
                 value: /healthz
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           matches:
             - path:
@@ -38,24 +42,35 @@ spec:
                 value: /readyz
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           matches:
             - path:
                 type: PathPrefix
                 value: /.well-known/
+        - backendRefs:
+            - name: web
+              namespace: oa-app
+              port: 80
+          matches:
+            - path:
+                type: Exact
+                value: /
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
     annotations:
-        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+        ontoaxis.dev/route-table-sha256: 8fb953d6aecd054fcdd9b6cfe1ea2222366553b82d4d19d1799cb5e1c4a33279
     name: oa-edge-protected
+    namespace: oa-system
 spec:
     parentRefs:
         - name: oa-edge
     rules:
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           filters:
             - requestHeaderModifier:
@@ -85,6 +100,7 @@ spec:
                 value: /api/v1/tenancy
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           filters:
             - requestHeaderModifier:
@@ -110,6 +126,7 @@ spec:
                 value: /api/v1/ontology
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           filters:
             - requestHeaderModifier:
@@ -135,6 +152,7 @@ spec:
                 value: /api/v1/datasets
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           filters:
             - requestHeaderModifier:
@@ -160,6 +178,7 @@ spec:
                 value: /api/v1/connectors
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           filters:
             - requestHeaderModifier:
@@ -177,6 +196,7 @@ spec:
                 value: /api/v1/ingestion
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           filters:
             - requestHeaderModifier:
@@ -202,6 +222,7 @@ spec:
                 value: /api/v1/pipelines
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           filters:
             - requestHeaderModifier:
@@ -227,6 +248,7 @@ spec:
                 value: /api/v1/objects
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           filters:
             - requestHeaderModifier:
@@ -248,6 +270,7 @@ spec:
                 value: /api/v1/query
         - backendRefs:
             - name: ontoaxis-core
+              namespace: oa-app
               port: 8080
           filters:
             - requestHeaderModifier:
@@ -310,13 +333,15 @@ apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
     annotations:
-        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+        ontoaxis.dev/route-table-sha256: 8fb953d6aecd054fcdd9b6cfe1ea2222366553b82d4d19d1799cb5e1c4a33279
     name: oa-edge-forward-auth
+    namespace: oa-system
 spec:
     extAuth:
         http:
             backendRefs:
                 - name: ontoaxis-core
+                  namespace: oa-app
                   port: 8080
             headersToBackend:
                 - x-ontoaxis-tenant-id
@@ -335,8 +360,9 @@ apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
     annotations:
-        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+        ontoaxis.dev/route-table-sha256: 8fb953d6aecd054fcdd9b6cfe1ea2222366553b82d4d19d1799cb5e1c4a33279
     name: oa-edge-rate-limit
+    namespace: oa-system
 spec:
     rateLimit:
         local:
@@ -354,8 +380,9 @@ apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: HTTPRouteFilter
 metadata:
     annotations:
-        ontoaxis.dev/route-table-sha256: df684c65978058c8cdae20b7cc5388b706fc329b7a6a9a196a09af6aa1fe07f9
+        ontoaxis.dev/route-table-sha256: 8fb953d6aecd054fcdd9b6cfe1ea2222366553b82d4d19d1799cb5e1c4a33279
     name: oa-edge-method-not-allowed
+    namespace: oa-system
 spec:
     directResponse:
         body:
@@ -363,3 +390,26 @@ spec:
             type: Inline
         contentType: application/json
         statusCode: 405
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+    annotations:
+        ontoaxis.dev/route-table-sha256: 8fb953d6aecd054fcdd9b6cfe1ea2222366553b82d4d19d1799cb5e1c4a33279
+    name: oa-edge-to-oa-app
+    namespace: oa-app
+spec:
+    from:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+          namespace: oa-system
+        - group: gateway.envoyproxy.io
+          kind: SecurityPolicy
+          namespace: oa-system
+    to:
+        - group: ""
+          kind: Service
+          name: ontoaxis-core
+        - group: ""
+          kind: Service
+          name: web

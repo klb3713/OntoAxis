@@ -13,14 +13,25 @@ global:
       cpu: 250m
       memory: 256Mi
   oidc:
-    issuer: http://localhost:18083/realms/ontoaxis
+    issuer: http://127.0.0.1:18083/realms/ontoaxis
     audience: ontoaxis-api
-    jwksUrl: ""
+    jwksUrl: http://keycloak.oa-system.svc.cluster.local:8080/realms/ontoaxis/protocol/openid-connect/certs
   secretStore:
-    name: ontoaxis-kubernetes-store
+    name: ontoaxis-kind
     kind: ClusterSecretStore
 
 components:
+  # Same wave -5 Secret owners as kind; charts only reference their targets.
+  postgres:
+    externalSecret: {enabled: false}
+  keycloak:
+    externalSecret: {enabled: false}
+  openfga:
+    externalSecret: {enabled: false}
+  seaweedfs:
+    externalSecret: {enabled: false}
+  ontoaxis-core:
+    externalSecret: {enabled: false}
   # Streaming / CDC / analytics / catalog engines trimmed for small clusters.
   kafka:
     enabled: false
@@ -34,6 +45,7 @@ components:
     enabled: false
   trino:
     enabled: false
+    externalSecret: {enabled: false}
   nessie:
     enabled: false
   # Observability extras that are not needed for a functional local stack.
@@ -41,3 +53,5 @@ components:
     enabled: false
   perses:
     enabled: false
+backup:
+  externalSecret: {enabled: false}

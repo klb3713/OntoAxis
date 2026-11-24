@@ -1,0 +1,21 @@
+{{- range $name, $c := .Values.components }}
+{{- if and $c.enabled (eq $c.chart $.Chart.Name) $c.persistence $c.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $c.persistence.claimName | default (printf "%s-data" $name) }}
+  namespace: {{ $c.namespace | default $.Values.global.namespace | default "oa-app" }}
+  labels:
+    {{- include "ontoaxis.labels" (dict "name" $name "root" $) | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- with $c.persistence.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ required (printf "ontoaxis: %s persistence.size is required" $name) $c.persistence.size }}
+{{- end }}
+{{- end }}

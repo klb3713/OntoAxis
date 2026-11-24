@@ -1,8 +1,13 @@
 # Local Meilisearch + object-search worker overlay.
-# Usage: docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml -f deploy/compose/search/compose.search.yaml up -d --build
+# Usage: docker compose -f deploy/compose/compose.yaml -f deploy/compose/search/compose.search.yaml --profile search up -d --build
+# Until production-delivery folds these services into deploy/compose/compose.yaml, the
+# `search` profile only exists in this overlay, so it must be passed explicitly.
+# `ontoaxis-core` keeps a non-required dependency on the worker so the base CRUD stack
+# still runs (search returns 503) when the profile is not enabled.
 name: ontoaxis-local
 services:
   meilisearch:
+    profiles: ["search"]
     image: getmeili/meilisearch:v1.11
     environment:
       MEILI_MASTER_KEY: local-search-master-key
@@ -14,6 +19,7 @@ services:
       - search_data:/meili_data
 
   search-worker:
+    profiles: ["search"]
     build:
       context: ../..
       dockerfile: deploy/compose/search/Dockerfile
@@ -42,6 +48,7 @@ services:
     depends_on:
       search-worker:
         condition: service_started
+        required: false
 
 volumes:
   search_data:

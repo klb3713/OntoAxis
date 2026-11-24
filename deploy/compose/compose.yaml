@@ -77,6 +77,9 @@ services:
       ONTOAXIS_COMMIT: "${ONTOAXIS_COMMIT:-unknown}"
       ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT: "${ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT:-}"
       ONTOAXIS_OTEL_SAMPLE_RATIO: "${ONTOAXIS_OTEL_SAMPLE_RATIO:-1.0}"
+      ONTOAXIS_SEARCH_ENABLED: "true"
+      ONTOAXIS_SEARCH_URL: "http://meilisearch:7700"
+      ONTOAXIS_SEARCH_API_KEY: "local-search-master-key"
     ports:
       - "${ONTOAXIS_CORE_HOST_PORT:-18080}:8080"
       - "${ONTOAXIS_METRICS_HOST_PORT:-19090}:9090"
@@ -85,11 +88,48 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+      search-worker:
+        condition: service_started
+        required: false
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 10
+
+  meilisearch:
+    profiles: ["search"]
+    image: getmeili/meilisearch:v1.11
+    environment:
+      MEILI_MASTER_KEY: local-search-master-key
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      - "127.0.0.1:17700:7700"
+    volumes:
+      - search_data:/meili_data
+
+  search-worker:
+    profiles: ["search"]
+    build:
+      context: ../..
+      dockerfile: deploy/compose/search/Dockerfile
+    command: ["consume"]
+    environment:
+      ONTOAXIS_DATABASE_URL: "postgres://ontoaxis:ontoaxis@postgres:5432/ontoaxis?sslmode=disable"
+      ONTOAXIS_SEARCH_ENABLED: "true"
+      ONTOAXIS_SEARCH_URL: "http://meilisearch:7700"
+      ONTOAXIS_SEARCH_API_KEY: "local-search-master-key"
+      ONTOAXIS_SEARCH_HTTP_ADDR: ":8081"
+      ONTOAXIS_SEARCH_METRICS_ADDR: ":9094"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    ports:
+      - "127.0.0.1:18088:8081"
+    restart: unless-stopped
 
   oa-edge:
     profiles: ["edge"]
@@ -202,6 +242,7 @@ services:
 volumes:
   ontoaxis_postgres_data:
   ontoaxis_prometheus_data:
+  search_data:
 
 networks:
   edge:

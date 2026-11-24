@@ -1,49 +1,48 @@
-# OntoAxis release manifest for the "kind" environment.
+# OntoAxis release manifest for the "kind" environment (image-level).
 #
-# TEMPLATE: every component digest below is the all-zero sha256 placeholder and
-# every commit is REPLACE_ME. `scripts/delivery-release-check.sh` intentionally
-# FAILS until these are replaced by real digests (e.g. via delivery-images.sh +
-# delivery-promote.sh). This is honest by design — a template must never look
-# like a verified release.
+# This manifest pins the container images actually running in the local kind
+# cluster (2026-11-24). Chart-only components (ontoaxis-platform/data/edge/
+# observability/jobs) are rendered units without their own image digest, so they
+# are not listed here; the image-level release covers the runtime images below.
 #
-# Logical install order matches the ArgoCD sync waves: platform (0) -> data (1)
-# -> app (2) -> edge (3) -> observability (4) -> jobs (5).
+# `scripts/delivery-release-check.sh --env kind` validates these fields and, when
+# a cluster is reachable, confirms the running Pod imageIDs match the digests.
 environment: kind
-created_at: "2026-11-22T20:57:23Z"
+created_at: "2026-11-24T01:05:00Z"
 operator: "local"
 components:
-  - component: ontoaxis-platform
-    repository: https://github.com/ontoaxis/ontoaxis.git
-    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
-    commit: "REPLACE_ME"
-    chartVersion: "0.1.0"
-  - component: ontoaxis-data
-    repository: https://github.com/ontoaxis/ontoaxis.git
-    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
-    commit: "REPLACE_ME"
-    chartVersion: "0.1.0"
   - component: ontoaxis-core
-    repository: localhost:5055/ontoaxis-core
-    digest: sha256:a6485178874d5be55089bae0386133077827575ad9ddd04bc8372fc5008c6f34
-    commit: a04ab4c0e7340fd69ecf29c4883bd290ea9f0a47
+    repository: localhost:5000/ontoaxis-core
+    digest: sha256:7e849f3aa600c707590f202d27f74d7cb41a450239deb7f02e601098596c3e66
+    commit: 20a6e5e10a181725796aa5295c02806c82b1c696
     chartVersion: ""
   - component: ontoaxis-web
-    repository: localhost:5055/ontoaxis-web
-    digest: sha256:9c1a30ccacca04176e7529cc1e693dd019f23c3673276830d5d57a0e34da6dbb
-    commit: a04ab4c0e7340fd69ecf29c4883bd290ea9f0a47
+    repository: localhost:5000/ontoaxis-web
+    digest: sha256:b0ff694e5d1164650b63b5885b067ad3022461dacd37971df6a01471ff66467e
+    commit: 506a0cdb46146a2f12dd8a3ab7ca454c7819aae4
     chartVersion: ""
-  - component: ontoaxis-edge
-    repository: https://github.com/ontoaxis/ontoaxis.git
-    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
-    commit: "REPLACE_ME"
-    chartVersion: "0.1.0"
-  - component: ontoaxis-observability
-    repository: https://github.com/ontoaxis/ontoaxis.git
-    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
-    commit: "REPLACE_ME"
-    chartVersion: "0.1.0"
-  - component: ontoaxis-jobs
-    repository: https://github.com/ontoaxis/ontoaxis.git
-    digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
-    commit: "REPLACE_ME"
-    chartVersion: "0.1.0"
+  - component: ontoaxis-search-worker
+    repository: localhost:5000/ontoaxis-search-worker
+    digest: sha256:0b8e42480a8fcb3969c0fe4d14138ea10311610e955e4923746bc860691254e6
+    commit: 20a6e5e10a181725796aa5295c02806c82b1c696
+    chartVersion: ""
+  - component: meilisearch
+    repository: localhost:5000/getmeili/meilisearch
+    digest: sha256:45aa1569111bf9e46025a41e5e63a24d62c13cc7a920c02ca3c2e5f9929a7903
+    commit: upstream:meilisearch-v1.11
+    chartVersion: ""
+  - component: postgres
+    repository: localhost:5000/library/postgres
+    digest: sha256:1517ffbd8fdf7c4946535604bfa8df5299456b7749e5396c0edcbb345fe76d6a
+    commit: upstream:postgres-17.6-alpine
+    chartVersion: ""
+  - component: keycloak
+    repository: localhost:5000/keycloak/keycloak
+    digest: sha256:f6c2e546526b0fac99261618d9b30bfcf487ac5a087b48def2cc1ace52335f02
+    commit: upstream:keycloak-26.0
+    chartVersion: ""
+  - component: openfga
+    repository: localhost:5000/openfga/openfga
+    digest: sha256:656cb52a9b5014dee922712aaeb82e69ef3cba87cae6bf3d8e214e1ae736a739
+    commit: upstream:openfga-v1.23.0
+    chartVersion: ""

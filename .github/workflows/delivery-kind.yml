@@ -1,0 +1,108 @@
+name: delivery-kind
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  delivery-kind:
+    # 受控 runner 准备就绪后才开启定时；手动可检查前置，仍只允许默认分支。
+    if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      (github.event_name == 'workflow_dispatch' || vars.DELIVERY_KIND_SCHEDULE_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      KIND_CLUSTER_NAME: ontoaxis-kind
+      ROOT_APP_ENV: kind-small
+      BOOTSTRAP_CONTEXT: kind-ontoaxis-kind
+      VERIFY_SMOKE_PROFILE: readiness
+      DIAG_OUT: dist/delivery/diagnostics-ci
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check controlled runner prerequisites before creating any cluster
+        run: |
+          mkdir -p dist/delivery
+          if [[ ! -f deploy/kind/ci-prepare.sh ]]; then
+            {
+              echo 'NOT EXECUTED delivery-kind: controlled kind-small runner setup has not been implemented.'
+              echo 'Required: build and pin every chart image, including core/web/search-worker; generate a matching kind-small release manifest.'
+              echo 'Required: serve reviewed Git commits via a read-only ClusterIP only, with no temporary public Git repository.'
+              echo 'Required: synthetic bootstrap credentials, in-cluster JWKS, loopback OIDC discovery and authorized read-only smoke identity.'
+            } | tee dist/delivery/prerequisites.txt
+            exit 1
+          fi
+          bash deploy/kind/ci-prepare.sh --check-prerequisites
+      - name: Install kind, Helm, kubectl and YAML parser
+        run: |
+          tmp=$(mktemp -d)
+          curl -fsSLo "$tmp/kind" https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-amd64
+          sudo install -m 0755 "$tmp/kind" /usr/local/bin/kind
+          curl -fsSLo "$tmp/helm.tgz" https://get.helm.sh/helm-v3.16.4-linux-amd64.tar.gz
+          tar -xzf "$tmp/helm.tgz" -C "$tmp"
+          sudo install -m 0755 "$tmp/linux-amd64/helm" /usr/local/bin/helm
+          curl -fsSLo "$tmp/kubectl" https://dl.k8s.io/release/v1.32.0/bin/linux/amd64/kubectl
+          sudo install -m 0755 "$tmp/kubectl" /usr/local/bin/kubectl
+          sudo apt-get update
+          sudo apt-get install -y python3-yaml
+          echo /usr/bin >> "$GITHUB_PATH"
+          kind version && helm version --short && kubectl version --client
+      - name: Create kind cluster and bind its kubeconfig
+        id: kind
+        run: |
+          SECONDS=0
+          trap 'printf "kind-up: %ss\n" "$SECONDS" >> dist/delivery/timings.txt' EXIT
+          export KIND_KUBECONFIG_OUT="$RUNNER_TEMP/ontoaxis-kind.kubeconfig"
+          bash deploy/kind/kind-up.sh
+          chmod 600 "$KIND_KUBECONFIG_OUT"
+          printf 'KUBECONFIG=%s\n' "$KIND_KUBECONFIG_OUT" >> "$GITHUB_ENV"
+      - name: Build and pin images and prepare controlled Git source
+        run: |
+          SECONDS=0
+          trap 'printf "images-and-source: %ss\n" "$SECONDS" >> dist/delivery/timings.txt' EXIT
+          # 后续适配器须从已审核输入构建镜像/提交，启动仅集群内 Git，并设置
+          # GITOPS_CHECKOUT/GITOPS_*_REVISION/RELEASE_MANIFEST 及合成 bootstrap 环境。
+          bash deploy/kind/ci-prepare.sh --prepare-images-and-source
+      - name: Bootstrap ArgoCD, ESO, Envoy and the controlled root
+        run: |
+          SECONDS=0
+          trap 'printf "bootstrap: %ss\n" "$SECONDS" >> dist/delivery/timings.txt' EXIT
+          bash deploy/kind/bootstrap.sh
+      - name: Wait for GitOps
+        run: |
+          SECONDS=0
+          trap 'printf "gitops-wait: %ss\n" "$SECONDS" >> dist/delivery/timings.txt' EXIT
+          bash deploy/kind/verify.sh --wait-only
+      - name: Run readiness smoke with a synthetic identity
+        run: |
+          SECONDS=0
+          trap 'printf "verify: %ss\n" "$SECONDS" >> dist/delivery/timings.txt' EXIT
+          # 后续适配器须绑定 loopback IdP，并以合成身份注入 OIDC_ISSUER/ONTOAXIS_SMOKE_TOKEN，
+          # 然后 exec 本命令。不得上传该适配器的临时文件或凭据。
+          bash deploy/kind/ci-prepare.sh --with-smoke-identity -- bash deploy/kind/verify.sh
+      - name: Collect bounded diagnostics after deployment failure
+        if: failure() && steps.kind.outcome == 'success'
+        run: |
+          if [[ ! -e "$DIAG_OUT/SUMMARY.txt" ]]; then
+            bash scripts/delivery-diag.sh
+          fi
+      - name: Upload allowlisted evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: delivery-kind-evidence
+          path: |
+            dist/delivery/prerequisites.txt
+            dist/delivery/timings.txt
+            dist/delivery/smoke-kind-readiness.json
+            dist/delivery/diagnostics-ci/SUMMARY.txt
+          if-no-files-found: warn
+      - name: Tear down only the workflow's own kind cluster
+        if: always() && (steps.kind.outcome == 'success' || steps.kind.outcome == 'failure')
+        run: bash deploy/kind/kind-down.sh

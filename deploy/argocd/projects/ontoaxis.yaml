@@ -22,7 +22,7 @@ metadata:
 spec:
   description: OntoAxis production delivery (platform/data/app/edge/observability)
   sourceRepos:
-    - https://github.com/ontoaxis/ontoaxis.git
+    - https://github.com/ontoaxis/ontoaxis.git  # kind-only: source repo for kind-only env; see runbook §0
   destinations:
     - namespace: oa-system
       server: https://kubernetes.default.svc

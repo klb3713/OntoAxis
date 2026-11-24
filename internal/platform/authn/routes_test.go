@@ -24,18 +24,24 @@ type edgeRouteTable struct {
 		Gateway struct {
 			Providers []string `yaml:"providers"`
 			Listener  struct {
-				Name     string `yaml:"name"`
-				Protocol string `yaml:"protocol"`
-				Port     int    `yaml:"port"`
-				TLS      struct {
+				Name      string `yaml:"name"`
+				Namespace string `yaml:"namespace"`
+				Protocol  string `yaml:"protocol"`
+				Port      int    `yaml:"port"`
+				TLS       struct {
 					Enabled bool `yaml:"enabled"`
 				} `yaml:"tls"`
 			} `yaml:"listener"`
 			PublicRoutes []struct {
-				Name   string `yaml:"name"`
-				Method string `yaml:"method"`
-				Path   string `yaml:"path"`
-				Auth   string `yaml:"auth"`
+				Name    string `yaml:"name"`
+				Method  string `yaml:"method"`
+				Path    string `yaml:"path"`
+				Auth    string `yaml:"auth"`
+				Backend struct {
+					Service   string `yaml:"service"`
+					Namespace string `yaml:"namespace"`
+					Port      int    `yaml:"port"`
+				} `yaml:"backend"`
 			} `yaml:"publicRoutes"`
 			InternalRoutes []struct {
 				Name     string `yaml:"name"`
@@ -47,9 +53,10 @@ type edgeRouteTable struct {
 			InternalHeadersToInject []string `yaml:"internalHeadersToInject"`
 		} `yaml:"gateway"`
 		Upstream struct {
-			Service string `yaml:"service"`
-			Port    int    `yaml:"port"`
-			Scheme  string `yaml:"scheme"`
+			Service   string `yaml:"service"`
+			Namespace string `yaml:"namespace"`
+			Port      int    `yaml:"port"`
+			Scheme    string `yaml:"scheme"`
 		} `yaml:"upstream"`
 		RateLimit struct {
 			Defaults struct {
@@ -125,6 +132,12 @@ func TestEdgeRouteTableMetadata(t *testing.T) {
 	if table.Spec.Gateway.Listener.Name != "oa-edge" || table.Spec.Gateway.Listener.Protocol != "HTTP" || table.Spec.Gateway.Listener.Port != 8080 {
 		t.Fatalf("listener = %+v, want oa-edge/HTTP/8080", table.Spec.Gateway.Listener)
 	}
+	// Generated resources must be namespace-deterministic: without an explicit
+	// namespace, `kubectl apply -f` would land them in the caller's context
+	// namespace and the edge contract would silently differ per environment.
+	if table.Spec.Gateway.Listener.Namespace != "oa-system" {
+		t.Fatalf("listener.namespace = %q, want oa-system", table.Spec.Gateway.Listener.Namespace)
+	}
 	if table.Spec.Gateway.Listener.TLS.Enabled {
 		t.Fatal("listener.tls.enabled = true, want false for the Stage 2 local contract")
 	}
@@ -184,13 +197,17 @@ func TestEdgeRouteTableCoversAllBusinessPrefixes(t *testing.T) {
 func TestEdgeRouteTablePublicAndInternalRoutes(t *testing.T) {
 	table := loadEdgeRouteTable(t)
 	wantPublic := []struct {
-		name   string
-		method string
-		path   string
+		name    string
+		method  string
+		path    string
+		backend string
 	}{
-		{"healthz", "GET", "/healthz"},
-		{"readyz", "GET", "/readyz"},
-		{"well-known", "GET", "/.well-known/*"},
+		{"healthz", "GET", "/healthz", ""},
+		{"readyz", "GET", "/readyz", ""},
+		{"well-known", "GET", "/.well-known/*", ""},
+		// The workbench root is a public route but is served by its own
+		// backend; an exact match keeps it from becoming a catch-all.
+		{"web-root", "GET", "/", "web"},
 	}
 	if len(table.Spec.Gateway.PublicRoutes) != len(wantPublic) {
 		t.Fatalf("public route count = %d, want %d", len(table.Spec.Gateway.PublicRoutes), len(wantPublic))
@@ -201,6 +218,21 @@ func TestEdgeRouteTablePublicAndInternalRoutes(t *testing.T) {
 		}
 		if route.Auth != "none" {
 			t.Fatalf("public route %s auth = %q, want none", route.Name, route.Auth)
+		}
+		if route.Backend.Service != wantPublic[i].backend {
+			t.Fatalf("public route %s backend = %q, want %q", route.Name, route.Backend.Service, wantPublic[i].backend)
+		}
+		if route.Backend.Service != "" {
+			if route.Backend.Namespace != "oa-app" || route.Backend.Port != 80 {
+				t.Fatalf("public route %s backend = %+v, want oa-app:80", route.Name, route.Backend)
+			}
+		}
+	}
+	// A PathPrefix "/" would swallow every unmatched path and violate the
+	// "unknown paths return 404, no catch-all" clause of the edge contract.
+	for _, route := range table.Spec.Gateway.PublicRoutes {
+		if route.Path == "/" && strings.HasSuffix(route.Path, "*") {
+			t.Fatalf("public route %s renders as a catch-all", route.Name)
 		}
 	}
 	if len(table.Spec.Gateway.InternalRoutes) != 1 {
@@ -240,6 +272,11 @@ func TestEdgeRouteTableAuthAndUpstreamContract(t *testing.T) {
 	table := loadEdgeRouteTable(t)
 	if table.Spec.Upstream.Service != "ontoaxis-core" || table.Spec.Upstream.Port != 8080 || table.Spec.Upstream.Scheme != "http" {
 		t.Fatalf("upstream = %+v, want ontoaxis-core:8080 http", table.Spec.Upstream)
+	}
+	// core lives in oa-app, so the upstream must name its namespace: otherwise the
+	// edge only works when someone keeps a hand-made Service alias next to it.
+	if table.Spec.Upstream.Namespace != "oa-app" {
+		t.Fatalf("upstream.namespace = %q, want oa-app", table.Spec.Upstream.Namespace)
 	}
 	auth := table.Spec.Auth
 	if auth.Type != "jwt" || auth.Header != "Authorization" || auth.Scheme != "Bearer" {

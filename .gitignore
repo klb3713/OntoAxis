@@ -36,6 +36,8 @@ Thumbs.db
 # Real credential files; keep the *.example.yaml variants in Git.
 *.secret.yaml
 *.secret.yml
+# Local fallback TLS material is never deployable from Git.
+/deploy/kind/tls/*.pem
 !*.secret.example.yaml
 !*.secret.example.yml
 
@@ -111,3 +113,6 @@ temp/
 # - go.sum, web/pnpm-lock.yaml    lockfiles
 # - internal/**/migrations/*.sql  goose migrations (embedded via go:embed)
 # - openspec/, docs/, .github/workflows/
+
+# Local generated root Applications (rehearsal)
+/deploy/argocd/apps/ontoaxis-app/

@@ -101,7 +101,8 @@ fi
 # Cluster comparison (only if reachable and not disabled).
 if [ "${CHECK_CLUSTER:-auto}" != "never" ] && command -v kubectl >/dev/null 2>&1 && kubectl cluster-info >/dev/null 2>&1; then
   echo "cluster reachable: comparing running Pod imageIDs against pinned digests"
-  mapfile -t pairs < <(python3 - "$MANIFEST" <<'PY'
+  pairs=()
+  while IFS= read -r _pair; do pairs+=("$_pair"); done < <(python3 - "$MANIFEST" <<'PY'
 import sys, re
 path = sys.argv[1]
 cur = None

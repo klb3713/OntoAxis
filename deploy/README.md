@@ -123,7 +123,7 @@ absent tool; it exits non-zero when a required command (`helm`, `kubectl`,
 
 The manifests here are for **controlled environments only**:
 
-- `kind` / `k3d` — local single-node clusters.
+- `kind` / `k3d` — local clusters; the standard scripts provision a control plane and two workers/agents.
 - `staging-like` — a rehearsal cluster configured for this repo.
 - `prod-like` — **render-only**; it exists to exercise production-shaped output
   and is never applied here.
@@ -140,32 +140,16 @@ the release manifest before any real deployment.
 ```sh
 # Static checks (no cluster needed)
 ./scripts/delivery-version-check.sh
-./scripts/delivery-render-check.sh          # SKIPs helm-specific steps when helm is absent
+bash scripts/delivery-render-check.sh --require-schema   # requires Helm, PyYAML, kubeconform
 
-# Render only
+# Render only; this does not apply any resources.
 helm template oa-platform deploy/helm/ontoaxis-platform \
-  -f deploy/values/common.yaml -f deploy/values/staging-like.yaml > /tmp/platform.yaml
-
-# Install (authorized controlled cluster only)
-helm upgrade --install oa-platform deploy/helm/ontoaxis-platform \
-  -n oa-system --create-namespace \
   -f deploy/values/common.yaml -f deploy/values/staging-like.yaml
 ```
 
-Rollback: prefer `helm rollback <release> <revision>` after confirming the target
-revision and taking a database backup (the `ontoaxis-jobs` CronJob / manual Job
-produces a `pg_dump -Fc` archive + `manifest.json`). Migrations are forward-only;
-schema rollback must use a backup restore, never hand-edited migration history.
+For a controlled kind/k3d deployment, follow the [delivery runbook](../docs/operations/delivery-runbook.md#1-install-kind). Do not apply the root template with its placeholder URL. Bootstrap validates the fixed Git commits with `--check-source` before connecting; use only the cluster-local Git source and the rehearsal image pins. Kind overlays rely on the dedicated GitOps wave to own target Secrets, not on a standalone chart install.
 
-## Local limitations (current workspace)
-
-- **Helm is not installed here**, so `helm lint` / `helm template` were **not**
-  run locally. Charts are authored to be syntactically valid; run the render gate
-  on a machine with Helm 3.x before applying.
-- **kind/k3d are not exercised** in this environment for the Helm path; the
-  Compose stack above remains the local run path.
-- YAML values/overlays were statically validated with the Ruby YAML parser
-  (PyYAML is not installed in this workspace); see `scripts/delivery-render-check.sh`.
+For GitOps rollback, review the local rollback commit before publication or sync. A direct `helm rollback` or `kubectl rollout undo` does not restore the GitOps desired state. Across schema versions use the reviewed backup/restore procedure, never edit migration history. See the [latest evidence](../docs/stages/evidence/stage-2-production-delivery.md) for the distinction between local checks and deployment acceptance.
 
 ## Make targets
 
@@ -176,8 +160,10 @@ schema rollback must use a backup restore, never hand-edited migration history.
 
 - Helm charts：`deploy/helm/ontoaxis-{platform,data,app,observability,jobs}`；环境 values：`deploy/values/`。
 - 静态检查：`make delivery-lint`、`make delivery-render-check`、`make delivery-config-check`。
-- 本地集群：`deploy/kind/kind-up.sh`（`KIND_REGISTRY_PORT=5055`）/`deploy/kind/kind-down.sh`；`deploy/kind/bootstrap.sh` 安装 ArgoCD/ESO/Envoy 与 app-of-apps。
-- GitOps：`deploy/argocd/projects/ontoaxis.yaml` + `deploy/argocd/root-app.yaml`；应用清单 `deploy/argocd/apps/`。
-- 晋升/回滚：`scripts/delivery-promote.sh --from kind --to staging-like`、`scripts/delivery-rollback.sh --env kind`；发布清单 `deploy/releases/<env>.yaml`。
-- 备份/恢复：`scripts/delivery-restore.sh --backup-dir <dir>`；故障处理见 `docs/operations/delivery-runbook.md`。
-- 烟测/诊断：`scripts/delivery-smoke.sh --env kind`、`scripts/delivery-diag.sh`。
+- 本地集群：`bash deploy/kind/kind-up.sh` / `bash deploy/kind/kind-down.sh`，或对应的 `k3d-*`；已存在集群不要用 teardown 演练代替验证。
+- GitOps：`bash deploy/kind/bootstrap.sh --check-source` 审查固定提交；满足 [前置条件](../docs/operations/delivery-runbook.md#1-install-kind) 后执行 bootstrap，再以 `bash deploy/kind/verify.sh --wait-only` 核对九个应用与提交。
+- 晋升/回滚：`bash scripts/delivery-promote.sh --help`、`bash scripts/delivery-rollback.sh --help`；完整参数见 [发布手册](../docs/operations/delivery-runbook.md#3-build-promote-rollback)。
+- 备份/恢复：`bash scripts/delivery-restore.sh --context <local-context> --backup-dir <dir>`；只验证 L1–L4，见 [备份恢复手册](../docs/operations/delivery-runbook.md#4-backup-and-restore)。
+- 烟测/诊断：`bash scripts/delivery-smoke.sh --env kind --context <local-context>`、`bash scripts/delivery-diag.sh`；`--profile edge` 仅覆盖入口 HTTP，不用于验收。
+
+> 2026-11-24 范围说明：`production-delivery` 已按「交付资产 + 本地 kind 证据」归档；生产级 GitOps 门控、k3d、CI runner、真实 staging IdP 与完整烟测链移交 Stage 3 的 `production-delivery-hardening` / `production-idp-staging`，不代表已具备生产验收。

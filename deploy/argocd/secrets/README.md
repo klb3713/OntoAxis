@@ -11,6 +11,11 @@ that the workloads consume through `secretKeyRef` / `valueFrom` only.
 | `staging-like/` | ESO `kubernetes` provider | same bootstrap `Secret`, populated from environment variables or a git-ignored `.env` file |
 | `prod-like/` | ESO `vault` provider — **template, not connected** | logical path `ontoaxis/prod-like/<component>/<key>`; `server: https://vault.invalid` fails closed if ever synced |
 
+`kind` 与 `kind-small` 共用 wave -5 的 `kind/` 清单。它是这些目标
+Secret 的唯一 ESO 所有者；环境 overlay 禁用各 chart 的同名目标生成，
+工作负载保留 `secretKeyRef`。单独使用 `helm template` 不会生成这些 Secret，
+必须先由受控 GitOps 安装 SecretStore 和 ExternalSecret。暂不改变其他环境的供给边界。
+
 ## `ontoaxis-bootstrap` Secret keys
 
 The `kubernetes` provider can only reference **valid Secret key names**, so the
@@ -45,6 +50,7 @@ shown for reference only.
 | `ontoaxis-core` | `oa-app` | `ontoaxis-core-secrets` |
 | `ontoaxis-keycloak` | `oa-system` | `ontoaxis-keycloak-secrets` |
 | `ontoaxis-data` | `oa-data` | `ontoaxis-data-secrets` |
+| `ontoaxis-seaweedfs` | `oa-app` | `ontoaxis-data-secrets`（仅 S3 键；`kind`/`kind-small`） |
 | `ontoaxis-openfga` | `oa-system` | `ontoaxis-openfga-secrets` |
 | `ontoaxis-backup` | `oa-data` | `ontoaxis-backup-secrets` |
 

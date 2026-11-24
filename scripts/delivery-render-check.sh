@@ -1,224 +1,175 @@
 #!/usr/bin/env bash
-# delivery-render-check.sh — render every chart against every environment overlay
-# and statically validate the result.
-#
-# Behaviour:
-#   * If `helm` is present: for each chart x values file run `helm template`
-#     twice, compare sha256 of the two renders (determinism check), and run
-#     `kubeconform` when available.
-#   * If `helm` is absent: print `SKIP helm not installed` and continue. Charts
-#     are still validated statically:
-#       - every YAML file parses (PyYAML yaml.safe_load; Ruby YAML fallback;
-#         grep-only fallback when neither parser is installed)
-#       - fail on obvious `repository: ...:latest` or missing/malformed
-#         `digest:` values in the values overlays.
-#   * Exit 0 when everything passes (including the helm-absent SKIP path),
-#     non-zero when a real validation/render failure is found.
-
-set -uo pipefail
-
+# 渲染五套 chart × 四个环境，校验确定性、镜像摘要和 Kubernetes schema。
+set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HELM_DIR="$ROOT/deploy/helm"
-VALUES_DIR="$ROOT/deploy/values"
+OUT="$ROOT/dist/helm-render"
+REQUIRE_SCHEMA=0
 
-CHARTS=(ontoaxis-platform ontoaxis-data ontoaxis-app ontoaxis-observability ontoaxis-jobs)
-ENVS=(kind kind-small staging-like prod-like)
+fail() { printf 'FAIL %s\n' "$*" >&2; exit 1; }
+for arg in "$@"; do
+  case "$arg" in
+    --require-schema) REQUIRE_SCHEMA=1 ;;
+    -h|--help) echo "usage: $0 [--require-schema]"; exit 0 ;;
+    *) fail "unknown argument: $arg" ;;
+  esac
+done
+command -v helm >/dev/null 2>&1 || fail 'helm not installed; render was not executed'
+python3 -c 'import yaml' >/dev/null 2>&1 || fail 'Python 3 with PyYAML is required'
+if command -v kubeconform >/dev/null 2>&1; then
+  schema=1
+elif [ "$REQUIRE_SCHEMA" -eq 1 ]; then
+  fail 'kubeconform not installed; schema validation is required'
+else
+  schema=0
+  echo 'NOT EXECUTED kubeconform: not installed (use --require-schema for the CI gate)'
+fi
 
-status=0
+charts=(ontoaxis-platform ontoaxis-data ontoaxis-app ontoaxis-observability ontoaxis-jobs)
+envs=(kind kind-small staging-like prod-like)
+tmp="$(mktemp -d)"
+cleanup() { rm -rf -- "${tmp:?}"; }
+trap cleanup EXIT
+mkdir -p "$tmp/rendered"
 
-sha() {
-  if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$1" | awk '{print $1}'
-  elif command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$1" | awk '{print $1}'
-  else
-    echo "no-sha-tool"
-  fi
-}
+for chart in "${charts[@]}"; do
+  for env in "${envs[@]}"; do
+    label="$chart x $env"
+    chart_dir="$ROOT/deploy/helm/$chart"
+    overlay=(-f "$ROOT/deploy/values/common.yaml" -f "$ROOT/deploy/values/$env.yaml")
+    manifest="$tmp/rendered/${chart}-${env}.yaml"
+    helm lint "$chart_dir" "${overlay[@]}" || fail "helm lint: $label"
+    helm template "oa-${chart#ontoaxis-}" "$chart_dir" "${overlay[@]}" >"$manifest" || fail "helm template first render: $label"
+    helm template "oa-${chart#ontoaxis-}" "$chart_dir" "${overlay[@]}" >"$tmp/again.yaml" || fail "helm template second render: $label"
+    python3 - "$manifest" "$tmp/again.yaml" <<'PY' || fail "deterministic render: $label"
+import hashlib
+import pathlib
+import sys
 
-# ---------------------------------------------------------------- yaml checks
-python_has_yaml() {
-  command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml' >/dev/null 2>&1
-}
-
-validate_with_python() {
-  local files=("$@")
-  python3 - "${files[@]}" <<'PY'
-import sys, re
-try:
-    import yaml
-except Exception as exc:  # pragma: no cover
-    print("SKIP python yaml import failed: %s" % exc)
-    sys.exit(2)
-bad = 0
-for path in sys.argv[1:]:
-    # 1) parse (multi-document tolerated)
-    try:
-        with open(path, "r", encoding="utf-8") as fh:
-            list(yaml.safe_load_all(fh))
-    except Exception as exc:
-        print("FAIL yaml parse %s: %s" % (path, exc))
-        bad = 1
-        continue
-    # 2) image hygiene on values-style files
-    with open(path, "r", encoding="utf-8") as fh:
-        for i, line in enumerate(fh, 1):
-            m = re.match(r"\s*repository:\s*(.*)$", line)
-            if m:
-                v = m.group(1).strip().strip("\"'")
-                if ":latest" in v:
-                    print("FAIL :latest repository %s:%d: %s" % (path, i, v))
-                    bad = 1
-            d = re.match(r"\s*digest:\s*(.*)$", line)
-            if d:
-                v = d.group(1).strip().strip("\"'")
-                if v == "":
-                    print("FAIL empty digest %s:%d" % (path, i))
-                    bad = 1
-                elif not re.fullmatch(r"sha256:[0-9a-f]{64}", v):
-                    print("FAIL malformed digest %s:%d: %s" % (path, i, v))
-                    bad = 1
-            # 3) rendered manifests carry `image: repo@sha256:<64hex>`
-            im = re.match(r"\s*image:\s*(\S.*)$", line)
-            if im:
-                v = im.group(1).strip().strip("\"'")
-                if ":latest" in v:
-                    print("FAIL :latest image %s:%d: %s" % (path, i, v))
-                    bad = 1
-                elif "@sha256:" not in v:
-                    print("FAIL image without digest %s:%d: %s" % (path, i, v))
-                    bad = 1
-print("PASS yaml+digest (%d file(s))" % len(sys.argv[1:]) if not bad else "FAIL yaml+digest")
-sys.exit(bad)
+hashes = [hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest() for path in sys.argv[1:]]
+if hashes[0] != hashes[1]:
+    print(f"render digests differ: {hashes[0]} != {hashes[1]}", file=sys.stderr)
+    sys.exit(1)
+print(f"sha256:{hashes[0]}")
 PY
-}
-
-validate_with_ruby() {
-  local files=("$@")
-  if ruby -ryaml -e 'ARGV.each { |f| YAML.load_stream(File.read(f)) }' "${files[@]}" 2>/tmp/oa_ruby_err; then
-    echo "PASS yaml (ruby fallback, ${#files[@]} file(s))"
-  else
-    echo "FAIL yaml (ruby fallback):"
-    cat /tmp/oa_ruby_err
-    status=1
-  fi
-}
-
-grep_digest_checks() {
-  local files=("$@")
-  local f bad=0
-  for f in "${files[@]}"; do
-    if grep -nE '^[[:space:]]*repository:.*:latest' "$f" >/dev/null 2>&1; then
-      echo "FAIL :latest repository in $f"
-      grep -nE '^[[:space:]]*repository:.*:latest' "$f"
-      bad=1
-    fi
-    if grep -nE '^[[:space:]]*digest:[[:space:]]*("")?[[:space:]]*$' "$f" >/dev/null 2>&1; then
-      echo "FAIL empty digest in $f"
-      bad=1
-    fi
-    if grep -nE '^[[:space:]]*digest:' "$f" | grep -vE 'sha256:[0-9a-f]{64}' >/dev/null 2>&1; then
-      echo "FAIL malformed digest in $f"
-      grep -nE '^[[:space:]]*digest:' "$f" | grep -vE 'sha256:[0-9a-f]{64}'
-      bad=1
-    fi
+    printf 'PASS deterministic render %s\n' "$label"
   done
-  if [ "$bad" -ne 0 ]; then status=1; fi
-}
+done
 
-collect_source_files() {
-  local f
-  [ -d "$VALUES_DIR" ] && for f in "$VALUES_DIR"/*.yaml; do [ -e "$f" ] && echo "$f"; done
-  for f in "$HELM_DIR"/*/Chart.yaml "$HELM_DIR"/*/values.yaml; do [ -e "$f" ] && echo "$f"; done
-}
+python3 - "$ROOT" "$tmp/rendered" <<'PY' || fail 'YAML or digest contract'
+from pathlib import Path
+import re
+import sys
+import yaml
 
-# ------------------------------------------------------------------ helm path
-run_helm() {
-  local tmpdir
-  tmpdir="$(mktemp -d)"
-  local -a rendered
-  rendered=()
-  local chart env rel out_a out_b
-  for chart in "${CHARTS[@]}"; do
-    for env in "${ENVS[@]}"; do
-      rel="oa-${chart#ontoaxis-}"
-      out_a="$tmpdir/${chart}-${env}-a.yaml"
-      out_b="$tmpdir/${chart}-${env}-b.yaml"
-      local -a args
-      args=("$rel" "$HELM_DIR/$chart")
-      [ -f "$VALUES_DIR/common.yaml" ] && args+=(-f "$VALUES_DIR/common.yaml")
-      args+=(-f "$VALUES_DIR/$env.yaml")
+root, rendered = map(Path, sys.argv[1:])
+digest = re.compile(r"sha256:[a-f0-9]{64}\Z")
+reference = re.compile(r"[^\s@]+@sha256:[a-f0-9]{64}\Z")
 
-      if ! helm template "${args[@]}" >"$out_a" 2>"$tmpdir/err"; then
-        echo "FAIL helm template $chart x $env"
-        cat "$tmpdir/err"
-        status=1
-        continue
-      fi
-      helm template "${args[@]}" >"$out_b" 2>>"$tmpdir/err"
-      if [ "$(sha "$out_a")" = "$(sha "$out_b")" ]; then
-        echo "PASS deterministic render $chart x $env"
-      else
-        echo "FAIL non-deterministic render $chart x $env"
-        status=1
-      fi
-      rendered+=("$out_a")
+def untagged(repository):
+    # 允许注册表地址带端口，但最后一个分量是仓库名，不能有 tag。
+    return isinstance(repository, str) and re.fullmatch(r"[^\s@]+", repository) and ":" not in repository.rsplit("/", 1)[-1]
 
-      if command -v kubeconform >/dev/null 2>&1; then
-        if kubeconform -strict -summary -ignore-missing-schemas "$out_a" >/dev/null 2>"$tmpdir/kcerr"; then
-          echo "PASS kubeconform $chart x $env"
-        else
-          echo "FAIL kubeconform $chart x $env"
-          cat "$tmpdir/kcerr"
-          status=1
-        fi
-      fi
-    done
-  done
+def walk(node, path, field, manifest):
+    if isinstance(node, list):
+        for index, value in enumerate(node):
+            walk(value, path, f"{field}[{index}]", manifest)
+    elif isinstance(node, dict):
+        for key, value in node.items():
+            location = f"{field}.{key}"
+            if key == "image":
+                if manifest and (not isinstance(value, str) or not reference.fullmatch(value) or not untagged(value.split("@", 1)[0])):
+                    raise ValueError(f"{path}: {location} must be repository@sha256:<64 hex>")
+                if not manifest:
+                    if not isinstance(value, dict):
+                        raise ValueError(f"{path}: {location} must be a repository/digest mapping")
+                    if "repository" in value and not untagged(value["repository"]):
+                        raise ValueError(f"{path}: {location}.repository must not include a tag/digest")
+                    if "digest" in value and (not isinstance(value["digest"], str) or not digest.fullmatch(value["digest"])):
+                        raise ValueError(f"{path}: {location}.digest must be sha256:<64 hex>")
+                    if "tag" in value:
+                        raise ValueError(f"{path}: {location}.tag is not allowed")
+            walk(value, path, location, manifest)
 
-  if command -v kubeconform >/dev/null 2>&1; then :; else
-    echo "SKIP kubeconform not installed"
-  fi
+try:
+    source = sorted((root / "deploy/values").glob("*.yaml"))
+    source += sorted((root / "deploy/helm").glob("*/values.yaml"))
+    manifests = sorted(rendered.glob("*.yaml"))
+    if len(manifests) != 20:
+        raise ValueError(f"expected 20 renders, got {len(manifests)}")
+    for path in source + manifests:
+        with path.open(encoding="utf-8") as stream:
+            for document in yaml.safe_load_all(stream):
+                walk(document, path, "$", path.parent == rendered)
+except (OSError, yaml.YAMLError, ValueError) as error:
+    print(error, file=sys.stderr)
+    sys.exit(1)
+print(f"PASS YAML and digest contract ({len(manifests)} renders)")
+PY
 
-  if python_has_yaml; then
-    validate_with_python "${rendered[@]}" || status=1
-  else
-    echo "SKIP PyYAML not available for rendered-output parse; using ruby/grep"
-    validate_with_ruby "${rendered[@]}"
-    grep_digest_checks "${rendered[@]}"
-  fi
-  rm -rf "$tmpdir"
-}
+python3 - "$ROOT" "$tmp/rendered" <<'PY' || fail 'kind Secret ownership and key coverage'
+from pathlib import Path
+import sys
+import yaml
 
-# ------------------------------------------------------------------ main flow
-echo "OntoAxis delivery render check"
-echo "------------------------------"
+root, rendered = map(Path, sys.argv[1:])
 
-SOURCE_FILES=()
-while IFS= read -r _line; do
-  [ -n "$_line" ] && SOURCE_FILES+=("$_line")
-done < <(collect_source_files)
+def documents(path):
+    return [x for x in yaml.safe_load_all(path.read_text()) if x]
 
-if command -v helm >/dev/null 2>&1; then
-  echo "helm: $(helm version --short 2>/dev/null || echo present)"
-  run_helm
-else
-  echo "SKIP helm not installed"
-  if python_has_yaml; then
-    validate_with_python "${SOURCE_FILES[@]}" || status=1
-  elif command -v ruby >/dev/null 2>&1; then
-    validate_with_ruby "${SOURCE_FILES[@]}"
-    grep_digest_checks "${SOURCE_FILES[@]}"
-  else
-    echo "SKIP no YAML parser available; grep-only fallback"
-    grep_digest_checks "${SOURCE_FILES[@]}"
-  fi
+def require(ok, error):
+    if not ok:
+        raise ValueError(error)
+
+wave = root / "deploy/argocd/secrets/kind"
+wave_docs = [d for path in sorted(wave.glob("*.yaml")) for d in documents(path)]
+for profile in ("kind", "kind-small"):
+    rendered_docs = [d for path in rendered.glob(f"*-{profile}.yaml") for d in documents(path)]
+    store_names = {d["metadata"]["name"] for d in wave_docs if d["kind"] == "ClusterSecretStore"}
+    bootstrap = (root / "scripts/delivery-secrets-bootstrap.sh").read_text()
+    targets = {}
+    for d in wave_docs + rendered_docs:
+        if d["kind"] != "ExternalSecret":
+            continue
+        spec = d["spec"]
+        target = (d["metadata"]["namespace"], spec["target"]["name"])
+        require(target not in targets, f"{profile}: duplicate Secret owner for {target}")
+        require(d in wave_docs and spec["target"].get("creationPolicy") == "Owner", f"{profile}: unexpected chart Secret owner for {target}")
+        require(spec["secretStoreRef"]["name"] in store_names, f"{profile}: unknown SecretStore for {target}")
+        keys = set()
+        for item in spec["data"]:
+            key = item["secretKey"]
+            remote = item["remoteRef"]
+            require(key not in keys and remote["key"] == "ontoaxis-bootstrap" and
+                    f'"{remote["property"]}:' in bootstrap, f"{profile}: invalid mapping for {target}/{key}")
+            keys.add(key)
+        targets[target] = keys
+    for d in rendered_docs:
+        if d["kind"] not in {"Deployment", "StatefulSet", "CronJob", "Job"}:
+            continue
+        namespace = d["metadata"]["namespace"]
+        spec = d["spec"]
+        if d["kind"] == "CronJob":
+            spec = spec["jobTemplate"]["spec"]
+        pod = spec["template"]["spec"]
+        for c in pod.get("containers", []) + pod.get("initContainers", []):
+            for env in c.get("env", []):
+                ref = env.get("valueFrom", {}).get("secretKeyRef")
+                if ref and not ref.get("optional"):
+                    require(ref["key"] in targets.get((namespace, ref["name"]), set()),
+                            f"{profile}: {namespace}/{ref['name']} lacks {ref['key']} for {c['name']}")
+    print(f"PASS {profile} unique wave -5 Secret owners and workload key coverage ({len(targets)} targets)")
+PY
+
+if [ "$schema" -eq 1 ]; then
+  kubeconform -ignore-missing-schemas -summary -strict "$tmp/rendered" || fail 'kubeconform schema validation'
 fi
 
-echo "------------------------------"
-if [ "$status" -eq 0 ]; then
-  echo "RESULT: PASS"
-else
-  echo "RESULT: FAIL"
-fi
-exit "$status"
+# 只发布本次验证通过的矩阵。固定文件名，下次运行原位覆盖。
+mkdir -p "$OUT"
+for chart in "${charts[@]}"; do
+  for env in "${envs[@]}"; do
+    file="${chart}-${env}.yaml"
+    cp "$tmp/rendered/$file" "$OUT/$file"
+  done
+done
+printf 'RESULT: PASS (schema validation: %s); manifests: %s\n' "$(if [ "$schema" -eq 1 ]; then echo passed; else echo not-executed; fi)" "$OUT"

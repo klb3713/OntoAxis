@@ -18,6 +18,9 @@ spec:
       - traefik
     listener:
       name: oa-edge
+      # The edge namespace owns the Gateway and HTTPRoutes; backends that live
+      # elsewhere (the workbench in oa-app) are bridged with a ReferenceGrant.
+      namespace: oa-system
       protocol: HTTP
       port: 8080
       tls:
@@ -37,6 +40,16 @@ spec:
         method: GET
         path: /.well-known/*
         auth: none
+      # Workbench static entry. Exact match only: a PathPrefix "/" would be a
+      # catch-all and the edge contract forbids one (unknown paths must 404).
+      - name: web-root
+        method: GET
+        path: /
+        auth: none
+        backend:
+          service: web
+          namespace: oa-app
+          port: 80
     # Internal routes must only be reachable from the cluster/private network;
     # they are never rendered on the public listener.
     internalRoutes:
@@ -62,6 +75,8 @@ spec:
       - x-ontoaxis-request-id
   upstream:
     service: ontoaxis-core
+    # core runs in oa-app; the edge never relies on a hand-made Service alias.
+    namespace: oa-app
     port: 8080
     scheme: http
   auth:
