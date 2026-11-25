@@ -47,7 +47,7 @@
 | 8.4 脚本/配置（CI） | `shellcheck`（全仓脚本，error 级）、`actionlint`、全 profile `compose config -q` | **通过**：CI `delivery-static` 三步全绿（[run 45600592906](https://github.com/klb3713/OntoAxis/actions/runs/45600592906)，steps 7/8/9） | 本行 + `stage-2-integration/d07-port-conflict.md` |
 | 8.6 CI | 真实 runner 完整 CI | **全绿 11/11**：[run 45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) | 本行 |
 | 5.4 Wave1 启动矩阵（compose） | `.github/workflows/wave1-stack-smoke.yml` | **3/3 job 绿**：[run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338)（connector-runtime/pipeline-kestra/action-temporal） | `stage-2-integration/wave1-stack-matrix.md` |
-| 5.4/7.x 全栈分组 E2E（CI） | `.github/workflows/fullstack-e2e.yml` | **4/4 job 绿**：[run 45607781575](https://github.com/klb3713/OntoAxis/actions/runs/45607781575)（foundation/search-outbox/actions/pipeline）；connector 默认跳过（`vars.ENABLE_CONNECTOR_E2E=true` 开启，Iceberg 插件扫描 >45 分钟） | 本行 |
+| 5.4/7.x 全栈分组 E2E（CI） | `.github/workflows/fullstack-e2e.yml` | **7/7 job 绿**：[run 45626955337](https://github.com/klb3713/OntoAxis/actions/runs/45626955337)（foundation / workbench 16-0 / search-outbox 73-73 / actions 7 断言 / pipeline / identity 12-0 / observability）；connector 默认跳过（`vars.ENABLE_CONNECTOR_E2E=true`，Iceberg 插件扫描 >45 分钟）；详见 [`fullstack-e2e-7x.md`](stage-2-integration/fullstack-e2e-7x.md) | 本行 |
 | 9.2 敏感串/许可 | gitleaks + `make license-check` | 见 `security-check.md`（1 条已跟踪误报 `bootstrap.sh:199`，CI secret-scan 绿） | `stage-2-integration/security-check.md`、`regression/gitleaks.json` |
 
 ## 4. 9.2 证据边界与安全检查
@@ -65,7 +65,7 @@
 | 2.5 | pipeline-kestra-dbt 合并验证未完成（E2E-06） |
 | 5.4 | 配置级已过（D-07 修复）；分组 `up -d` 启动矩阵已在 CI 真实 runner 通过（run 45570760338，见 `wave1-stack-matrix.md`）；全量同栈一次性启动未执行 |
 | 6.1–6.5 | kind 交付层复跑未执行：集群节点 Ready 但 `oa-data`/`oa-observability` 多数 `ImagePullBackOff`（13）、ArgoCD 无 Application，见 `stage-2-integration/kind-cluster-state.md` |
-| 7.1–7.7 | 部分覆盖：`fullstack-e2e` run 45607781575 的 foundation/search-outbox/actions/pipeline 四组在真实 runner 通过（E2E-04/07 与 Kestra+Trino 启动）；E2E-01/02/03/05/06/08/09/12 的完整断言与 `e2e-connector`（默认关闭）未合成一页证据；7.7 kind 受镜像/ArgoCD 阻塞（`kind-cluster-state.md`） |
+| 7.1–7.7 | 7.1 部分（E2E-01 全量 16/16，E2E-08 未覆盖）、7.2 部分（E2E-04/07 过；E2E-05 opt-in、E2E-06 未产 dataset）、**7.3 满足**（E2E-02/03/12 共 12/12）、7.4 部分（trace/RED/Perses 过；SLO/告警/基线缺）、7.6 未跑、7.7 kind 受镜像/ArgoCD 阻塞；汇总页 [`stage-2-integration/fullstack-e2e-7x.md`](stage-2-integration/fullstack-e2e-7x.md) |
 | 8.1/8.2/8.3/8.4 部分 | 工具缺失或未跑（见 §3） |
 | 8.5 | 仍有在途 change |
 | 9.3/9.4/9.5、10.x | 依赖上述完成与评审 |

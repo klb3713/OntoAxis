@@ -27,8 +27,8 @@ S2-AC-02…10 的主证据与验收归属各自 change；本 change 只做跨 ch
 
 | Stage AC | 归属 change | 本 change 组合复验任务 | 计划证据 | 状态 |
 | --- | --- | --- | --- | --- |
-| S2-AC-02 | `edge-gateway`（已归档） | 2.2、5.2、7.3、7.7 | edge smoke 矩阵日志（200/401/403/404/405/429/fail-closed）、Envoy kind 输出 | planned |
-| S2-AC-03 | `authorization-openfga-cedar` | 2.3、7.3 | allow/deny、跨租户拒绝、默认拒绝、审计记录 | planned |
+| S2-AC-02 | `edge-gateway`（已归档） | 2.2、5.2、7.3、7.7 | edge smoke 矩阵日志（`fullstack-e2e-7x.md` §3：200/401/403/404/405/429/fail-closed，run 45626955337）；Envoy kind 输出（7.7 未执行） | partial（Compose 矩阵通过，kind 未跑） |
+| S2-AC-03 | `authorization-openfga-cedar` | 2.3、7.3 | allow/deny、跨租户拒绝、默认拒绝、审计记录（OSM 隔离 E2E 73/73 + `authz-integration`；`fullstack-e2e-7x.md` §3） | partial（审计记录未单列） |
 | S2-AC-04 | `action-temporal` | 2.6、7.2 | 重试/补偿/审批/状态回写日志 | planned |
 | S2-AC-05 | `pipeline-kestra-dbt` | 2.5、7.2 | Flow 发布/运行/失败重试/dataset 产出日志 | planned |
 | S2-AC-06 | `connector-runtime` | 2.4、7.2 | CDC → dataset → 查询日志 | planned |
