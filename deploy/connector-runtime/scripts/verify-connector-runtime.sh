@@ -11,7 +11,7 @@
 #   ./deploy/connector-runtime/scripts/verify-connector-runtime.sh --submit-smoke
 #
 # 环境变量：
-#   ONTOAXIS_CONNECT_URL                 默认 http://127.0.0.1:18086
+#   ONTOAXIS_CONNECT_URL                 默认 http://127.0.0.1:18089
 #   ONTOAXIS_SOURCE_POSTGRES_HOST_PORT   默认 15434
 #   ONTOAXIS_SOURCE_POSTGRES_DB/USER/PASSWORD 默认 ontoaxis_source/ontoaxis_source/ontoaxis_source_local
 #
@@ -19,7 +19,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-CONNECT_URL="${ONTOAXIS_CONNECT_URL:-http://127.0.0.1:18086}"
+CONNECT_URL="${ONTOAXIS_CONNECT_URL:-http://127.0.0.1:18089}"
 CONNECT_URL="${CONNECT_URL%/}"
 SOURCE_DB="${ONTOAXIS_SOURCE_POSTGRES_DB:-ontoaxis_source}"
 SOURCE_USER="${ONTOAXIS_SOURCE_POSTGRES_USER:-ontoaxis_source}"

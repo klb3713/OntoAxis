@@ -330,6 +330,7 @@ scripts/delivery-promote.sh --from kind --to staging-like
   2. `docs/architecture/services-and-ports.md` 补登记 Kafka Connect `18089`、Redpanda `19092`、source-postgres `15434`、Meilisearch `17700`、search worker metrics `19094`；
   3. 验证：`docker compose -f compose.yaml -f connector-runtime -f pipeline-kestra --profile connector-runtime --profile pipeline-kestra config -q` 通过，`up -d` 后两端健康。
 - 判据：两个 profile 同栈起停无冲突；端口表与 compose 默认值逐项一致。
+- **状态（2026-11-25）**：已修复（Fast Track）。Connect 默认 `18089`；search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT`（默认 `18088`，与 Temporal UI `18088` 同栈时设 `18091`）。全 profile `docker compose config -q` 通过、16 服务无重复宿主端口；真实 `up -d` 健康矩阵待可拉取镜像环境执行。证据：`docs/stages/evidence/stage-2-integration/d07-port-conflict.md`。
 
 ## 4. 执行顺序建议
 

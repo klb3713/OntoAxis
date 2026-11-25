@@ -1,0 +1,199 @@
+=== RUN   TestNewClientValidatesURL
+--- PASS: TestNewClientValidatesURL (0.00s)
+=== RUN   TestClientEnsureIndexCreateThenIdempotent
+--- PASS: TestClientEnsureIndexCreateThenIdempotent (0.00s)
+=== RUN   TestClientDeleteIndexIgnoresNotFound
+--- PASS: TestClientDeleteIndexIgnoresNotFound (0.00s)
+=== RUN   TestClientUpsertDocumentsHeadersAndTask
+--- PASS: TestClientUpsertDocumentsHeadersAndTask (0.00s)
+=== RUN   TestClientDeleteDocuments
+--- PASS: TestClientDeleteDocuments (0.00s)
+=== RUN   TestClientSearchAndTruncation
+--- PASS: TestClientSearchAndTruncation (0.00s)
+=== RUN   TestClientSearchDefaultsLimit
+--- PASS: TestClientSearchDefaultsLimit (0.00s)
+=== RUN   TestClientWaitTask
+--- PASS: TestClientWaitTask (0.05s)
+=== RUN   TestClientWaitTaskFailureKinds
+=== RUN   TestClientWaitTaskFailureKinds/invalid_document
+=== RUN   TestClientWaitTaskFailureKinds/internal
+--- PASS: TestClientWaitTaskFailureKinds (0.00s)
+    --- PASS: TestClientWaitTaskFailureKinds/invalid_document (0.00s)
+    --- PASS: TestClientWaitTaskFailureKinds/internal (0.00s)
+=== RUN   TestClientWaitTaskTimeout
+--- PASS: TestClientWaitTaskTimeout (0.12s)
+=== RUN   TestClientSwapIndexes
+--- PASS: TestClientSwapIndexes (0.00s)
+=== RUN   TestClientHealth
+--- PASS: TestClientHealth (0.00s)
+=== RUN   TestClientErrorMappingDoesNotLeakBody
+=== RUN   TestClientErrorMappingDoesNotLeakBody/bad_request
+=== RUN   TestClientErrorMappingDoesNotLeakBody/unprocessable
+=== RUN   TestClientErrorMappingDoesNotLeakBody/server_error
+=== RUN   TestClientErrorMappingDoesNotLeakBody/not_found
+--- PASS: TestClientErrorMappingDoesNotLeakBody (0.00s)
+    --- PASS: TestClientErrorMappingDoesNotLeakBody/bad_request (0.00s)
+    --- PASS: TestClientErrorMappingDoesNotLeakBody/unprocessable (0.00s)
+    --- PASS: TestClientErrorMappingDoesNotLeakBody/server_error (0.00s)
+    --- PASS: TestClientErrorMappingDoesNotLeakBody/not_found (0.00s)
+=== RUN   TestClientTransportFailureIsUnavailable
+--- PASS: TestClientTransportFailureIsUnavailable (0.00s)
+=== RUN   TestLoadConfigDefaultsWhenDisabled
+--- PASS: TestLoadConfigDefaultsWhenDisabled (0.00s)
+=== RUN   TestLoadConfigValidEnabled
+--- PASS: TestLoadConfigValidEnabled (0.00s)
+=== RUN   TestLoadConfigRejectsInvalidValues
+=== RUN   TestLoadConfigRejectsInvalidValues/missing_url
+=== RUN   TestLoadConfigRejectsInvalidValues/missing_api_key
+=== RUN   TestLoadConfigRejectsInvalidValues/bad_url
+=== RUN   TestLoadConfigRejectsInvalidValues/bad_scheme
+=== RUN   TestLoadConfigRejectsInvalidValues/zero_timeout
+=== RUN   TestLoadConfigRejectsInvalidValues/huge_timeout
+=== RUN   TestLoadConfigRejectsInvalidValues/bad_version
+=== RUN   TestLoadConfigRejectsInvalidValues/short_sync
+=== RUN   TestLoadConfigRejectsInvalidValues/long_sync
+=== RUN   TestLoadConfigRejectsInvalidValues/short_poll
+=== RUN   TestLoadConfigRejectsInvalidValues/long_poll
+=== RUN   TestLoadConfigRejectsInvalidValues/zero_batch
+=== RUN   TestLoadConfigRejectsInvalidValues/huge_batch
+=== RUN   TestLoadConfigRejectsInvalidValues/zero_attempts
+=== RUN   TestLoadConfigRejectsInvalidValues/huge_attempts
+--- PASS: TestLoadConfigRejectsInvalidValues (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/missing_url (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/missing_api_key (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/bad_url (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/bad_scheme (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/zero_timeout (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/huge_timeout (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/bad_version (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/short_sync (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/long_sync (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/short_poll (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/long_poll (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/zero_batch (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/huge_batch (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/zero_attempts (0.00s)
+    --- PASS: TestLoadConfigRejectsInvalidValues/huge_attempts (0.00s)
+=== RUN   TestLoadConfigParsesMalformedEnv
+--- PASS: TestLoadConfigParsesMalformedEnv (0.00s)
+=== RUN   TestConfigValidateDirect
+--- PASS: TestConfigValidateDirect (0.00s)
+=== RUN   TestApplyEventUpsertsDocument
+--- PASS: TestApplyEventUpsertsDocument (0.00s)
+=== RUN   TestApplyEventNotFoundDeletesDocument
+--- PASS: TestApplyEventNotFoundDeletesDocument (0.00s)
+=== RUN   TestApplyEventReaderError
+--- PASS: TestApplyEventReaderError (0.00s)
+=== RUN   TestApplyEventUnknownTypeIsNoop
+--- PASS: TestApplyEventUnknownTypeIsNoop (0.00s)
+=== RUN   TestApplyEventApplierErrorIsReturned
+--- PASS: TestApplyEventApplierErrorIsReturned (0.00s)
+=== RUN   TestBackoffForAttempt
+--- PASS: TestBackoffForAttempt (0.00s)
+=== RUN   TestClientApplierRequiresClient
+--- PASS: TestClientApplierRequiresClient (0.00s)
+=== RUN   TestReplayDeadRequiresPool
+--- PASS: TestReplayDeadRequiresPool (0.00s)
+=== RUN   TestEventConstants
+--- PASS: TestEventConstants (0.00s)
+=== RUN   TestBuildDocumentAndDisplayName
+--- PASS: TestBuildDocumentAndDisplayName (0.00s)
+=== RUN   TestBuildDocumentDisplayNameFallbackAndValidation
+--- PASS: TestBuildDocumentDisplayNameFallbackAndValidation (0.00s)
+=== RUN   TestFlattenPropertiesDeterministicAndSafe
+--- PASS: TestFlattenPropertiesDeterministicAndSafe (0.00s)
+=== RUN   TestFlattenPropertiesTruncatesOnRuneBoundary
+--- PASS: TestFlattenPropertiesTruncatesOnRuneBoundary (0.00s)
+=== RUN   TestDocumentJSONTagsAndSettings
+--- PASS: TestDocumentJSONTagsAndSettings (0.00s)
+=== RUN   TestErrorTypedKinds
+--- PASS: TestErrorTypedKinds (0.00s)
+=== RUN   TestMigrationStatementsIncludeSchemaAndIdempotentTables
+--- PASS: TestMigrationStatementsIncludeSchemaAndIdempotentTables (0.00s)
+=== RUN   TestSplitSQLStatementsIgnoresCommentsAndDown
+--- PASS: TestSplitSQLStatementsIgnoresCommentsAndDown (0.00s)
+=== RUN   TestTenantHashIsStableLowerHex16
+--- PASS: TestTenantHashIsStableLowerHex16 (0.00s)
+=== RUN   TestIndexAndStagingNames
+--- PASS: TestIndexAndStagingNames (0.00s)
+=== RUN   TestValidateIndexVersion
+--- PASS: TestValidateIndexVersion (0.00s)
+=== RUN   TestScanObjectRow
+--- PASS: TestScanObjectRow (0.00s)
+=== RUN   TestScanObjectRowInvalidProperties
+--- PASS: TestScanObjectRowInvalidProperties (0.00s)
+=== RUN   TestTenantFilter
+--- PASS: TestTenantFilter (0.00s)
+=== RUN   TestRebuildWaitTimeoutBounds
+--- PASS: TestRebuildWaitTimeoutBounds (0.00s)
+=== RUN   TestRebuildApplierWaitsForTask
+--- PASS: TestRebuildApplierWaitsForTask (0.00s)
+=== RUN   TestSummaryJSONFields
+--- PASS: TestSummaryJSONFields (0.00s)
+=== RUN   TestClientListDocuments
+=== RUN   TestClientListDocuments/complete
+=== RUN   TestClientListDocuments/missing_results
+=== RUN   TestClientListDocuments/inconsistent_page
+=== RUN   TestClientListDocuments/partial_page
+=== RUN   TestClientListDocuments/missing_fields
+=== RUN   TestClientListDocuments/extra_field
+--- PASS: TestClientListDocuments (0.00s)
+    --- PASS: TestClientListDocuments/complete (0.00s)
+    --- PASS: TestClientListDocuments/missing_results (0.00s)
+    --- PASS: TestClientListDocuments/inconsistent_page (0.00s)
+    --- PASS: TestClientListDocuments/partial_page (0.00s)
+    --- PASS: TestClientListDocuments/missing_fields (0.00s)
+    --- PASS: TestClientListDocuments/extra_field (0.00s)
+=== RUN   TestDocumentDigestCanonical
+--- PASS: TestDocumentDigestCanonical (0.00s)
+=== RUN   TestIndexDocumentHashesPagination
+=== RUN   TestIndexDocumentHashesPagination/paged_and_scoped
+=== RUN   TestIndexDocumentHashesPagination/unstable_total
+=== RUN   TestIndexDocumentHashesPagination/duplicate_across_page_boundary
+=== RUN   TestIndexDocumentHashesPagination/wrong_tenant
+--- PASS: TestIndexDocumentHashesPagination (0.00s)
+    --- PASS: TestIndexDocumentHashesPagination/paged_and_scoped (0.00s)
+    --- PASS: TestIndexDocumentHashesPagination/unstable_total (0.00s)
+    --- PASS: TestIndexDocumentHashesPagination/duplicate_across_page_boundary (0.00s)
+    --- PASS: TestIndexDocumentHashesPagination/wrong_tenant (0.00s)
+=== RUN   TestIntegrationMigrationUpDownUp
+2026/11/24 21:20:05 OK   00001_jobs_schema.sql (13.57ms)
+2026/11/24 21:20:05 goose: successfully migrated database to version: 1
+--- PASS: TestIntegrationMigrationUpDownUp (0.10s)
+=== RUN   TestIntegrationClaimConcurrent
+2026/11/24 21:20:05 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationClaimConcurrent (0.15s)
+=== RUN   TestIntegrationConsumerAppliesAndPublishes
+2026/11/24 21:20:05 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationConsumerAppliesAndPublishes (0.43s)
+=== RUN   TestIntegrationRebuildKeysetPagination
+2026/11/24 21:20:06 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationRebuildKeysetPagination (0.98s)
+=== RUN   TestIntegrationRebuildSwapKeepsPreviousIndex
+2026/11/24 21:20:07 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationRebuildSwapKeepsPreviousIndex (0.56s)
+=== RUN   TestIntegrationRebuildReplaysWindowEvents
+2026/11/24 21:20:07 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationRebuildReplaysWindowEvents (0.58s)
+=== RUN   TestIntegrationRebuildVerifyDetectsDrift
+2026/11/24 21:20:08 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationRebuildVerifyDetectsDrift (0.37s)
+=== RUN   TestIntegrationRebuildFailureCleansStaging
+2026/11/24 21:20:08 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationRebuildFailureCleansStaging (0.32s)
+=== RUN   TestIntegrationRebuildObjectTypePreservesOtherTypes
+2026/11/24 21:20:08 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationRebuildObjectTypePreservesOtherTypes (0.53s)
+=== RUN   TestIntegrationTenantIsolation
+2026/11/24 21:20:09 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationTenantIsolation (0.50s)
+=== RUN   TestIntegrationRebuildSummaryStable
+2026/11/24 21:20:09 goose: no migrations to run. current version: 1
+--- PASS: TestIntegrationRebuildSummaryStable (0.67s)
+=== RUN   TestIntegrationRebuildCLIExitAndDigest
+2026/11/24 21:20:10 goose: no migrations to run. current version: 1
+    rebuild_cli_integration_test.go:77: two independent CLI rebuilds exited 0 with the same verified digest
+    rebuild_cli_integration_test.go:117: CLI exited 1 for same-count document drift and reported only digest differences
+--- PASS: TestIntegrationRebuildCLIExitAndDigest (1.97s)
+PASS
+ok  	github.com/klb3713/ontoaxis/internal/platform/search	7.587s

@@ -16,7 +16,7 @@
 #   ./deploy/connector-runtime/scripts/cleanup.sh --yes --down-stack
 #
 # 环境变量：
-#   ONTOAXIS_CONNECT_URL        默认 http://127.0.0.1:18086
+#   ONTOAXIS_CONNECT_URL        默认 http://127.0.0.1:18089
 #   ONTOAXIS_CONNECTOR_PREFIX   默认 oa-（只删除该前缀的 connector）
 #   ONTOAXIS_KEEP_CONNECTORS=1  即使 --yes 也跳过 connector 删除
 #
@@ -26,7 +26,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 BASE_COMPOSE="${ROOT}/deploy/compose/compose.yaml"
 OVERLAY_COMPOSE="${ROOT}/deploy/connector-runtime/compose.connector-runtime.yaml"
-CONNECT_URL="${ONTOAXIS_CONNECT_URL:-http://127.0.0.1:18086}"
+CONNECT_URL="${ONTOAXIS_CONNECT_URL:-http://127.0.0.1:18089}"
 CONNECT_URL="${CONNECT_URL%/}"
 PREFIX="${ONTOAXIS_CONNECTOR_PREFIX:-oa-}"
 PROFILE_SERVICES=(redpanda kafka-connect source-postgres iceberg-warehouse)

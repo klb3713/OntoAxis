@@ -65,7 +65,7 @@ S2-AC-07 拆分核对：
 
 ## 归档检查
 
-- [ ] `tasks.md` 全部勾选，且每项有可复核证据（当前 49/52；仅余 7.5/7.6 交 `production-delivery`、8.4 交 `stage-2-integration` 收录）
+- [ ] `tasks.md` 全部勾选，且每项有可复核证据（当前 52/52 全勾；7.5/7.6 产物已交付、其合并与 kind 评审在 `production-delivery` tasks §11 跟踪；8.4 已由 `stage-2-integration` 收录，见 `docs/stages/evidence/stage-2-integration.md` §2）
 - [ ] 所有 Requirement 的 traceability 状态从 planned 更新为 actual，并链接证据文件
 - [ ] R10（搜索授权过滤）证据可用，或由负责人书面接受延后并记录在 G2/风险
 - [ ] `openspec validate --all --strict` 通过

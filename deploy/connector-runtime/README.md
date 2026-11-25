@@ -42,7 +42,7 @@ source-postgres (Debezium source)
   Redpanda 限制 `--memory=1G`、Connect `-Xmx1g`）。
 - 首次构建 `kafka-connect` 需要网络：Debezium 镜像（Quay）、Apache Iceberg 源码 tarball、
   Maven Central（Gradle 依赖 + PostgreSQL JDBC）；构建时间明显长于普通镜像（Gradle 全量构建）。
-- 宿主端口 `19092`、`18086`、`15434` 默认未被占用；如冲突用第 3 节的环境变量覆盖。
+- 宿主端口 `19092`、`18089`、`15434` 默认未被占用；如冲突用第 3 节的环境变量覆盖。
 - 不需要真实数据/生产连接信息；所有口令都是本地合成默认值。
 
 ---
@@ -109,7 +109,7 @@ postgres 数据卷与 `ontoaxis_postgres_data`，影响本地主栈。`cleanup.s
 | 服务 | 宿主端口 | 容器端口 | 说明 |
 | --- | --- | --- | --- |
 | redpanda | `19092`（`ONTOAXIS_REDPANDA_HOST_PORT`） | 19092 | Kafka 兼容 EXTERNAL listener；容器内请用 `redpanda:9092` |
-| kafka-connect | `18086`（`ONTOAXIS_CONNECT_HOST_PORT`） | 8083 | Connect REST；容器内 URL `http://kafka-connect:8083` |
+| kafka-connect | `18089`（`ONTOAXIS_CONNECT_HOST_PORT`） | 8083 | Connect REST；容器内 URL `http://kafka-connect:8083` |
 | source-postgres | `15434`（`ONTOAXIS_SOURCE_POSTGRES_HOST_PORT`） | 5432 | 合成源库（已开 `wal_level=logical`） |
 | iceberg-warehouse | — | — | 一次性 init 容器，创建 `/warehouse` 后 `exit 0` |
 | base 栈端口不变 | 18080 / 19090 / 18082 / 18083 / 18081 / 15433 | — | 见 `deploy/README.md` |
@@ -124,11 +124,11 @@ docker compose -f deploy/compose/compose.yaml \
 # 期望：redpanda healthy、kafka-connect healthy（首次约 40–60s）、source-postgres healthy，
 # iceberg-warehouse 为 exited (0)。
 
-curl -sS http://127.0.0.1:18086/connector-plugins | head -c 500
+curl -sS http://127.0.0.1:18089/connector-plugins | head -c 500
 # 期望至少包含：io.debezium.connector.postgresql.PostgresConnector
 # 构建成功时还应包含：org.apache.iceberg.connect.IcebergSinkConnector
 
-curl -sS http://127.0.0.1:18086/connectors
+curl -sS http://127.0.0.1:18089/connectors
 # 期望：[]（本 profile 不自动创建业务 connector；由 core 应用按 design D3/D5 提交）
 
 ./deploy/connector-runtime/scripts/verify-connector-runtime.sh
@@ -151,7 +151,7 @@ connector-runtime 的运行时模块通过 Connect REST 提交/停止/查询 con
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
-| `ONTOAXIS_CONNECT_URL` | 空 | Connect REST 地址。宿主进程用 `http://127.0.0.1:18086`；同 compose 网络内的 core 用 `http://kafka-connect:8083` |
+| `ONTOAXIS_CONNECT_URL` | 空 | Connect REST 地址。宿主进程用 `http://127.0.0.1:18089`；同 compose 网络内的 core 用 `http://kafka-connect:8083` |
 | `ONTOAXIS_CONNECT_TIMEOUT` | 模块默认（见 OpenSpec design/spec） | 单次 HTTP 超时 |
 | `ONTOAXIS_CONNECT_RETRY_MAX` | 模块默认 | 重试次数 |
 | `ONTOAXIS_CONNECT_VERIFY_MAX_ROWS` | `1000000` | 同步后行数校验上限 |
@@ -166,11 +166,11 @@ connector-runtime 的运行时模块通过 Connect REST 提交/停止/查询 con
 给宿主进程的示例（不要提交到仓库）：
 
 ```bash
-export ONTOAXIS_CONNECT_URL=http://127.0.0.1:18086
+export ONTOAXIS_CONNECT_URL=http://127.0.0.1:18089
 # 然后按 core 的启动方式重启；验证 StartSync/TestConnector 不再返回 unavailable
 ```
 
-> 安全提示：Connect REST 默认**没有认证/TLS**，仅绑定本机给本地开发使用。不要把 18086 暴露到
+> 安全提示：Connect REST 默认**没有认证/TLS**，仅绑定本机给本地开发使用。不要把 18089 暴露到
 > 局域网/公网；Connect 内部 topic 会持久化 connector 配置（含数据库口令，见第 8 节）。
 
 ---
@@ -276,7 +276,7 @@ docker compose -f deploy/compose/compose.yaml exec source-postgres \
 | `docker compose -f deploy/compose/compose.yaml -f deploy/connector-runtime/compose.connector-runtime.yaml --profile connector-runtime config -q` | ✅ 通过（编写会话实际执行） |
 | 再加 `-f deploy/connector-runtime/compose.trino-iceberg.yaml` 的 `config -q` | ✅ 通过（编写会话实际执行） |
 | 解析后的 4 个新服务均带 `profiles: ["connector-runtime"]`，base 服务未被重定义 | ✅ 通过 `config --format json` 检查 |
-| 端口默认值插值（19092/18086/15434）与 `ONTOAXIS_*_HOST_PORT` 覆盖 | ✅ 默认值解析正确；覆盖变量未逐一实测启动 |
+| 端口默认值插值（19092/18089/15434）与 `ONTOAXIS_*_HOST_PORT` 覆盖 | ✅ 默认值解析正确；覆盖变量未逐一实测启动 |
 | 镜像 `docker compose build` / `up` / E2E 数据一致性 | ❌ 未执行（任务禁止启动服务/拉取大镜像） |
 | `/connector-plugins` 实际包含 Iceberg sink 插件 | ❌ 未验证（需先构建镜像并启动） |
 | Trino 查询 Iceberg 表 | ❌ 未验证（可选路径） |

@@ -61,7 +61,7 @@ services:
   # Kafka Connect：Debezium Connect 基础镜像 + 构建出的 Iceberg sink 插件。
   # 镜像名固定为本地 tag；build.args 固定基础镜像 digest、Iceberg 版本与校验和。
   # 首次 up 需要 --build，构建过程需要访问网络（详见 connect/README.md）。
-  # REST 端口：容器内 8083，宿主 18086。
+  # REST 端口：容器内 8083，宿主 18089。
   # ---------------------------------------------------------------------------
   kafka-connect:
     profiles: ["connector-runtime"]
@@ -102,7 +102,7 @@ services:
       # 传入 "a=WARN,b=ERROR" 这类写法会让 rootLogger 失效、日志全部丢失；日志级别用 CONNECT_LOG4J_ROOT_LOGLEVEL。
       KAFKA_HEAP_OPTS: "-Xms512m -Xmx1g"
     ports:
-      - "${ONTOAXIS_CONNECT_HOST_PORT:-18086}:8083"
+      - "${ONTOAXIS_CONNECT_HOST_PORT:-18089}:8083"
     volumes:
       # 与 sink 插件配置的 warehouse 路径保持一致；同一卷也会被可选 Trino overlay 挂载。
       - ontoaxis_iceberg_warehouse:/warehouse

@@ -128,7 +128,7 @@ services:
       meilisearch:
         condition: service_started
     ports:
-      - "127.0.0.1:18088:8081"
+      - "127.0.0.1:${ONTOAXIS_SEARCH_WORKER_PORT:-18088}:8081"
     restart: unless-stopped
 
   oa-edge:

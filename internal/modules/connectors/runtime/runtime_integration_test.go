@@ -22,7 +22,7 @@ import (
 // ONTOAXIS_CONNECT_INTEGRATION=1 so the default unit suite never needs Docker.
 //
 //	ONTOAXIS_CONNECT_INTEGRATION=1 \
-//	ONTOAXIS_CONNECT_IT_URL=http://127.0.0.1:18086 \
+//	ONTOAXIS_CONNECT_IT_URL=http://127.0.0.1:18089 \
 //	go test -tags=integration ./internal/modules/connectors/runtime/ -run Integration -v
 
 const integrationTenant = "11111111-1111-4111-8111-111111111111"
@@ -32,7 +32,7 @@ const validSourceSecret = `{"username":"ontoaxis_source","password":"ontoaxis_so
 func integrationConnectURL() string {
 	url := strings.TrimSpace(os.Getenv("ONTOAXIS_CONNECT_IT_URL"))
 	if url == "" {
-		return "http://127.0.0.1:18086"
+		return "http://127.0.0.1:18089"
 	}
 	return url
 }

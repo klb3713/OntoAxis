@@ -1,0 +1,134 @@
+[
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/deploy/kind/bootstrap.sh",
+  "StartLine": 199,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "private-key",
+  "File": "/repo/deploy/kind/tls/key.pem",
+  "StartLine": 1,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "jwt",
+  "File": "/repo/dist/delivery/idp-negative/audience.token",
+  "StartLine": 1,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "jwt",
+  "File": "/repo/dist/delivery/idp-negative/bad_signature.token",
+  "StartLine": 1,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "jwt",
+  "File": "/repo/dist/delivery/idp-negative/control.token",
+  "StartLine": 1,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "jwt",
+  "File": "/repo/dist/delivery/idp-negative/expired.token",
+  "StartLine": 1,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "jwt",
+  "File": "/repo/dist/delivery/idp-negative/issuer.token",
+  "StartLine": 1,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "jwt",
+  "File": "/repo/dist/delivery/idp-negative/missing_claims.token",
+  "StartLine": 1,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-20261123T172912Z/describe.txt",
+  "StartLine": 2321,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-20261123T172912Z/describe.txt",
+  "StartLine": 2322,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-20261123T172912Z/describe.txt",
+  "StartLine": 2598,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-20261123T172912Z/describe.txt",
+  "StartLine": 2599,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "jwt",
+  "File": "/repo/dist/delivery/idp-rotation/token-after",
+  "StartLine": 1,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "jwt",
+  "File": "/repo/dist/delivery/idp-rotation/token-before",
+  "StartLine": 1,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-badimage-verify/describe.txt",
+  "StartLine": 2270,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-badimage-verify/describe.txt",
+  "StartLine": 2271,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-badimage-verify/describe.txt",
+  "StartLine": 2574,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-badimage-verify/describe.txt",
+  "StartLine": 2575,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-oom/describe.txt",
+  "StartLine": 2341,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-oom/describe.txt",
+  "StartLine": 2342,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-oom/describe.txt",
+  "StartLine": 2609,
+  "Secret": "[redacted]"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "File": "/repo/dist/delivery/diagnostics-oom/describe.txt",
+  "StartLine": 2610,
+  "Secret": "[redacted]"
+ }
+]

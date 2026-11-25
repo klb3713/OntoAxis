@@ -18,8 +18,8 @@
 ## 2. 收录后仍需回填
 
 - [x] 8.2 的 GitHub Actions run 链接：[run 45405474349](https://github.com/klb3713/OntoAxis/actions/runs/45405474349)，job [`search-integration`](https://github.com/klb3713/OntoAxis/actions/runs/45405474349/job/138484907178) success（2026-11-24，草稿 PR #1）
-- [ ] 9.1/9.2/9.3 评审签字记录
-- [ ] 在 Stage 证据中区分“本地合成数据验证”与“生产/CI 验收”，不得把本地通过写成 CI/生产通过
+- [x] 9.1/9.2/9.3 评审签字记录：已记入 `docs/stages/evidence/stage-2-integration.md` §2（评审人 klb3713，2026-11-24）
+- [x] 在 Stage 证据中区分“本地合成数据验证”与“生产/CI 验收”：已写入 `docs/stages/evidence/stage-2-integration.md` §2/§4 与 `stage-2-integration/security-check.md`
 
 ## 3. 已完成的跨 change 协调
 

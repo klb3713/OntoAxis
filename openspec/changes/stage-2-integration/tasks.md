@@ -1,6 +1,6 @@
 # Tasks
 
-> 状态：planning（2026-11-22 创建）。**全部任务未开始，未勾选，未产生任何实现或证据。** 勾选前必须存在对应证据；没有证据的项不得标记完成。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
+> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **31/56**。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
 
 ## 1. 准入与基线
 
@@ -41,7 +41,7 @@
 - [x] 5.1 静态校验与 default profile：`docker compose -f deploy/compose/compose.yaml config` 通过；起栈后 `scripts/smoke-foundation.sh` 通过。验证：命令输出与日志入库。
 - [x] 5.2 edge profile 集成：起 `--profile edge` 后运行 `EDGE_TEST_FAIL_CLOSED=1 ./scripts/edge-smoke.sh`。验证：全部用例 PASS，日志入库。
 - [x] 5.3 observability profile 集成：设置 `ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT` 后起 profile，运行 `make observability-rules-test` 与 `scripts/observability-smoke.sh`。验证：Prometheus 有指标、Jaeger 有 `ontoaxis-core` trace，输出入库。
-- [ ] 5.4 Wave 1/2 运行时 profile：按各 change 文档同时/分组启动 Temporal、Kestra、Kafka Connect、Meilisearch、OpenFGA 等，运行各自的 health/集成检查。验证：每个组件健康检查通过；记录资源占用与端口占用。
+- [ ] 5.4 Wave 1/2 运行时 profile：按各 change 文档同时/分组启动 Temporal、Kestra、Kafka Connect、Meilisearch、OpenFGA 等，运行各自的 health/集成检查。验证：每个组件健康检查通过；记录资源占用与端口占用。— 进展（2026-11-25）：D-07 端口冲突已修复（Connect `18086→18089`；search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT` 以避开 Temporal UI `18088`），全 profile 合并 `docker compose ... config -q` 通过、16 服务无重复宿主端口（见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；真实 `up -d` 健康矩阵未执行（本机 docker 无法拉取 Connect/Kestra/Temporal/Redpanda 镜像：`registry-1.docker.io ... EOF`）。
 - [x] 5.5 可重复性：`down -v` 清空后重新起栈一次，确认结果与 5.1–5.4 一致。验证：两次运行日志对比无不可解释差异；写清重置步骤。
 - [x] 5.6 Compose 层跨 change 缺陷修复：经 owner 同意后修复 `deploy/compose/` 中的装配缺陷。验证：修复后重跑 5.1–5.5 相关检查通过，修复记录与 owner 同意写入证据。
 
@@ -65,17 +65,17 @@
 
 ## 8. 回归与质量门
 
-- [ ] 8.1 Go 质量门：`go build ./...`、`go test ./...`、`go test -race ./...`、`go vet ./...`、golangci-lint（与 CI 同版本）、`make license-check`。验证：全部通过，日志入库。
-- [ ] 8.2 前端质量门：`cd web && pnpm install --frozen-lockfile && pnpm check && pnpm test && pnpm build`。验证：全部通过，日志入库。
-- [ ] 8.3 契约门：`make proto-lint`、`make proto-breaking`、`make generate-check`、`make edge-generate-check`。验证：全部通过且工作区干净。
-- [ ] 8.4 脚本与配置门：`actionlint`、`shellcheck scripts/*.sh`、`docker compose config`。验证：无 error 级结果，日志入库。
-- [ ] 8.5 OpenSpec 门：全部前置 change 归档后运行 `openspec validate --all --strict`。验证：输出 0 failed（若仍有在途 change 未归档，不得判定通过）。
-- [ ] 8.6 CI 门：在真实 runner 上运行完整 CI（build-test/proto/frontend/docker/observability/compose-smoke/edge）。验证：全绿并记录 run URL 与 job 列表；本地通过不能替代此任务。
+- [ ] 8.1 Go 质量门：`go build ./...`、`go test ./...`、`go test -race ./...`、`go vet ./...`、golangci-lint（与 CI 同版本）、`make license-check`。验证：全部通过，日志入库。— 进展（2026-11-25）：`go build`/`go vet`/`go test -race` 全通过（`docs/stages/evidence/stage-2-integration/regression/go-gates.log`）、`make license-check` 通过（`regression/make-gates.log`）；本机无 golangci-lint，未执行（CI `build-test` 已覆盖）。
+- [x] 8.2 前端质量门：`cd web && pnpm install --frozen-lockfile && pnpm check && pnpm test && pnpm build`。验证：全部通过，日志入库。— 2026-11-25 本地实跑 `INSTALL_OK/CHECK_OK/TEST_OK/BUILD_OK`，日志 `docs/stages/evidence/stage-2-integration/regression/web-gates.log`。
+- [ ] 8.3 契约门：`make proto-lint`、`make proto-breaking`、`make generate-check`、`make edge-generate-check`。验证：全部通过且工作区干净。— 进展（2026-11-25）：`make edge-generate-check` 通过；`make proto-lint`/`proto-breaking`/`generate-check` 未执行（本机无 buf，docker 回退镜像 `bufbuild/buf:1.75.0` 拉取失败 `registry-1.docker.io ... EOF`），见 `regression/make-gates.log`。
+- [ ] 8.4 脚本与配置门：`actionlint`、`shellcheck scripts/*.sh`、`docker compose config`。验证：无 error 级结果，日志入库。— 进展（2026-11-25）：全 profile `docker compose config -q` 通过（`d07-port-conflict.md`）；本机无 actionlint/shellcheck，未执行。
+- [ ] 8.5 OpenSpec 门：全部前置 change 归档后运行 `openspec validate --all --strict`。验证：输出 0 failed（若仍有在途 change 未归档，不得判定通过）。— 2026-11-25 `openspec validate --all --strict` 19/19 通过，但仍有在途 change（含 OSM 未归档），故不勾。
+- [x] 8.6 CI 门：在真实 runner 上运行完整 CI（build-test/proto/frontend/docker/observability/compose-smoke/edge）。验证：全绿并记录 run URL 与 job 列表；本地通过不能替代此任务。— 2026-11-25 主干 run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) 11/11 全绿（build-test、proto、secret-scan、delivery-static、search-integration、authz-integration、edge、compose-smoke、frontend、docker、observability）。
 
 ## 9. 证据与 Stage 2 报告
 
-- [ ] 9.1 建立证据索引 `docs/stages/evidence/stage-2-integration.md` 与原始目录 `docs/stages/evidence/stage-2-integration/`：按 AC 组织，每行含日期/环境/commit/命令/结果/路径。验证：索引中的每个路径真实存在，抽查 3 条可复跑。
-- [ ] 9.2 证据边界与安全检查：确认无 token/密码/生产连接串；声明合成夹具与本地环境边界；运行仓库 secrets/license 检查并记录。验证：检查命令输出入库，证据文件无敏感串。
+- [x] 9.1 建立证据索引 `docs/stages/evidence/stage-2-integration.md` 与原始目录 `docs/stages/evidence/stage-2-integration/`：按 AC 组织，每行含日期/环境/commit/命令/结果/路径。验证：索引中的每个路径真实存在，抽查 3 条可复跑。— 2026-11-25 已建立索引（S2-AC-01…11 映射 + 质量门结果 + 未完成/阻塞清单），并新增 `object-search/`、`regression/`、`d07-port-conflict.md`、`security-check.md`。
+- [x] 9.2 证据边界与安全检查：确认无 token/密码/生产连接串；声明合成夹具与本地环境边界；运行仓库 secrets/license 检查并记录。验证：检查命令输出入库，证据文件无敏感串。— 2026-11-25 gitleaks v8.24.3 + `make license-check`（通过）；22 条命中中 12 文件未跟踪、唯一已跟踪为 `bootstrap.sh:199` `condition=Available` 误报，CI secret-scan 绿；见 `docs/stages/evidence/stage-2-integration/security-check.md`。
 - [ ] 9.3 起草 `docs/stages/stage-2-exit-report.md`：按 design 的 10 节结构与 S2-AC-01…11 证据表编写。验证：未执行/未通过项如实标 `not passed`；报告状态为 `exit candidate pending owner confirmation`。
 - [ ] 9.4 文档同步：更新 `ARCHITECTURE.md` 15.x、`docs/stages/stage-2-change-map.md` 状态、`README.md`、`docs/getting-started/local-development.md`、`docs/architecture/services-and-ports.md` 等（经各 owner 同意）。验证：链接可达、无过期“计划中”表述、命令可照抄执行。
 - [ ] 9.5 自检 traceability：核对 S2-AC-01/AC-11 的每条证据路径与状态，S2-AC-02…10 的组合复验记录齐全。验证：traceability 中无未解释的 `planned`；每条 `passed` 有可点开的证据。
@@ -90,10 +90,10 @@
 
 来源：`openspec/changes/object-search-meilisearch/handoff/stage-2-integration.md`（证据源文件已备，`docs/stages/evidence/` 归本 change 收录）。本 change 2.7 已完成 object-search 的合并；以下为证据收口与边界声明。
 
-- [ ] 11.1 收录证据源文件到 `docs/stages/evidence/`（清单见交接文件 §1）：集成记录、隔离验证（后端 12 项 / 原生 HTTP 68/68 / 隔离 Compose E2E 73/73）、CI 同参本地日志、手册复现记录；按 AC 组织并写索引。验证：索引内每个路径真实存在，抽查可复跑。回填 object-search-meilisearch 8.4。
-- [ ] 11.2 回填 object-search-meilisearch 8.2 的 GitHub Actions `search-integration` run 链接（本机无 runner，本地同参 exit 0、0 SKIP）。验证：CI job 绿并记录 run URL。
-- [ ] 11.3 记录 object-search 9.1/9.2/9.3 评审签字（评审人 klb3713，2026-11-24）到 Stage 证据索引，附各材料 §4/§5/§6 链接。
-- [ ] 11.4 证据边界声明：明确区分“隔离本地 + 合成数据验证”与“CI/生产验收”，不得把本地通过写成 CI 或生产通过；业务质量阈值仍 `pending-owner-signoff`。
+- [x] 11.1 收录证据源文件到 `docs/stages/evidence/`（清单见交接文件 §1）：集成记录、隔离验证（后端 12 项 / 原生 HTTP 68/68 / 隔离 Compose E2E 73/73）、CI 同参本地日志、手册复现记录；按 AC 组织并写索引。验证：索引内每个路径真实存在，抽查可复跑。回填 object-search-meilisearch 8.4。— 2026-11-25 已收录到 `docs/stages/evidence/stage-2-integration/object-search/`（5 个源文件），索引 §2；OSM 8.4 已回填。
+- [x] 11.2 回填 object-search-meilisearch 8.2 的 GitHub Actions `search-integration` run 链接（本机无 runner，本地同参 exit 0、0 SKIP）。验证：CI job 绿并记录 run URL。— [run 45405474349 / job 138484907178](https://github.com/klb3713/OntoAxis/actions/runs/45405474349/job/138484907178) success；主干最终全绿 [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516)。
+- [x] 11.3 记录 object-search 9.1/9.2/9.3 评审签字（评审人 klb3713，2026-11-24）到 Stage 证据索引，附各材料 §4/§5/§6 链接。— 2026-11-25 已写入索引 §2（review-ops-runbook §5、security-data-governance-review §4/§6、review-wave2-admission §5/§6，评审人 klb3713，2026-11-24）。
+- [x] 11.4 证据边界声明：明确区分“隔离本地 + 合成数据验证”与“CI/生产验收”，不得把本地通过写成 CI 或生产通过；业务质量阈值仍 `pending-owner-signoff`。— 2026-11-25 已写入索引 §2/§4 与 `security-check.md`。
 - 关联既有项：本 change 5.4（Wave 1/2 运行时 profile 含 Meilisearch）、7.2（E2E-04 outbox→Meilisearch→搜索/重建）可复用上述证据。
 
 ## Workflow follow-up

@@ -113,13 +113,13 @@ docker compose -f deploy/compose/compose.yaml \
 
 ```bash
 # 1) Connect REST 可达
-curl -sS http://127.0.0.1:18086/connector-plugins | python3 -m json.tool
+curl -sS http://127.0.0.1:18089/connector-plugins | python3 -m json.tool
 
 # 2) 必需插件是否出现（脚本化检查）
 ./deploy/connector-runtime/scripts/verify-connector-runtime.sh
 
 # 3) 已提交的 connector 与状态
-curl -sS http://127.0.0.1:18086/connectors | python3 -m json.tool
+curl -sS http://127.0.0.1:18089/connectors | python3 -m json.tool
 ```
 
 `verify-connector-runtime.sh` 默认只读；只有显式传 `--submit-smoke` 才会提交一个临时 source

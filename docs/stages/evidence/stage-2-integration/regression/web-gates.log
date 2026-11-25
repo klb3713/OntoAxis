@@ -1,0 +1,76 @@
+## pnpm install
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+Done in 391ms using pnpm v10.34.7
+INSTALL_OK
+## pnpm check
+
+> ontoaxis-web@0.1.0 check /Users/klb3713/work/OntoAxis/web
+> tsc -p tsconfig.json --noEmit
+
+CHECK_OK
+## pnpm test
+
+> ontoaxis-web@0.1.0 test /Users/klb3713/work/OntoAxis/web
+> vitest run
+
+
+ RUN  v3.2.7 /Users/klb3713/work/OntoAxis/web
+
+(node:9680) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9678) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9675) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9679) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9677) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9676) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ src/api/errors.test.ts (4 tests) 2ms
+ ✓ src/config/runtime.test.ts (4 tests) 2ms
+ ✓ src/api/normalize.test.ts (6 tests) 4ms
+ ✓ src/api/mock-data-provider.test.ts (9 tests) 6ms
+ ✓ src/auth/oidc.test.ts (5 tests) 10ms
+ ✓ src/features/approvals/approvals.test.tsx (7 tests) 328ms
+
+ Test Files  6 passed (6)
+      Tests  35 passed (35)
+   Start at  14:37:05
+   Duration  1.44s (transform 205ms, setup 906ms, collect 481ms, tests 353ms, environment 2.18s, prepare 442ms)
+
+TEST_OK
+## pnpm build
+
+> ontoaxis-web@0.1.0 build /Users/klb3713/work/OntoAxis/web
+> tsc -p tsconfig.json --noEmit && vite build
+
+vite v7.3.8 building client environment for production...
+transforming...
+✓ 369 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                               0.53 kB │ gzip:   0.36 kB
+dist/assets/index-DuA-Z2z1.css               18.45 kB │ gzip:   4.56 kB
+dist/assets/useDebouncedValue-CgpK41xm.js     0.21 kB │ gzip:   0.18 kB
+dist/assets/format-C9qkuSbK.js                0.24 kB │ gzip:   0.22 kB
+dist/assets/Pagination-D_BB1KNU.js            0.74 kB │ gzip:   0.35 kB
+dist/assets/Modal-DqGKTO2L.js                 0.87 kB │ gzip:   0.49 kB
+dist/assets/ObjectExplorerPage-DtcR12lc.js    4.19 kB │ gzip:   1.49 kB
+dist/assets/ProjectsPage-DLof4Zvz.js          4.83 kB │ gzip:   1.73 kB
+dist/assets/QueriesPage-CV5gtpjr.js           5.50 kB │ gzip:   1.84 kB
+dist/assets/ApprovalsPage-C9n9xcmR.js         6.52 kB │ gzip:   2.10 kB
+dist/assets/DatasetsPage-C0sKgKz-.js          6.67 kB │ gzip:   2.10 kB
+dist/assets/OntologyPage-CRN6TbFG.js         10.47 kB │ gzip:   2.59 kB
+dist/assets/index-BbGCqpum.js               575.42 kB │ gzip: 185.20 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.03s
+BUILD_OK
+exit=0

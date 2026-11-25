@@ -1,0 +1,38 @@
+## edge-generate-check
+edge route output is up to date
+EDGE_GEN_OK
+## generate-check
+/Library/Developer/CommandLineTools/usr/bin/make generate
+Unable to find image 'bufbuild/buf:1.75.0' locally
+docker: Error response from daemon: Get "https://registry-1.docker.io/v2/": EOF
+
+Run 'docker run --help' for more information
+make[1]: *** [generate] Error 125
+make: *** [generate-check] Error 2
+## license-check
+# nexus-proto-annotations 是 Temporal 的传递依赖，模块内无许可证元数据；经负责人批准加路径例外，依赖树其余包仍检查。
+go run github.com/google/go-licenses@v1.6.0 check --ignore github.com/nexus-rpc/nexus-proto-annotations ./...
+go: downloading github.com/google/go-licenses v1.6.0
+go: downloading k8s.io/klog/v2 v2.80.1
+go: downloading gopkg.in/src-d/go-git.v4 v4.13.1
+go: downloading go.opencensus.io v0.23.0
+go: downloading github.com/google/licenseclassifier v0.0.0-20210722185704-3043a050f148
+go: downloading golang.org/x/mod v0.7.0
+go: downloading github.com/spf13/cobra v1.6.0
+go: downloading github.com/otiai10/copy v1.6.0
+go: downloading golang.org/x/tools v0.5.0
+go: downloading golang.org/x/net v0.5.0
+go: downloading golang.org/x/text v0.6.0
+go: downloading github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
+go: downloading github.com/go-logr/logr v1.2.0
+go: downloading golang.org/x/crypto v0.1.0
+go: downloading gopkg.in/src-d/go-billy.v4 v4.3.2
+go: downloading github.com/sergi/go-diff v1.2.0
+go: downloading github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
+go: downloading github.com/emirpasic/gods v1.12.0
+go: downloading github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd
+go: downloading github.com/mitchellh/go-homedir v1.1.0
+go: downloading github.com/xanzy/ssh-agent v0.2.1
+go: downloading github.com/src-d/gcfg v1.4.0
+go: downloading gopkg.in/warnings.v0 v0.1.2
+go: downloading golang.org/x/sys v0.4.0
