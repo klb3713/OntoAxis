@@ -52,7 +52,7 @@ services:
         VITE_OIDC_CLIENT_ID: ontoaxis-web
         VITE_OIDC_REDIRECT_URI: http://localhost:18082/auth/callback
     ports:
-      - "${ONTOAXIS_WEB_HOST_PORT:-18082}:80"
+      - "${ONTOAXIS_WEB_HOST_PORT:-18082}:8080"
     depends_on:
       ontoaxis-core:
         condition: service_healthy
