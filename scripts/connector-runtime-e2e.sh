@@ -10,7 +10,7 @@
 set -euo pipefail
 
 API="${ONTOAXIS_API:-http://127.0.0.1:18080}"
-CONNECT="${ONTOAXIS_CONNECT:-http://127.0.0.1:18086}"
+CONNECT="${ONTOAXIS_CONNECT:-http://127.0.0.1:18089}"  # D-07: Connect 端口 18086→18089
 TOKEN_URL="${ONTOAXIS_TOKEN_URL:-http://127.0.0.1:18083/realms/ontoaxis/protocol/openid-connect/token}"
 USER_NAME="${ONTOAXIS_USER:-admin}"
 PASSWORD="${ONTOAXIS_PASSWORD:-admin123}"
