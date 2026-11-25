@@ -150,8 +150,9 @@ jobs:
           exit 1
       - name: Assert kestra API and trino respond
         run: |
+          curl -fsS http://127.0.0.1:18086/health
           curl -fsS -u "$KESTRA_BASIC_AUTH_USERNAME:$KESTRA_BASIC_AUTH_PASSWORD" \
-            http://127.0.0.1:18086/api/v1/flows/search >/dev/null
+            http://127.0.0.1:18086/api/v1/configs >/dev/null
           curl -fsS http://127.0.0.1:18081/v1/info
       - name: Dump logs on failure
         if: failure()

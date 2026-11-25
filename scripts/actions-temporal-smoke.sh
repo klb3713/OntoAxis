@@ -69,6 +69,15 @@ if [ "${SKIP_START:-0}" != "1" ]; then
     if curl -sf "$CORE/readyz" >/dev/null 2>&1; then break; fi
     sleep 1
   done
+  # Keycloak 与 core 就绪时间不同步：token 端点未就绪时 curl 会 connection reset。
+  for _ in $(seq 1 120); do
+    if curl -fsS -X POST "$KEYCLOAK/realms/ontoaxis/protocol/openid-connect/token" \
+      -H 'Content-Type: application/x-www-form-urlencoded' \
+      -d 'grant_type=password&client_id=ontoaxis-web&username=admin&password=admin123' >/dev/null 2>&1; then
+      break
+    fi
+    sleep 3
+  done
 fi
 
 TOKEN=$(curl -sS -X POST "$KEYCLOAK/realms/ontoaxis/protocol/openid-connect/token" -H 'Content-Type: application/x-www-form-urlencoded' -d 'grant_type=password&client_id=ontoaxis-web&username=admin&password=admin123' | json 'd["access_token"]')
