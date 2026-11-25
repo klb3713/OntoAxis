@@ -38,7 +38,7 @@ open http://127.0.0.1:18082/   # oa-web；Keycloak 登录 admin / admin123
 docker compose -f deploy/compose/compose.yaml down -v
 ```
 
-如本机端口被占用，可通过 `ONTOAXIS_CORE_HOST_PORT` / `ONTOAXIS_METRICS_HOST_PORT` / `ONTOAXIS_POSTGRES_HOST_PORT` / `ONTOAXIS_KEYCLOAK_HOST_PORT` / `ONTOAXIS_TRINO_HOST_PORT` / `ONTOAXIS_WEB_HOST_PORT` 覆盖 Compose 宿主端口。
+如本机端口被占用，可通过 `ONTOAXIS_CORE_HOST_PORT` / `ONTOAXIS_METRICS_HOST_PORT` / `ONTOAXIS_POSTGRES_HOST_PORT` / `ONTOAXIS_KEYCLOAK_HOST_PORT` / `ONTOAXIS_TRINO_HOST_PORT` / `ONTOAXIS_WEB_HOST_PORT` / `ONTOAXIS_SEARCH_WORKER_PORT`（search profile 的搜索 worker 宿主端口，默认 18088） 覆盖 Compose 宿主端口。
 
 ## 开发
 

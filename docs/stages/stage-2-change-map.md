@@ -98,6 +98,8 @@ flowchart TB
 - 生产 IdP 不在 Stage 2 范围（移交 `production-idp-staging`）；
 - 所有 Wave 1 服务的 compose/helm 配置可启动。
 
+**G2 门禁登记（2026-11-25）**：判定与证据见 [`docs/stages/evidence/stage-2-g2-gate-record.md`](evidence/stage-2-g2-gate-record.md)。负责人 klb3713 确认登记 G2 = `pass`，口径如下：条件 1（outbox→Meilisearch 对象搜索 E2E：隔离 Compose 73/73、两次 rebuild `--verify` digest 一致、CI `search-integration` 绿）pass；条件 2（Helm/ArgoCD kind 部署、探针/PDB/Secret）采信 `production-delivery` 归属方归档证据（70/70），本 change 6.x 复跑列入 Stage 2 退出条件；条件 3（备份恢复/镜像回滚）采信归属方证据 pass；条件 4（生产 IdP）out of scope（移交 `production-idp-staging`）；条件 5 compose 部分由真实 runner [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338)（3/3）与 fullstack [run 45607781575](https://github.com/klb3713/OntoAxis/actions/runs/45607781575)（4/4）提供证据，helm 部分列入 6.x。**G2 pass 仅解锁 Wave 2/3 的实施与集成，不等同 Stage 2 退出**；退出条件 4 仍要求 Compose 与 kind 均完成全栈 E2E。
+
 ### Wave 3 — 集成
 
 串行 change：`stage-2-integration`。
@@ -185,7 +187,7 @@ flowchart TB
 
 **范围收缩（2026-11-24）**：`production-delivery` 已按「交付资产 + 本地 kind 证据」归档（70/70，10 项显式移出、2 项降级接受、4 项 search 交接快速完成）；S2-AC-08 收窄、S2-AC-10 移出 Stage 2。移出项登记到 §12 的 `production-delivery-hardening` 与 `production-idp-staging`，详见 [`evidence/stage-2-production-delivery-archive-review.md`](evidence/stage-2-production-delivery-archive-review.md)。
 
-**状态（2026-11-25）**：`object-search-meilisearch` 已完成 52/52 并归档为 `2026-11-25-object-search-meilisearch`（spec 写入 `openspec/specs/object-search/spec.md`）。D-07 端口冲突已修复（Kafka Connect 18086→18089、search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT`）。Wave 1 分组启动矩阵在真实 CI runner 通过（run [45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 3/3，证据 `evidence/stage-2-integration/wave1-stack-matrix.md`），作为 G2 条件 5 的 compose 启动证据；**G2 仍未登记 `pass`**（Helm/kind 启动待 6.x，需负责人确认）。`stage-2-integration` 当前 32/56，仍在途。
+**状态（2026-11-25）**：`object-search-meilisearch` 已完成 52/52 并归档为 `2026-11-25-object-search-meilisearch`（spec 写入 `openspec/specs/object-search/spec.md`）。D-07 端口冲突已修复（Kafka Connect 18086→18089、search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT`）。Wave 1 分组启动矩阵在真实 CI runner 通过（run [45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 3/3，证据 `evidence/stage-2-integration/wave1-stack-matrix.md`），作为 G2 条件 5 的 compose 启动证据。**G2 已于 2026-11-25 登记为 `pass`**（负责人 klb3713；口径见 §4「G2 门禁登记」：compose 真实 runner 证据 + 归属方 helm/kind 证据，本 change 6.x kind 复跑仍属退出条件 4）。`stage-2-integration` 当前 37/56，仍在途。
 
 | change | 任务 | 当前实现边界 |
 | --- | --- | --- |
@@ -195,7 +197,7 @@ flowchart TB
 | `action-temporal` | 55/55（已归档 2026-11-23） | 领域/迁移/repo、Temporal adapter/workflow/worker、审批 REST + UI、proto/幂等/审计/授权接缝、span、真实 Temporal 集成测试与门禁；见 `openspec/changes/archive/2026-11-23-action-temporal/` |
 | `object-search-meilisearch` | 51/52 | search 客户端/consumer/rebuild、outbox、search API、app adapter；真实 Meilisearch/Postgres 集成与隔离 E2E 通过；仅剩 8.4 由 `stage-2-integration` 收录 |
 | `production-delivery` | 70/70（**已按收缩范围归档 2026-11-24**） | Helm/ArgoCD 资产、kind 部署、探针/PDB/Secret、备份恢复 L1–L5、两轮真实回滚、本地 IdP 证据；生产级验证移交 `production-delivery-hardening` 与 `production-idp-staging` |
-| `stage-2-integration` | 23/56 | `internal/app`/`cmd` 运行时装配、fail-fast 组合测试、go mod tidy、基础 Compose + OpenFGA 冒烟与重复性完成；Gate G2/kind/全链路 E2E/质量门未闭合 |
+| `stage-2-integration` | 38/56 | `internal/app`/`cmd` 运行时装配、D-07 端口修复、质量门（8.1/8.4 经 CI）、Wave 1 启动矩阵、全栈分组 E2E（4/4）完成；G2 已登记 pass（附口径）；6.x kind、7.x 全链 E2E、G3 与终局评审未闭合 |
 
 ## 11. 依赖治理移交台账（2026-11-23）
 

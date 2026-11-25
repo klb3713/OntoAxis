@@ -42,7 +42,7 @@
 | S2-AC-08 production-delivery | 归属方 kind 证据（`stage-2-production-delivery-kind.md`）；本 change 6.x 未复跑 | **passed-with-caveat**（kind 复跑未完成） |
 | S2-AC-09 runtime-observability | Compose observability smoke 通过（5.3）；E2E-09（trace/SLO/告警）未执行 | **passed-with-caveat** |
 | S2-AC-10 生产 IdP | 已移出 Stage 2（`production-idp-staging`），本地合成 IdP 仅技术证据 | **out of scope（收缩口径）** |
-| S2-AC-11 证据与报告 | 证据索引（`docs/stages/evidence/stage-2-integration.md`）、CI 全绿 [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516)、本报告 | **partial**（G2/G3 记录、终局评审未完成） |
+| S2-AC-11 证据与报告 | 证据索引（`docs/stages/evidence/stage-2-integration.md`）、CI 全绿 [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516)、本报告 | **partial**（G3 记录与终局评审未完成；G2 已于 2026-11-25 登记 `pass`） |
 
 ## 4. 质量门结果
 
@@ -86,7 +86,7 @@
 
 ## 7. 偏差、风险与未覆盖项
 
-1. **G2 未登记 pass**：条件 5 的 compose 启动部分已由真实 runner 矩阵（run 45570760338）提供证据，Helm/kind 启动（6.1–6.5）未完成；G2 记录待负责人确认。
+1. **G2 已登记 `pass`（2026-11-25，负责人 klb3713）**：条件 1/2/3 有证据，条件 4 out of scope，条件 5 的 compose 部分由真实 runner 矩阵（run 45570760338，3/3）与全栈 E2E（run 45607781575，4/4）提供证据；Helm/kind 启动（6.1–6.5）仍未完成，仍属退出条件 4。
 2. **D-07 端口冲突**已修复（Connect 18086→18089、search worker 端口参数化），配置级与 CI 启动均验证；全量同栈一次性启动与资源占用未记录。
 3. **kind 交付层（6.x）与全栈 E2E（7.x）未复跑**：本机 docker 无法拉取部分镜像，kind 集群未完成本轮复验。
 4. **工具缺口**：golangci-lint/actionlint/shellcheck/buf 本机缺失，对应门以 CI 结果替代或标未执行。
@@ -96,12 +96,12 @@
 ## 8. 文档同步清单（9.4）
 
 - `ARCHITECTURE.md` 15.x：待同步（状态表述需 owner 同意）
-- `docs/stages/stage-2-change-map.md`：状态列仍为计划值，需在 G2 登记后更新
+- `docs/stages/stage-2-change-map.md`：G2 已登记、状态列已于 2026-11-25 更新
 - `README.md`、`docs/getting-started/local-development.md`：待核对命令与端口
 - `docs/architecture/services-and-ports.md`：已补登 Kafka Connect 18089、Redpanda 19092、source-postgres 15434、Meilisearch 17700、search worker 18088/`ONTOAXIS_SEARCH_WORKER_PORT`
 
 ## 9. 退出建议与待负责人确认项
 
-- 当前**不建议**宣布 Stage 2 退出：G2 未登记、6.x/7.x 未完成、S2-AC-05 未通过、E2E 矩阵多数 `not covered`。
-- 待负责人确认：G2 `pass` 记录（含条件 5 口径是否接受 “compose 已启动、helm 待 6.x”）、6.x/7.x 是否必须在本 Stage 完成、是否接受以 `passed-with-caveat` 收口 S2-AC-01/02/03/04/06/07/08/09。
+- 当前**不建议**宣布 Stage 2 退出：6.x/7.x 未完成、S2-AC-05 未通过、E2E 矩阵多数 `not covered`（G2 已登记 `pass`，但不等同退出）。
+- 待负责人确认：6.x/7.x 是否必须在本 Stage 完成（或接受 CI kind job 补证/`passed-with-caveat` 收口）、是否接受以 `passed-with-caveat` 收口 S2-AC-01/02/03/04/06/07/08/09。G2 已于 2026-11-25 登记 `pass`（口径见 change-map §4）。
 - 本报告不自动退出；Stage 2 brief 状态保持 `in_progress`。

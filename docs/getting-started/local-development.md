@@ -24,6 +24,18 @@ Compose 包含：
 | PostgreSQL | 15433 | 平台存储 |
 | oa-edge | 18085（`edge` profile） | Traefik 入口，forwardAuth 到 core |
 
+Stage 2 追加 profile 的宿主机端口（详见 `docs/architecture/services-and-ports.md`）：
+
+| 服务 | 宿主机端口 | profile |
+| --- | --- | --- |
+| Meilisearch | 17700 | `search` |
+| search worker | 18088（可用 `ONTOAXIS_SEARCH_WORKER_PORT` 覆盖，如与 Temporal UI 同栈时用 18091） | `search` |
+| source-postgres | 15434 | `connector-runtime` |
+| Redpanda | 19092 | `connector-runtime` |
+| Kafka Connect | 18089 | `connector-runtime` |
+| Kestra | 18086 | `pipeline-kestra` |
+| Temporal UI | 18088 | `action-temporal`（与 search worker 同栈时需调 search worker 端口） |
+
 浏览器打开 <http://127.0.0.1:18082/>，使用 Keycloak 用户 `admin` / `admin123` 登录。
 
 ## oa-edge 本地入口（可选）

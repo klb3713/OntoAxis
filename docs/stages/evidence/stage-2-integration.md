@@ -18,7 +18,7 @@
 | S2-AC-08 production-delivery | 2.8、6.1–6.5、7.7 | `stage-2-production-delivery-kind.md`、`stage-2-production-delivery.md` §17–§21 | **partial**（归属方 kind 证据已存在；本 change 6.x 未复跑） |
 | S2-AC-09 runtime-observability | 1.3、5.3、7.4 | `stage-2-integration/compose-smoke.md`；观测 smoke 见归档证据 | **partial**（E2E-09 未执行） |
 | S2-AC-10 生产 IdP | —（7.5 已于 2026-11-25 移交 `production-idp-staging` 4.1/4.2） | 已移出 Stage 2（`production-idp-staging`），本地合成 IdP 见 `stage-2-idp-security-review.md` | **out of scope（按收缩口径）** |
-| S2-AC-11 证据与报告 | 1.1、8.5、8.6、9.1–9.4、10.1–10.3 | 本索引；CI run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) | **partial**（G2/G3/归档/退出报告未完成） |
+| S2-AC-11 证据与报告 | 1.1、8.5、8.6、9.1–9.4、10.1–10.3 | 本索引；CI run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) | **partial**（G3 与终局评审未完成；G2 已登记 pass，2026-11-25） |
 
 ## 2. object-search 交接（change 已于 2026-11-25 归档：`openspec/changes/archive/2026-11-25-object-search-meilisearch`）证据（11.1–11.4）
 
@@ -61,7 +61,7 @@
 
 | 任务 | 阻塞原因 |
 | --- | --- |
-| 1.1 | G2 未登记 pass（条件 5 的 compose 启动矩阵已由 [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 提供真实证据，Helm/kind 待 6.x）；`openspec list` 仍有其他在途 change（OSM 已归档） |
+| 1.1 | G2 已于 2026-11-25 登记 `pass`（compose 矩阵 [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) + 归属方 helm/kind 证据；6.x 复跑属退出条件 4）；`openspec list` 另有 3 个范围外 change，排除理由写入退出报告 §2 |
 | 2.5 | pipeline-kestra-dbt 合并验证未完成（E2E-06） |
 | 5.4 | 配置级已过（D-07 修复）；分组 `up -d` 启动矩阵已在 CI 真实 runner 通过（run 45570760338，见 `wave1-stack-matrix.md`）；全量同栈一次性启动未执行 |
 | 6.1–6.5 | kind 交付层复跑未执行：集群节点 Ready 但 `oa-data`/`oa-observability` 多数 `ImagePullBackOff`（13）、ArgoCD 无 Application，见 `stage-2-integration/kind-cluster-state.md` |

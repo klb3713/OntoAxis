@@ -3,7 +3,7 @@
 - 起草日期：2026-11-25
 - 起草人：`stage-2-integration`（自动起草，**非**批准）
 - 门禁定义：`docs/stages/stage-2-change-map.md` §4「Wave 2 — 搜索与生产交付」门 G2
-- 结论状态：**draft — pending owner confirmation**（未登记为 `pass`；负责人确认后才可在 change map §4 记录并视为通过）
+- 结论状态：**pass（2026-11-25，负责人 klb3713 确认登记）**；口径见下，登记记录已写入 `docs/stages/stage-2-change-map.md` §4
 
 ## 1. 门禁条件与证据
 
@@ -19,7 +19,10 @@
 
 8 个前置 change 已全部归档（含 `object-search-meilisearch` 于 2026-11-25 归档：`openspec/changes/archive/2026-11-25-object-search-meilisearch`，主 spec `openspec/specs/object-search/spec.md`）。
 
-## 3. 待负责人确认事项
+## 3. 负责人确认结论（2026-11-25）
+
+- 确认人：klb3713；结论：**pass**，附三条口径（compose 真实 runner 证据；helm/kind 采信 production-delivery 归档证据；本 change 6.x 复跑与 kind 全栈 E2E 仍属 Stage 2 退出条件 4）。
+- 以下为起草时的待确认项，保留以便追溯：
 
 1. 条件 5 的口径：是否接受「Wave 1 服务 compose 已真实启动、helm/kind 启动留待本 change 6.x」即登记 G2 `pass`，或要求先完成 6.x。
 2. 条件 2 的口径：是否接受以 `production-delivery` 归属方 kind 证据作为 G2 第 2 条依据。

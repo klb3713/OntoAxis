@@ -1305,8 +1305,20 @@ kafka, debezium, kestra, trino, nessie, seaweedfs, meilisearch
 Stage 2 **不需要**先完成 15.2 中的功能实现，但以下设计输入必须在对应 Wave 开始前定稿：
 
 1. **oa-edge 路由契约（已实现并验证，2026-11-22）**：`config/edge/routes.yaml`、`config/edge/routes.schema.json`、`config/edge/README.md` 定义 schema、最长前缀匹配顺序、公开/受保护路由、JWT/header 边界与确定性生成规则；`tools/edgegen` 生成 `deploy/edge/generated/` 的 Envoy/Traefik 产物，`make edge-generate-check` 校验，`scripts/edge-smoke.sh` 与 `scripts/edge-smoke-envoy.sh` 覆盖 200/401/403/404/405/429 与 fail-closed（Traefik 500、Envoy 403）。Envoy Gateway 与 Traefik 只消费同一份生成结果，不再另立路由真源；Envoy 已在 kind v1.37 上验证 Gateway Programmed 与运行态 smoke。
-2. **授权边界（已定稿并进入实施，2026-11-22）**：`docs/architecture/authorization-boundary.md` 已覆盖 OpenFGA 关系模型、Cedar 策略集、默认拒绝与审计事件字段；负责人已确认安全评审通过并授权 `authorization-openfga-cedar` 实施。核心 `internal/platform/authz/`、`policies/` 与 9 个模块接缝已实现；`internal/app`/`cmd` 接线与证据归档仍待 `stage-2-integration` 收口，未归档前不得视为 Stage 2 验收完成。实现中不得临时扩大或重叠职责。
+2. **授权边界（已定稿并进入实施，2026-11-22）**：`docs/architecture/authorization-boundary.md` 已覆盖 OpenFGA 关系模型、Cedar 策略集、默认拒绝与审计事件字段；负责人已确认安全评审通过并授权 `authorization-openfga-cedar` 实施。核心 `internal/platform/authz/`、`policies/` 与 9 个模块接缝已实现；`internal/app`/`cmd` 接线已完成并进入主干，证据归档见 `docs/stages/evidence/stage-2-integration.md`，G2 已登记 `pass`（2026-11-25，附口径）。Stage 2 退出仍以 brief 退出条件为准（kind 全栈 E2E 待 6.x/7.x）。实现中不得临时扩大或重叠职责。
 3. **可观测基线（已定稿并实现，2026-11-22）**：`docs/architecture/observability-baseline.md` 定义服务名、指标命名、trace 传播和 SLO；`runtime-observability` 已归档，后续 change 直接复用。
 4. **治理前置（已完成）**：Stage 2 brief 已获负责人批准（2026-11-22）；剩余 7 个 change 已一次性创建规划产物并通过评审，见 `docs/stages/stage-2-change-batch-review.md`；负责人同日授权按 change-map 顺序实施，从 `authorization-openfga-cedar` 开始。
 
 完成状态以 `openspec/specs/`、`docs/stages/stage-1-exit-report.md` 和后续 Stage brief 为准。
+
+### 15.4 Stage 2 当前进展（2026-11-25）
+
+| 能力 | 已实现 | 证据/落点 |
+| --- | --- | --- |
+| 授权（OpenFGA + Cedar） | 关系模型、策略、跨租户拒绝、fail-closed 中间件接入 `internal/app` | `openspec/specs/authorization/`；`internal/platform/authz/` |
+| 真实连接器 / Pipeline / Action | Kafka Connect、Kestra+dbt、Temporal 工作流（重试/补偿/审批） | `openspec/specs/connectors|pipelines|actions/`；Wave 1 矩阵 run 45570760338 |
+| 对象搜索 | outbox→Meilisearch、增量索引、全量/单类型重建与摘要对账、搜索 API | `openspec/specs/object-search/spec.md`；隔离 E2E 73/73、CI `search-integration` |
+| 交付资产 | Helm chart、ArgoCD、探针/PDB/Secret、备份与回滚 | `openspec/changes/archive/2026-11-24-production-delivery/`（70/70） |
+| 集成与证据 | 模块装配、D-07 端口收敛、质量门进 CI、全栈分组 E2E | `docs/stages/evidence/stage-2-integration.md`、`stage-2-exit-report.md`（draft） |
+
+未闭合：kind 全栈 E2E（6.1–6.5/7.7，受公共镜像拉取与 ArgoCD Application 清单限制，计划 CI kind job）、生产 IdP（`production-idp-staging`）、生产交付加固（`production-delivery-hardening`）。G2 `pass` 不等于 Stage 2 退出。
