@@ -6,6 +6,9 @@ name: fullstack-e2e
 # job 提供。仅做隔离环境验证，不是生产验收。手动触发 + 本文件变更的 PR。
 on:
   workflow_dispatch: {}
+  # 允许在功能分支上跑首轮；该模式不匹配 main，合并后不影响主干触发策略。
+  push:
+    branches: ['stage2-int/**']
   pull_request:
     branches: [main]
     paths:
