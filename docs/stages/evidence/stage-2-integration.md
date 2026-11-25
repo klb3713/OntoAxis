@@ -64,8 +64,8 @@
 | 1.1 | G2 未登记 pass（条件 5 的 compose 启动矩阵已由 [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 提供真实证据，Helm/kind 待 6.x）；`openspec list` 仍有其他在途 change（OSM 已归档） |
 | 2.5 | pipeline-kestra-dbt 合并验证未完成（E2E-06） |
 | 5.4 | 配置级已过（D-07 修复）；分组 `up -d` 启动矩阵已在 CI 真实 runner 通过（run 45570760338，见 `wave1-stack-matrix.md`）；全量同栈一次性启动未执行 |
-| 6.1–6.5 | kind 交付层复跑未执行 |
-| 7.1–7.7 | 全栈 E2E 未执行 |
+| 6.1–6.5 | kind 交付层复跑未执行：集群节点 Ready 但 `oa-data`/`oa-observability` 多数 `ImagePullBackOff`（13）、ArgoCD 无 Application，见 `stage-2-integration/kind-cluster-state.md` |
+| 7.1–7.7 | 全栈 E2E 未执行（7.7 kind 受镜像/ArgoCD 阻塞，见 `kind-cluster-state.md`） |
 | 8.1/8.2/8.3/8.4 部分 | 工具缺失或未跑（见 §3） |
 | 8.5 | 仍有在途 change |
 | 9.3/9.4/9.5、10.x | 依赖上述完成与评审 |

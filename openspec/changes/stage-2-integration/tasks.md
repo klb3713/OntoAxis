@@ -47,11 +47,11 @@
 
 ## 6. kind/k3d 交付层
 
-- [ ] 6.1 Helm 部署：安装 chart，检查 Deployment/Service/ConfigMap/Secret、readiness/liveness probe、PDB、资源限额。验证：`kubectl get pods` 全部 Ready，probe 配置与 chart 一致。
-- [ ] 6.2 ArgoCD 同步：创建/更新 Application 并等待同步。验证：`Synced/Healthy` 状态截图或 CLI 输出入库。
-- [ ] 6.3 集群入口：验证 Envoy `oa-edge` 路由在集群内生效（public 200、受保护 401/200、未知 404、`/metrics` 不可达）。验证：命令输出入库；与 edge spec 行为一致。
-- [ ] 6.4 备份恢复演练：按 `deploy/README.md` 备份 → 恢复。验证：恢复后 `/readyz` 与关键数据抽查通过，演练日志入库。
-- [ ] 6.5 镜像回滚演练：固定上一已验证 tag 回滚并重跑 smoke。验证：回滚后 `/healthz`、`/readyz`、核心 smoke 通过，记录 tag 与时间。
+- [ ] 6.1 Helm 部署：安装 chart，检查 Deployment/Service/ConfigMap/Secret、readiness/liveness probe、PDB、资源限额。验证：`kubectl get pods` 全部 Ready，probe 配置与 chart 一致。 — 进展（2026-11-25）：本机 kind 集群节点 Ready，但 `oa-data`/`oa-observability` 多数工作负载 `ImagePullBackOff`（13 个），无法复跑安装与探针检查；现状见 `docs/stages/evidence/stage-2-integration/kind-cluster-state.md`。
+- [ ] 6.2 ArgoCD 同步：创建/更新 Application 并等待同步。验证：`Synced/Healthy` 状态截图或 CLI 输出入库。 — 进展（2026-11-25）：ArgoCD 控制器 Running，但 `argocd` 命名空间无 Application，无对象可验（`kind-cluster-state.md`）。
+- [ ] 6.3 集群入口：验证 Envoy `oa-edge` 路由在集群内生效（public 200、受保护 401/200、未知 404、`/metrics` 不可达）。验证：命令输出入库；与 edge spec 行为一致。 — 进展（2026-11-25）：集群入口未复验（依赖 6.1 工作负载就绪，见 `kind-cluster-state.md`）。
+- [ ] 6.4 备份恢复演练：按 `deploy/README.md` 备份 → 恢复。验证：恢复后 `/readyz` 与关键数据抽查通过，演练日志入库。 — 进展（2026-11-25）：未执行，依赖可拉取镜像环境（`kind-cluster-state.md`）。
+- [ ] 6.5 镜像回滚演练：固定上一已验证 tag 回滚并重跑 smoke。验证：回滚后 `/healthz`、`/readyz`、核心 smoke 通过，记录 tag 与时间。 — 进展（2026-11-25）：未执行，依赖可拉取镜像环境（`kind-cluster-state.md`）。
 
 ## 7. 全栈 E2E（跨 change）
 
@@ -61,7 +61,7 @@
 - [ ] 7.4 Compose 可观测：执行 E2E-09（trace 贯通、RED/运行时指标、SLO 面板、告警触发、负载基线复跑）。验证：Jaeger trace JSON、Prometheus 查询结果、面板截图、基线结果入库。
 - [ ] 7.5 生产 IdP：执行 E2E-11（非本地 OIDC issuer/JWKS/claims 登录与 API 调用）。验证：登录与 API 成功，claims 映射正确，证据中无任何生产密钥。
 - [ ] 7.6 前端 E2E：运行 Stage 1 Playwright 套件；如 `action-temporal` 提供审批 UI，合并并运行其新增用例。验证：`cd web && pnpm test:e2e` 通过，截图/trace 入库。
-- [ ] 7.7 kind 栈 E2E 子集：在 kind/k3d 上执行 E2E-01、E2E-02、E2E-10（交付）。验证：结果入库；未覆盖的组合在报告中标 `not covered`。
+- [ ] 7.7 kind 栈 E2E 子集：在 kind/k3d 上执行 E2E-01、E2E-02、E2E-10（交付）。验证：结果入库；未覆盖的组合在报告中标 `not covered`。 — 进展（2026-11-25）：未执行；kind 工作负载多数 `ImagePullBackOff`（`kind-cluster-state.md`）。
 
 ## 8. 回归与质量门
 
