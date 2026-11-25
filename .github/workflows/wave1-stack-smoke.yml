@@ -4,6 +4,10 @@ name: wave1-stack-smoke
 # 只做本地/合成数据验证，不是生产部署验收。手动触发。
 on:
   workflow_dispatch: {}
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/wave1-stack-smoke.yml'
 
 permissions:
   contents: read
