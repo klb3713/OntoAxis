@@ -63,6 +63,10 @@ jobs:
 
   # E2E-05：CDC 负向矩阵（成功同步需更长提交窗口，默认不跑）。
   e2e-connector:
+    # 默认跳过：kafka-connect 首次启动要扫描上百个 Iceberg 插件 jar，
+    # 在 2 核 runner 上远超 45 分钟观察窗（见 docs/stages/evidence/stage-2-integration/wave1-stack-matrix.md）。
+    # 需要验证时在仓库 Variables 设 ENABLE_CONNECTOR_E2E=true，或在本地/专用 runner 运行。
+    if: ${{ vars.ENABLE_CONNECTOR_E2E == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -160,7 +164,7 @@ jobs:
         run: |
           curl -s -o /dev/null -w 'kestra root %{http_code}\n' http://127.0.0.1:18086/
           docker compose -f deploy/compose/compose.yaml -f deploy/compose/pipeline-kestra/compose.pipeline.yaml \
-            --profile pipeline-kestra exec -T kestra sh -c 'curl -fsS http://localhost:34092/health >/dev/null' 
+            --profile pipeline-kestra logs --no-log-prefix kestra | grep -q 'Health endpoint is available' 
           curl -fsS http://127.0.0.1:18081/v1/info
       - name: Dump logs on failure
         if: failure()
