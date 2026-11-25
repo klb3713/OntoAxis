@@ -13,7 +13,7 @@ entries:
     tag: "1.26.3"
     digest: ""
   - source: Makefile
-    line: 93
+    line: 108
     component: prometheus
     image: prom/prometheus
     tag: "v3.1.0"
@@ -79,37 +79,43 @@ entries:
     tag: "484"
     digest: "sha256:2704eb53935af5e582d63d6033e9bf99d20c325e9b0e30b1016ef59a4773979f"
   - source: deploy/compose/compose.yaml
-    line: 96
+    line: 102
+    component: meilisearch
+    image: getmeili/meilisearch
+    tag: "v1.11"
+    digest: ""
+  - source: deploy/compose/compose.yaml
+    line: 136
     component: oa-edge
     image: traefik
     tag: "v3.3"
     digest: ""
   - source: deploy/compose/compose.yaml
-    line: 150
+    line: 190
     component: otel-collector
     image: otel/opentelemetry-collector-contrib
     tag: "0.120.0"
     digest: ""
   - source: deploy/compose/compose.yaml
-    line: 162
+    line: 202
     component: jaeger
     image: jaegertracing/all-in-one
     tag: "1.62.0"
     digest: ""
   - source: deploy/compose/compose.yaml
-    line: 170
+    line: 210
     component: prometheus
     image: prom/prometheus
     tag: "v3.1.0"
     digest: ""
   - source: deploy/compose/compose.yaml
-    line: 188
+    line: 228
     component: alertmanager
     image: prom/alertmanager
     tag: "v0.27.0"
     digest: ""
   - source: deploy/compose/compose.yaml
-    line: 198
+    line: 238
     component: perses
     image: persesdev/perses
     tag: "v0.50.0"
@@ -133,7 +139,7 @@ entries:
     tag: "3.20"
     digest: ""
   - source: deploy/compose/search/compose.search.yaml
-    line: 6
+    line: 11
     component: meilisearch
     image: getmeili/meilisearch
     tag: "v1.11"
@@ -151,19 +157,19 @@ entries:
     tag: ""
     digest: "sha256:7e55f59af53b572be0e41dcb24d820529d3f0b9b730419d8ee9a69451e1f79b8"
   - source: deploy/helm/ontoaxis-app/values.yaml
-    line: 96
+    line: 107
     component: web
     image: ghcr.io/ontoaxis/web
     tag: ""
-    digest: "sha256:a0ed559da443097c2e904f50aa5f76bbdb83298f6ceb0d9b265d90bd6aff68e4"
+    digest: "sha256:b0ff694e5d1164650b63b5885b067ad3022461dacd37971df6a01471ff66467e"
   - source: deploy/helm/ontoaxis-app/values.yaml
-    line: 123
+    line: 145
     component: meilisearch
     image: docker.io/getmeili/meilisearch
     tag: ""
     digest: "sha256:4d3af8ce1b917315c9d05a15649047e66120018e3f0bef8da11c0216b27f8940"
   - source: deploy/helm/ontoaxis-app/values.yaml
-    line: 154
+    line: 176
     component: ontoaxis-search
     image: ghcr.io/ontoaxis/search-worker
     tag: ""
@@ -253,25 +259,25 @@ entries:
     tag: ""
     digest: "sha256:c33545010eb5f1b23e8d7a529f5436d93e933b85c999e6d274ce4102dc538106"
   - source: deploy/helm/ontoaxis-platform/values.yaml
-    line: 88
+    line: 93
     component: keycloak
     image: quay.io/keycloak/keycloak
     tag: ""
     digest: "sha256:4141bb80f2680f54e6d7b012f489875f09668d6f3f02d54258a50d2efb955663"
   - source: deploy/helm/ontoaxis-platform/values.yaml
-    line: 139
+    line: 163
     component: openfga
     image: openfga/openfga
     tag: ""
     digest: "sha256:da8fd1f33609a4c1564e03f544c6647f3808530c65280f8610d49442c7742473"
   - source: deploy/helm/ontoaxis-platform/values.yaml
-    line: 196
+    line: 222
     component: valkey
     image: docker.io/valkey/valkey
     tag: ""
     digest: "sha256:ba84b1f8691d7216992433291e42f7c6e60a1fde971da211e66ce5ef821a0690"
   - source: deploy/helm/ontoaxis-platform/values.yaml
-    line: 221
+    line: 247
     component: seaweedfs
     image: docker.io/chrislusf/seaweedfs
     tag: ""
