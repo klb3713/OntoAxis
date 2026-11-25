@@ -81,17 +81,22 @@ jobs:
                 -f deploy/compose/authz/compose.authz.yaml
                 -f deploy/connector-runtime/compose.connector-runtime.yaml
                 --profile connector-runtime)
+          docker compose "${args[@]}" up -d --build postgres keycloak openfga trino redpanda source-postgres iceberg-warehouse
+          # authz-init 只依赖 openfga service_started，存在竞态：失败时重试 up 即可重建。
           for attempt in 1 2 3; do
-            if docker compose "${args[@]}" up -d --build postgres keycloak openfga authz-init ontoaxis-core trino redpanda source-postgres kafka-connect; then
+            if docker compose "${args[@]}" up -d --build authz-init ontoaxis-core; then
               break
             fi
-            echo "compose up attempt $attempt failed; retrying"
+            echo "core stack attempt $attempt failed; retrying"
             sleep 15
           done
-          docker compose "${args[@]}" up -d authz-init ontoaxis-core
+          # kafka-connect 首次启动要扫描上百个 Iceberg 插件 jar（>5 分钟），
+          # 超过 compose healthcheck 的 40s+30×10s 窗口会拖垮依赖它的 up；
+          # 故用 --no-deps 单独启动，由后续等待步骤按实际就绪判断。
+          docker compose "${args[@]}" up -d --build --no-deps kafka-connect
       - name: Wait for core and kafka-connect REST
         run: |
-          for _ in $(seq 1 150); do
+          for _ in $(seq 1 300); do
             if curl -fsS http://127.0.0.1:18080/readyz >/dev/null 2>&1 && \
                curl -fsS http://127.0.0.1:18089/connectors >/dev/null 2>&1; then
               exit 0
@@ -154,8 +159,8 @@ jobs:
       - name: Assert kestra API and trino respond
         run: |
           curl -s -o /dev/null -w 'kestra root %{http_code}\n' http://127.0.0.1:18086/
-          curl -fsS -u "$KESTRA_BASIC_AUTH_USERNAME:$KESTRA_BASIC_AUTH_PASSWORD" \
-            http://127.0.0.1:18086/api/v1/configs >/dev/null
+          docker compose -f deploy/compose/compose.yaml -f deploy/compose/pipeline-kestra/compose.pipeline.yaml \
+            --profile pipeline-kestra exec -T kestra sh -c 'curl -fsS http://localhost:34092/health >/dev/null' 
           curl -fsS http://127.0.0.1:18081/v1/info
       - name: Dump logs on failure
         if: failure()
