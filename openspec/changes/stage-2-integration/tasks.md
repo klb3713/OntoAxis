@@ -1,6 +1,6 @@
 # Tasks
 
-> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **34/56**。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
+> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **35/56**（7.5 为 2026-11-25 范围移交，标 `[x]` 但不计入 Stage 2 退出判据）。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
 
 ## 1. 准入与基线
 
@@ -59,7 +59,7 @@
 - [ ] 7.2 Compose 数据链路：执行 E2E-05（CDC → dataset → 查询）、E2E-06（Kestra+dbt → dataset）、E2E-07（Temporal 重试/补偿/审批）、E2E-04（outbox → Meilisearch → 搜索/重建）。验证：各场景日志与查询结果入库。
 - [ ] 7.3 Compose 身份/授权：执行 E2E-02（edge 矩阵）、E2E-03（OpenFGA/Cedar allow/deny、跨租户、默认拒绝、审计）、E2E-12（安全负路径）。验证：状态码/审计记录/拒绝原因入库。
 - [ ] 7.4 Compose 可观测：执行 E2E-09（trace 贯通、RED/运行时指标、SLO 面板、告警触发、负载基线复跑）。验证：Jaeger trace JSON、Prometheus 查询结果、面板截图、基线结果入库。
-- [ ] 7.5 生产 IdP：执行 E2E-11（非本地 OIDC issuer/JWKS/claims 登录与 API 调用）。验证：登录与 API 成功，claims 映射正确，证据中无任何生产密钥。
+- [x] 7.5 生产 IdP：**out of scope（2026-11-25 移交）**——S2-AC-10 已移出 Stage 2，E2E-11 由 `production-idp-staging` 4.1/4.2 承接；本项不计入 Stage 2 任务与退出判据。
 - [ ] 7.6 前端 E2E：运行 Stage 1 Playwright 套件；如 `action-temporal` 提供审批 UI，合并并运行其新增用例。验证：`cd web && pnpm test:e2e` 通过，截图/trace 入库。
 - [ ] 7.7 kind 栈 E2E 子集：在 kind/k3d 上执行 E2E-01、E2E-02、E2E-10（交付）。验证：结果入库；未覆盖的组合在报告中标 `not covered`。 — 进展（2026-11-25）：未执行；kind 工作负载多数 `ImagePullBackOff`（`kind-cluster-state.md`）。
 

@@ -14,3 +14,7 @@
 - [ ] 3.1 六项负向 token 全部 401/403
 - [ ] 3.2 IdP 安全评审复评并签核
 - [ ] 3.3 证据归档并更新 S2-AC-10 traceability
+
+## 4. E2E 与验收（自 stage-2-integration 7.5 迁入）
+- [ ] 4.1 执行 E2E-11：非本地 OIDC 登录 → web/API 调用 → claims（tenant-id/org-ids/workspace-ids/realm-roles）断言，证据归档
+- [ ] 4.2 将 S2-AC-10 证据映射到本 change（traceability）与 Stage 证据索引，声明 Stage 2 退出不含该 AC

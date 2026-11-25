@@ -35,7 +35,7 @@ S2-AC-02…10 的主证据与验收归属各自 change；本 change 只做跨 ch
 | S2-AC-07 | `object-search-meilisearch` | 2.7、7.2 | 索引一致性、全量重建日志 | planned |
 | S2-AC-08 | `production-delivery` | 2.8、6.1–6.5、7.7 | Helm/ArgoCD 状态、probes/PDB/Secret、备份恢复与回滚演练日志 | planned |
 | S2-AC-09 | `runtime-observability`（已归档） | 1.3、5.3、7.4 | Jaeger trace JSON、Prometheus 查询、SLO 面板截图、告警触发、负载基线 | planned |
-| S2-AC-10 | `production-delivery` | 7.5 | 非本地 OIDC 登录/JWKS/claims 证据（不含密钥） | planned |
+| S2-AC-10 | `production-idp-staging` | 4.1 | 非本地 OIDC 登录/JWKS/claims 证据（不含密钥） | out of scope（2026-11-25 任务移交 `production-idp-staging` 4.1/4.2） |
 
 ## 已知缺口与未决项
 

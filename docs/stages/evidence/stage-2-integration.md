@@ -17,7 +17,7 @@
 | S2-AC-07 object-search-meilisearch | 2.7、7.2 | `stage-2-integration/object-search/`（见 §2）、`stage-2-integration/search-profile.md` | **partial**（真实集成 + 隔离 E2E 73/73；Compose 全栈 E2E-04 见 §3） |
 | S2-AC-08 production-delivery | 2.8、6.1–6.5、7.7 | `stage-2-production-delivery-kind.md`、`stage-2-production-delivery.md` §17–§21 | **partial**（归属方 kind 证据已存在；本 change 6.x 未复跑） |
 | S2-AC-09 runtime-observability | 1.3、5.3、7.4 | `stage-2-integration/compose-smoke.md`；观测 smoke 见归档证据 | **partial**（E2E-09 未执行） |
-| S2-AC-10 生产 IdP | 7.5 | 已移出 Stage 2（`production-idp-staging`），本地合成 IdP 见 `stage-2-idp-security-review.md` | **out of scope（按收缩口径）** |
+| S2-AC-10 生产 IdP | —（7.5 已于 2026-11-25 移交 `production-idp-staging` 4.1/4.2） | 已移出 Stage 2（`production-idp-staging`），本地合成 IdP 见 `stage-2-idp-security-review.md` | **out of scope（按收缩口径）** |
 | S2-AC-11 证据与报告 | 1.1、8.5、8.6、9.1–9.4、10.1–10.3 | 本索引；CI run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) | **partial**（G2/G3/归档/退出报告未完成） |
 
 ## 2. object-search 交接（change 已于 2026-11-25 归档：`openspec/changes/archive/2026-11-25-object-search-meilisearch`）证据（11.1–11.4）

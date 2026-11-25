@@ -13,3 +13,4 @@
 - 接入真实 staging IdP 的 issuer/audience/JWKS/claims 映射（tenant-id、org-ids、workspace-ids、realm-roles）。
 - 负向矩阵（audience/issuer/expired/bad_kid/missing_claims/bad_signature）fail-closed。
 - IdP 安全评审复评与证据归档，作为 S2-AC-10 的验收依据。
+- 执行 E2E-11（自 `stage-2-integration` 7.5 于 2026-11-25 移交）：非本地 OIDC 登录 → API → claims 断言，并映射 S2-AC-10 证据。
