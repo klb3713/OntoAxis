@@ -38,7 +38,10 @@ status() {
 }
 
 wait_code() {
-  local url="$1" want="$2" timeout="${3:-90}" deadline=$((SECONDS + timeout)) value=000
+  local url="$1" want="$2"
+  local timeout="${3:-90}"
+  local deadline=$((SECONDS + timeout))
+  local value=000
   while (( SECONDS < deadline )); do
     value="$(status "${tmp}/probe.body" "${url}")"
     [[ "${value}" == "${want}" ]] && break
