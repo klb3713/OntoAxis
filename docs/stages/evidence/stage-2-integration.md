@@ -38,7 +38,7 @@
 | 项 | 命令 | 结果 | 路径 |
 | --- | --- | --- | --- |
 | 8.1 Go（本地） | `go build ./...`、`go vet ./...`、`go test -race -count=1 ./...` | 全部通过（exit 0） | `stage-2-integration/regression/go-gates.log` |
-| 8.1 golangci-lint | 与 CI 同版本 | **未执行**：本机无 golangci-lint（CI `build-test` 已覆盖） | — |
+| 8.1 golangci-lint（CI） | 与 CI 同版本 | **通过**：CI `build-test` Lint step（[run 45600592906](https://github.com/klb3713/OntoAxis/actions/runs/45600592906)），License step 同绿 | 本行 |
 | 8.1 license | `make license-check` | 通过（`LICENSE_OK`） | `stage-2-integration/regression/make-gates.log` |
 | 8.2 前端 | `pnpm install --frozen-lockfile && pnpm check && pnpm test && pnpm build` | **全部通过**（`INSTALL_OK/CHECK_OK/TEST_OK/BUILD_OK`） | `stage-2-integration/regression/web-gates.log` |
 | 8.3 proto（CI） | `make proto-lint`、`make proto-breaking` | **通过**：CI `proto` job 绿（[run 45600592906](https://github.com/klb3713/OntoAxis/actions/runs/45600592906)）；本机无 buf 仅影响本地复跑 | 本行 |

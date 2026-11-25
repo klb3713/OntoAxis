@@ -1,6 +1,6 @@
 # Tasks
 
-> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **36/56**（7.5 为 2026-11-25 范围移交，标 `[x]` 但不计入 Stage 2 退出判据）。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
+> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **37/56**（7.5 为 2026-11-25 范围移交，标 `[x]` 但不计入 Stage 2 退出判据）。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
 
 ## 1. 准入与基线
 
@@ -65,7 +65,7 @@
 
 ## 8. 回归与质量门
 
-- [ ] 8.1 Go 质量门：`go build ./...`、`go test ./...`、`go test -race ./...`、`go vet ./...`、golangci-lint（与 CI 同版本）、`make license-check`。验证：全部通过，日志入库。— 进展（2026-11-25）：`go build`/`go vet`/`go test -race` 全通过（`docs/stages/evidence/stage-2-integration/regression/go-gates.log`）、`make license-check` 通过（`regression/make-gates.log`）；本机无 golangci-lint，未执行（CI `build-test` 已覆盖）。
+- [x] 8.1 Go 质量门：`go build ./...`、`go test ./...`、`go test -race ./...`、`go vet ./...`、golangci-lint（与 CI 同版本）、`make license-check`。验证：全部通过，日志入库。— 完成（2026-11-25）：本地 `go build`/`go vet`/`go test -race` 全通过（`regression/go-gates.log`）、`make license-check` 通过（`regression/make-gates.log`）；golangci-lint 与 license 由 CI `build-test` job steps 7 Lint、9 License 覆盖（[run 45600592906](https://github.com/klb3713/OntoAxis/actions/runs/45600592906)）。
 - [x] 8.2 前端质量门：`cd web && pnpm install --frozen-lockfile && pnpm check && pnpm test && pnpm build`。验证：全部通过，日志入库。— 2026-11-25 本地实跑 `INSTALL_OK/CHECK_OK/TEST_OK/BUILD_OK`，日志 `docs/stages/evidence/stage-2-integration/regression/web-gates.log`。
 - [ ] 8.3 契约门：`make proto-lint`、`make proto-breaking`、`make generate-check`、`make edge-generate-check`。验证：全部通过且工作区干净。— 进展（2026-11-25）：`make edge-generate-check` 通过；`make proto-lint`/`proto-breaking`/`generate-check` 未执行（本机无 buf，docker 回退镜像 `bufbuild/buf:1.75.0` 拉取失败 `registry-1.docker.io ... EOF`），见 `regression/make-gates.log`。
 - [x] 8.4 脚本与配置门：`actionlint`、`shellcheck scripts/*.sh`、`docker compose config`。验证：无 error 级结果，日志入库。— 完成（2026-11-25）：CI `delivery-static` job 新增并跑通三步——`ShellCheck all repository scripts (error severity)`、`Compose config matrix (all profiles, static)`、`actionlint`，随主干/分支 CI 全绿（run [45600592906](https://github.com/klb3713/OntoAxis/actions/runs/45600592906) delivery-static success，steps 7/8/9）；本机无这些工具，以 CI 为准。
