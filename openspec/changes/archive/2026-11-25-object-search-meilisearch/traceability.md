@@ -55,7 +55,7 @@ S2-AC-07 拆分核对：
 | `evidence/2026-11-23-object-search-unit.md` | unit 切片（实现期） | 已存在 |
 | `evidence/2026-11-23-object-search-integration.md` | 1.4/4.1/5.1–5.7 真实 PG16+Meilisearch 集成、缺陷修复、go.mod 未改、compose config、评测基线；含 not executed 清单 | 已采集（2026-11-23） |
 | [2026-11-24 隔离验证](evidence/2026-11-24-object-search-verification.md) | 5.5/5.7 真实 CLI、后端集成（12 项）、原生 HTTP 68 项、中文合成基线和隔离 Compose E2E 73 项 | 已采集 |
-| [`scripts/object-search-e2e.sh`](../../../scripts/object-search-e2e.sh) | 8.1 E2E 矩阵 | 预检与离线回归通过；隔离 Compose E2E 73/73（2026-11-24 21:07）|
+| [`scripts/object-search-e2e.sh`](../../../../scripts/object-search-e2e.sh) | 8.1 E2E 矩阵 | 预检与离线回归通过；隔离 Compose E2E 73/73（2026-11-24 21:07）|
 | `.github/workflows/ci.yml` `search-integration` | 8.2 CI 必跑 | workflow 已配置；CI 同参本地实跑 exit 0、0 skip（[日志](evidence/2026-11-24-search-integration-ci-local.log)）；**真实 CI run 已执行**：[run 45405474349](https://github.com/klb3713/OntoAxis/actions/runs/45405474349) 的 [`search-integration` job](https://github.com/klb3713/OntoAxis/actions/runs/45405474349/job/138484907178) success（集成测试 PASS + 检索回归门 PASS，0 SKIP） |
 | `fixtures/search/dataset.json`、`fixtures/search/README.md`、`scripts/search-quality-baseline.sh` | 8.3 中文评测 | 已实跑 exit 0；工程回归门 `engineering_gate` 已签并 `--strict` PASS（接 CI）；业务阈值 `pending-owner-signoff` |
 | `deployment-requirements.md` | 7.6 Helm/ArgoCD 要求 | 文档完成；`helm template`/kind **not executed** |

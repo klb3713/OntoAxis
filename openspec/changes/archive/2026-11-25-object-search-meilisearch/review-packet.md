@@ -6,7 +6,7 @@
 
 | 任务 | 材料 | 性质 |
 | --- | --- | --- |
-| 9.1 运维手册 | [review-ops-runbook.md](review-ops-runbook.md) + [docs/operations/object-search-runbook.md](../../../docs/operations/object-search-runbook.md) | 手册 + 评审检查表；命令本地复现已完成 |
+| 9.1 运维手册 | [review-ops-runbook.md](review-ops-runbook.md) + [docs/operations/object-search-runbook.md](../../../../docs/operations/object-search-runbook.md) | 手册 + 评审检查表；命令本地复现已完成 |
 | 9.2 安全与数据治理 | [security-data-governance-review.md](security-data-governance-review.md) | 事实清单 S1–S15 + 7 个待决问题 + 风险 R-1..R-4 + §4 结论表（已评审通过）+ §6 处置记录 |
 | 9.3 change 评审与 Wave 2 准入 | [review-wave2-admission.md](review-wave2-admission.md) | 自评审清单 C1–C10 + G1 引用 + 准入待办 + 签字表（待填） |
 

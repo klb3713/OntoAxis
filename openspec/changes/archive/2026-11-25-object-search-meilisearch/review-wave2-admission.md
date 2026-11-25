@@ -1,7 +1,7 @@
 # change 评审与 Wave 2 准入核对（object-search）
 
 > 对应任务 **9.3**。本文件记录 change 评审与 Wave 2 准入核对；评审结论见 §6 签字表（2026-11-24，评审人 klb3713 通过）。
-> G1 已由负责人于 2026-11-24 [登记为 `pass`](../../../docs/stages/evidence/stage-2-g1-gate-record.md)。本轮实施仅用隔离本地环境与合成数据；G2 仍未执行。
+> G1 已由负责人于 2026-11-24 [登记为 `pass`](../../../../docs/stages/evidence/stage-2-g1-gate-record.md)。本轮实施仅用隔离本地环境与合成数据；G2 仍未执行。
 
 ## 1. 门禁定义（摘录）
 
@@ -16,7 +16,7 @@
 
 | G1 要素 | 当前事实 | 结论 |
 | --- | --- | --- |
-| Wave 1 三个 change 真实实例启动 | 负责人已在 [G1 记录 §1–2](../../../docs/stages/evidence/stage-2-g1-gate-record.md#1-门禁条件与证据) 确认并列出证据 | 引用已登记结果 |
+| Wave 1 三个 change 真实实例启动 | 负责人已在 [G1 记录 §1–2](../../../../docs/stages/evidence/stage-2-g1-gate-record.md#1-门禁条件与证据) 确认并列出证据 | 引用已登记结果 |
 | Wave 1 集成/失败/拒绝与降级 | 同一 G1 记录列出三项 change 的验证与归档证据 | 引用已登记结果 |
 | 授权 change 跨租户/越权负向测试 | `authorization-openfga-cedar` 已归档，G1 引用其 29 条负向用例；不等于搜索 R10 已完成端到端验收 | G1 已满足；搜索单独取证 |
 | change 实施范围 | 2026-11-24 会话确认，仅隔离本地环境与合成数据 | 仅适用于本轮验证 |

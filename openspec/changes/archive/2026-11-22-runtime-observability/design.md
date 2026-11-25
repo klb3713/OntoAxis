@@ -4,7 +4,7 @@
 
 Stage 1 的 `internal/platform/observability` 只有 JSON slog 与 request id；`internal/platform/httpserver` 在自有 Prometheus registry 上注册两个 HTTP 指标，`/metrics` 独立监听；`internal/platform/db` 与模块尚未统一接入 trace。Stage 2 将引入 `oa-edge`、OpenFGA/Cedar、Temporal、Kestra、Kafka Connect、Meilisearch，跨进程链路和失败面会快速增加。
 
-本 change 的完整行为契约见 [`specs/observability/spec.md`](specs/observability/spec.md)；可落地的基线细节见 [`docs/architecture/observability-baseline.md`](../../../docs/architecture/observability-baseline.md)。
+本 change 的完整行为契约见 [`specs/observability/spec.md`](specs/observability/spec.md)；可落地的基线细节见 [`docs/architecture/observability-baseline.md`](../../../../docs/architecture/observability-baseline.md)。
 
 ## Goals / Non-Goals
 

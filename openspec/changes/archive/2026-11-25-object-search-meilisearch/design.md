@@ -7,7 +7,7 @@
 - `runtime-observability` 已归档：`observability` 包提供 telemetry 初始化、HTTP RED 指标、DB tracing；`httpserver` 已内建 request ID、metrics、trace 中间件。
 - `authorization-openfga-cedar` 已归档。业务模块必须调用平台授权守卫，不自写角色/同租户放行判断，不得 fail-open。本 change 只接入守卫并提供租户内对象类型事实，不实现授权引擎。
 - `module.Module` 接口只有 `Name/Dependencies/Migrate/RegisterRoutes/Ready`，没有后台任务生命周期钩子；`internal/app/` 与 `cmd/` 由 `stage-2-integration` 拥有，`deploy/compose/`、`deploy/helm/` 由 `production-delivery` 拥有。
-- [G1 已登记通过](../../../docs/stages/evidence/stage-2-g1-gate-record.md)。当前实施范围为隔离本地环境与合成数据验证；不包含外部 IdP、交付验收或 G2 签核。
+- [G1 已登记通过](../../../../docs/stages/evidence/stage-2-g1-gate-record.md)。当前实施范围为隔离本地环境与合成数据验证；不包含外部 IdP、交付验收或 G2 签核。
 
 ## Goals
 

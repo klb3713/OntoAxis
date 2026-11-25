@@ -48,7 +48,7 @@ S2-AC-02…10 的主证据与验收归属各自 change；本 change 只做跨 ch
 
 | Stage AC | 当前状态 | 说明 |
 | --- | --- | --- |
-| S2-AC-01 | partial | Go 全门通过、前端 check/test/build 通过、edge-gen 通过；golangci-lint/buf/Playwright 未跑（工具缺失），见 `docs/stages/evidence/stage-2-integration.md` §3 |
+| S2-AC-01 | partial | Go 全门通过、前端 check/test/build 通过、edge-gen 通过；golangci-lint/buf/Playwright 未跑（工具缺失）。2026-11-25 追加：E2E-01/02/03/07/08 组合链与 edge 矩阵在真实 runner 通过（`fullstack-e2e-7x.md` §2/§3/§6），仍缺 Playwright 与 buf 本地工具，见 `docs/stages/evidence/stage-2-integration.md` §3 |
 | S2-AC-02 | partial | Compose edge smoke 通过；kind 入口未执行 |
 | S2-AC-03 | partial | 本地 allow/403/401/503 证据（object-search 原生 HTTP）；E2E-03 全矩阵未执行 |
 | S2-AC-04 | partial | 组合运行时已有；CI smoke 7/7（run 45570760338，`wave1-stack-matrix.md`）；E2E-07 未执行 |

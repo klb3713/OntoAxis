@@ -2,7 +2,7 @@
 
 ## 范围
 
-仅本机隔离环境与合成数据。本记录用于 `object-search-meilisearch` 的变更验证，不是生产验收、Stage G2 或评审签核；第 7 节单独记录一次真实 CI 运行结果（仍非生产/业务验收）。不改已有容器、数据库、外部 IdP、共享交付配置。G1 事实见 [Stage 2 G1 记录](../../../../docs/stages/evidence/stage-2-g1-gate-record.md)。
+仅本机隔离环境与合成数据。本记录用于 `object-search-meilisearch` 的变更验证，不是生产验收、Stage G2 或评审签核；第 7 节单独记录一次真实 CI 运行结果（仍非生产/业务验收）。不改已有容器、数据库、外部 IdP、共享交付配置。G1 事实见 [Stage 2 G1 记录](../../../../../docs/stages/evidence/stage-2-g1-gate-record.md)。
 
 ## 1. 真实 PostgreSQL、Meilisearch 与 CLI
 

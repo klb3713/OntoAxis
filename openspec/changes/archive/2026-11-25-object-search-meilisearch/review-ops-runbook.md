@@ -1,7 +1,7 @@
 # 9.1 运维手册评审材料（object-search）
 
 > 对应任务 **9.1**。本文件记录运维手册评审材料与结论；§1–§4 为核对材料，§5 为 2026-11-24 评审人 klb3713 的签字（已通过，9.1 已勾选）。
-> 被评审对象：[docs/operations/object-search-runbook.md](../../../docs/operations/object-search-runbook.md)。
+> 被评审对象：[docs/operations/object-search-runbook.md](../../../../docs/operations/object-search-runbook.md)。
 > 日期：2026-11-24
 
 ## 1. 覆盖对照（任务 9.1 五项 + 相关项）

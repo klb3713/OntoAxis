@@ -134,8 +134,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      KESTRA_BASIC_AUTH_USERNAME: admin
-      KESTRA_BASIC_AUTH_PASSWORD: admin123
+      KESTRA_BASIC_AUTH_USERNAME: admin@ontoaxis.local
+      KESTRA_BASIC_AUTH_PASSWORD: Admin1234
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Free disk space
@@ -262,3 +262,34 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f deploy/compose/compose.yaml --profile observability down -v
+
+  # E2E-08（7.1）：对象 → action → 搜索索引 → dataset/view → pipeline(publish+run) → 查询/搜索 → 审计/指标。
+  # 只使用隔离 Compose 与合成数据。pipeline 执行引擎只断言 run 到达终态（dbt 产出未验证，报告中标 partial）。
+  e2e-chain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KESTRA_BASIC_AUTH_USERNAME: admin@ontoaxis.local
+      KESTRA_BASIC_AUTH_PASSWORD: Admin1234
+      ONTOAXIS_SEARCH_WORKER_PORT: "18091"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
+          docker system prune -af || true
+          df -h /
+      - name: Run cross-module chain E2E (E2E-08)
+        run: bash scripts/fullstack-chain-e2e.sh
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml \
+            -f deploy/compose/action-temporal/compose.temporal.yaml -f deploy/compose/search/compose.search.yaml \
+            -f deploy/compose/pipeline-kestra/compose.pipeline.yaml logs --tail=200
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose -f deploy/compose/compose.yaml -f deploy/compose/authz/compose.authz.yaml \
+            -f deploy/compose/action-temporal/compose.temporal.yaml -f deploy/compose/search/compose.search.yaml \
+            -f deploy/compose/pipeline-kestra/compose.pipeline.yaml down -v --remove-orphans

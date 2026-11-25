@@ -8,6 +8,8 @@ services:
     environment:
       KESTRA_SERVER_BASIC_AUTH_ENABLED: "true"
       KESTRA_SERVER_BASIC_AUTH_USERNAME: ${KESTRA_BASIC_AUTH_USERNAME:?set KESTRA_BASIC_AUTH_USERNAME}
+      # Kestra v2 (OSS) 固定要求：用户名必须是合法邮箱，口令为明文且≥8 位、
+      # 含大小写字母与数字。这里仅用于本地/CI 合成环境。
       KESTRA_SERVER_BASIC_AUTH_PASSWORD: ${KESTRA_BASIC_AUTH_PASSWORD:?set KESTRA_BASIC_AUTH_PASSWORD}
       KESTRA_CONFIGURATION: |
         kestra:
