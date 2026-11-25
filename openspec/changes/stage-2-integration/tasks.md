@@ -1,6 +1,6 @@
 # Tasks
 
-> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **35/56**（7.5 为 2026-11-25 范围移交，标 `[x]` 但不计入 Stage 2 退出判据）。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
+> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **36/56**（7.5 为 2026-11-25 范围移交，标 `[x]` 但不计入 Stage 2 退出判据）。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
 
 ## 1. 准入与基线
 
@@ -41,7 +41,7 @@
 - [x] 5.1 静态校验与 default profile：`docker compose -f deploy/compose/compose.yaml config` 通过；起栈后 `scripts/smoke-foundation.sh` 通过。验证：命令输出与日志入库。
 - [x] 5.2 edge profile 集成：起 `--profile edge` 后运行 `EDGE_TEST_FAIL_CLOSED=1 ./scripts/edge-smoke.sh`。验证：全部用例 PASS，日志入库。
 - [x] 5.3 observability profile 集成：设置 `ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT` 后起 profile，运行 `make observability-rules-test` 与 `scripts/observability-smoke.sh`。验证：Prometheus 有指标、Jaeger 有 `ontoaxis-core` trace，输出入库。
-- [ ] 5.4 Wave 1/2 运行时 profile：按各 change 文档同时/分组启动 Temporal、Kestra、Kafka Connect、Meilisearch、OpenFGA 等，运行各自的 health/集成检查。验证：每个组件健康检查通过；记录资源占用与端口占用。— 进展（2026-11-25）：D-07 端口冲突已修复（Connect `18086→18089`；search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT` 以避开 Temporal UI `18088`），全 profile 合并 `docker compose ... config -q` 通过、16 服务无重复宿主端口（见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；本机无法拉取镜像，已改在真实 CI runner 分组 `up -d` 验证：[run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) connector-runtime/pipeline-kestra/action-temporal 3/3 绿（`docs/stages/evidence/stage-2-integration/wave1-stack-matrix.md`）；全量同栈一次性启动与资源占用记录仍待补。
+- [ ] 5.4 Wave 1/2 运行时 profile：按各 change 文档同时/分组启动 Temporal、Kestra、Kafka Connect、Meilisearch、OpenFGA 等，运行各自的 health/集成检查。验证：每个组件健康检查通过；记录资源占用与端口占用。— 进展（2026-11-25）：D-07 端口冲突已修复（Connect `18086→18089`；search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT` 以避开 Temporal UI `18088`），全 profile 合并 `docker compose ... config -q` 通过、16 服务无重复宿主端口（见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；本机无法拉取镜像，已改在真实 CI runner 分组 `up -d` 验证：[run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) connector-runtime/pipeline-kestra/action-temporal 3/3 绿（`docs/stages/evidence/stage-2-integration/wave1-stack-matrix.md`）；全量同栈一次性启动与资源占用记录仍待补。 2026-11-25 追加：`fullstack-e2e` 工作流 [run 45607781575](https://github.com/klb3713/OntoAxis/actions/runs/45607781575) 在真实 runner 分组启动 foundation/search-outbox/actions/pipeline 四组全绿；connector 组因 Iceberg 插件扫描 >45 分钟改为 `vars.ENABLE_CONNECTOR_E2E=true` 手动开启（默认 skipped）。全量同栈一次性启动与资源占用表仍待补。
 - [x] 5.5 可重复性：`down -v` 清空后重新起栈一次，确认结果与 5.1–5.4 一致。验证：两次运行日志对比无不可解释差异；写清重置步骤。
 - [x] 5.6 Compose 层跨 change 缺陷修复：经 owner 同意后修复 `deploy/compose/` 中的装配缺陷。验证：修复后重跑 5.1–5.5 相关检查通过，修复记录与 owner 同意写入证据。
 
@@ -55,10 +55,10 @@
 
 ## 7. 全栈 E2E（跨 change）
 
-- [ ] 7.1 Compose 基础链路：执行 E2E-01（Keycloak 登录 → web → 工作台 → 对象读写 → health/readyz）与 E2E-08（对象 → action → pipeline → dataset → 查询/搜索组合链）。验证：脚本/步骤日志与截图入库，结果可复现。
-- [ ] 7.2 Compose 数据链路：执行 E2E-05（CDC → dataset → 查询）、E2E-06（Kestra+dbt → dataset）、E2E-07（Temporal 重试/补偿/审批）、E2E-04（outbox → Meilisearch → 搜索/重建）。验证：各场景日志与查询结果入库。
-- [ ] 7.3 Compose 身份/授权：执行 E2E-02（edge 矩阵）、E2E-03（OpenFGA/Cedar allow/deny、跨租户、默认拒绝、审计）、E2E-12（安全负路径）。验证：状态码/审计记录/拒绝原因入库。
-- [ ] 7.4 Compose 可观测：执行 E2E-09（trace 贯通、RED/运行时指标、SLO 面板、告警触发、负载基线复跑）。验证：Jaeger trace JSON、Prometheus 查询结果、面板截图、基线结果入库。
+- [ ] 7.1 Compose 基础链路：执行 E2E-01（Keycloak 登录 → web → 工作台 → 对象读写 → health/readyz）与 E2E-08（对象 → action → pipeline → dataset → 查询/搜索组合链）。验证：脚本/步骤日志与截图入库，结果可复现。 — 进展（2026-11-25）：`fullstack-e2e` 工作流 `e2e-foundation` job（`scripts/smoke-foundation.sh`：health/readyz 与基础 API）在真实 runner 通过（run 45607781575）；E2E-01/E2E-08 的登录→web→工作台与全链组合尚未完整覆盖，日志见该 run。
+- [ ] 7.2 Compose 数据链路：执行 E2E-05（CDC → dataset → 查询）、E2E-06（Kestra+dbt → dataset）、E2E-07（Temporal 重试/补偿/审批）、E2E-04（outbox → Meilisearch → 搜索/重建）。验证：各场景日志与查询结果入库。 — 进展（2026-11-25）：`e2e-search-outbox`（E2E-04 outbox→Meilisearch→搜索/重建，隔离 Compose 73/73）与 `e2e-actions`（E2E-07 Temporal 重试/补偿/审批，7 断言通过）在真实 runner 通过；`e2e-pipeline`（Kestra UI 307 + 容器健康日志 + Trino /v1/info）通过；E2E-05 CDC 依赖 connector 组（插件扫描超 45 分钟，默认关闭）；E2E-06 仅验证 Kestra/Trino 启动，dbt 产 dataset 未覆盖。run 45607781575。
+- [ ] 7.3 Compose 身份/授权：执行 E2E-02（edge 矩阵）、E2E-03（OpenFGA/Cedar allow/deny、跨租户、默认拒绝、审计）、E2E-12（安全负路径）。验证：状态码/审计记录/拒绝原因入库。 — 进展（2026-11-25）：E2E-03 的 OpenFGA/Cedar allow/deny、跨租户、暂停 503 已由 OSM 隔离 Compose E2E 73/73 与 `authz-integration` CI job 覆盖（证据见 `object-search/2026-11-24-object-search-verification.md`、主干 run 45543404516）；E2E-12 安全负路径与 E2E-02 edge 矩阵由 CI `edge`/`compose-smoke` job 覆盖；尚未汇总成一页 7.3 证据表。
+- [ ] 7.4 Compose 可观测：执行 E2E-09（trace 贯通、RED/运行时指标、SLO 面板、告警触发、负载基线复跑）。验证：Jaeger trace JSON、Prometheus 查询结果、面板截图、基线结果入库。 — 进展（2026-11-25）：CI `observability` job 在真实 runner 通过（主干 run 45543404516）；Jaeger trace/RED 指标/SLO 面板/告警触发/负载基线复跑的完整证据仍缺（R12 partial）。
 - [x] 7.5 生产 IdP：**out of scope（2026-11-25 移交）**——S2-AC-10 已移出 Stage 2，E2E-11 由 `production-idp-staging` 4.1/4.2 承接；本项不计入 Stage 2 任务与退出判据。
 - [ ] 7.6 前端 E2E：运行 Stage 1 Playwright 套件；如 `action-temporal` 提供审批 UI，合并并运行其新增用例。验证：`cd web && pnpm test:e2e` 通过，截图/trace 入库。
 - [ ] 7.7 kind 栈 E2E 子集：在 kind/k3d 上执行 E2E-01、E2E-02、E2E-10（交付）。验证：结果入库；未覆盖的组合在报告中标 `not covered`。 — 进展（2026-11-25）：未执行；kind 工作负载多数 `ImagePullBackOff`（`kind-cluster-state.md`）。
@@ -68,7 +68,7 @@
 - [ ] 8.1 Go 质量门：`go build ./...`、`go test ./...`、`go test -race ./...`、`go vet ./...`、golangci-lint（与 CI 同版本）、`make license-check`。验证：全部通过，日志入库。— 进展（2026-11-25）：`go build`/`go vet`/`go test -race` 全通过（`docs/stages/evidence/stage-2-integration/regression/go-gates.log`）、`make license-check` 通过（`regression/make-gates.log`）；本机无 golangci-lint，未执行（CI `build-test` 已覆盖）。
 - [x] 8.2 前端质量门：`cd web && pnpm install --frozen-lockfile && pnpm check && pnpm test && pnpm build`。验证：全部通过，日志入库。— 2026-11-25 本地实跑 `INSTALL_OK/CHECK_OK/TEST_OK/BUILD_OK`，日志 `docs/stages/evidence/stage-2-integration/regression/web-gates.log`。
 - [ ] 8.3 契约门：`make proto-lint`、`make proto-breaking`、`make generate-check`、`make edge-generate-check`。验证：全部通过且工作区干净。— 进展（2026-11-25）：`make edge-generate-check` 通过；`make proto-lint`/`proto-breaking`/`generate-check` 未执行（本机无 buf，docker 回退镜像 `bufbuild/buf:1.75.0` 拉取失败 `registry-1.docker.io ... EOF`），见 `regression/make-gates.log`。
-- [ ] 8.4 脚本与配置门：`actionlint`、`shellcheck scripts/*.sh`、`docker compose config`。验证：无 error 级结果，日志入库。— 进展（2026-11-25）：全 profile `docker compose config -q` 通过（`d07-port-conflict.md`）；本机无 actionlint/shellcheck，未执行。
+- [x] 8.4 脚本与配置门：`actionlint`、`shellcheck scripts/*.sh`、`docker compose config`。验证：无 error 级结果，日志入库。— 完成（2026-11-25）：CI `delivery-static` job 新增并跑通三步——`ShellCheck all repository scripts (error severity)`、`Compose config matrix (all profiles, static)`、`actionlint`，随主干/分支 CI 全绿（run [45600592906](https://github.com/klb3713/OntoAxis/actions/runs/45600592906) delivery-static success，steps 7/8/9）；本机无这些工具，以 CI 为准。
 - [ ] 8.5 OpenSpec 门：全部前置 change 归档后运行 `openspec validate --all --strict`。验证：输出 0 failed（若仍有在途 change 未归档，不得判定通过）。— 2026-11-25 `openspec validate --all --strict` 19/19 通过，但仍有在途 change（含 OSM 未归档），故不勾。
 - [x] 8.6 CI 门：在真实 runner 上运行完整 CI（build-test/proto/frontend/docker/observability/compose-smoke/edge）。验证：全绿并记录 run URL 与 job 列表；本地通过不能替代此任务。— 2026-11-25 主干 run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) 11/11 全绿（build-test、proto、secret-scan、delivery-static、search-integration、authz-integration、edge、compose-smoke、frontend、docker、observability）。
 

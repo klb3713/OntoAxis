@@ -18,3 +18,15 @@
 - 为缩短运行时间并避免 core 的 fail-closed 依赖阻塞 Wave 1 服务本身，workflow 只启动各组件所需的最小依赖集，并直接轮询组件自身接口（不依赖 compose healthcheck）：connector job 轮询 `http://127.0.0.1:18089/connectors`；pipeline job 轮询 Kestra HTTP 与 Trino `/v1/info`；temporal job 复用既有 smoke（`SKIP_START=1`，Temporal/核心服务已由 job 步骤拉起）。
 - **未覆盖**：Helm/kind 的“可启动”（属 6.x 任务）；source-postgres CDC 写链路（`--submit-smoke` 未启用）；Wave 2 组件（Meilisearch/OpenFGA）另见 `search-profile.md`、`compose-smoke.md`。
 - 结论：**G2 条件 5 的 compose 启动部分已具备真实 runner 证据**；G2 是否登记 `pass` 仍由负责人确认（本文件不构成门禁批准）。
+
+## 6. 全栈分组 E2E（`.github/workflows/fullstack-e2e.yml`，2026-11-25）
+
+- run [45607781575](https://github.com/klb3713/OntoAxis/actions/runs/45607781575)（head `8b011e0`）：**4/4 job 绿**。
+  - `e2e-foundation`：`scripts/smoke-foundation.sh`（health/readyz + 基础 API）。
+  - `e2e-search-outbox`：`E2E_START_TIMEOUT=300 bash scripts/object-search-e2e.sh`，隔离 Compose 73/73。
+  - `e2e-actions`：`scripts/actions-temporal-smoke.sh`，7 断言通过（object_update/compensation/approval_approve/reject/timeout/retry_exhaustion/compensation_failed）。
+  - `e2e-pipeline`：Kestra 根路径 307 + 日志 `Health endpoint is available` + Trino `/v1/info`。
+- 触发为 `workflow_dispatch` + `push branches: ['stage2-int/**']`（`workflow_dispatch` 在当前非默认分支不可用）。
+- 已知限制：
+  1. `e2e-connector` 默认 `if: vars.ENABLE_CONNECTOR_E2E == 'true'` 关闭：Kafka Connect 首次启动扫描上百个 Iceberg 插件 jar，2 核 runner 上超过 job 45 分钟观察窗（run 45600583537 的 `Wait for core and kafka-connect REST` 超时被取消）。需要时在仓库 Variables 打开，或用专用 runner/本地运行。
+  2. `e2e-pipeline` 未跑 dbt 产 dataset（E2E-06 完整断言）；`e2e-foundation` 未覆盖登录→web→工作台全链（E2E-01）。
