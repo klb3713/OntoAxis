@@ -43,5 +43,5 @@
 
 - **D-07 已修复（配置级）**：Kafka Connect 默认 `18086→18089`，search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT`（避开 Temporal UI `18088`）。全 profile `docker compose ... config -q` 通过，16 服务无重复宿主端口（`docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）。
 - **仍未 pass**：上述仅为配置级校验；G2 条件 5 要求“可启动”，真正的分组 `up -d` 健康矩阵未执行（本机 docker 无法拉取 Connect/Kestra/Temporal/Redpanda 镜像：`registry-1.docker.io ... EOF`）。
-- **OSM 归档前置**：object-search-meilisearch 本 change 任务已 52/52，8.4 证据已由 `stage-2-integration` 收录（`docs/stages/evidence/stage-2-integration.md` §2）；归档仍需负责人单独授权。
+- **OSM 归档前置（已解除）**：object-search-meilisearch 已于 2026-11-25 归档（`openspec/changes/archive/2026-11-25-object-search-meilisearch`），spec 写入 `openspec/specs/object-search/spec.md`。object-search-meilisearch 本 change 任务已 52/52，8.4 证据已由 `stage-2-integration` 收录（`docs/stages/evidence/stage-2-integration.md` §2）；归档仍需负责人单独授权。
 - **G2 登记**：仍需要在负责人确认后新建 `docs/stages/evidence/stage-2-g2-gate-record.md` 并在 change map §4 记录（本轮未登记、未宣布 pass）。

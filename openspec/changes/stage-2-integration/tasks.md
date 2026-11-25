@@ -4,7 +4,7 @@
 
 ## 1. 准入与基线
 
-- [ ] 1.1 核对 Wave 3 准入：`docs/stages/stage-2-change-map.md` §4 存在 G2 为 `pass` 的记录（日期、命令、结果、确认人），且 8 个前置 change 已归档。验证：`openspec list` 仅本 change 在途；将核对结果与截图/命令输出写入 `docs/stages/evidence/stage-2-integration/baseline/admission.md`。
+- [ ] 1.1 核对 Wave 3 准入：`docs/stages/stage-2-change-map.md` §4 存在 G2 为 `pass` 的记录（日期、命令、结果、确认人），且 8 个前置 change 已归档。验证：`openspec list` 仅本 change 在途；将核对结果与截图/命令输出写入 `docs/stages/evidence/stage-2-integration/baseline/admission.md`。 — 进展（2026-11-25）：8 个前置 change 已全部归档（含 object-search-meilisearch，见 `openspec/changes/archive/2026-11-25-object-search-meilisearch`）；仅缺负责人登记的 G2 `pass` 记录。
 - [x] 1.2 记录基线快照：commit SHA、`git status`、Go/Node/Docker/Compose 版本、容器镜像版本、现有 CI run id、`/healthz`/`/readyz` 原始输出、`openspec validate --all --strict` 结果。验证：基线文件存在于 `docs/stages/evidence/stage-2-integration/baseline/`，内容可逐条复核。
 - [x] 1.3 复跑已归档 `runtime-observability` 与 `edge-gateway` 的证据命令，确认 Stage 2 基线仍可复现。验证：`make observability-rules-test`、`scripts/observability-smoke.sh`、`scripts/edge-smoke.sh` 结果与归档证据一致或在证据中解释差异。
 
@@ -88,7 +88,7 @@
 
 ## 11. 接收自 object-search-meilisearch 的交接项（2026-11-24）
 
-来源：`openspec/changes/object-search-meilisearch/handoff/stage-2-integration.md`（证据源文件已备，`docs/stages/evidence/` 归本 change 收录）。本 change 2.7 已完成 object-search 的合并；以下为证据收口与边界声明。
+来源：`openspec/changes/archive/2026-11-25-object-search-meilisearch/handoff/stage-2-integration.md`（证据源文件已备，`docs/stages/evidence/` 归本 change 收录）。本 change 2.7 已完成 object-search 的合并；以下为证据收口与边界声明。
 
 - [x] 11.1 收录证据源文件到 `docs/stages/evidence/`（清单见交接文件 §1）：集成记录、隔离验证（后端 12 项 / 原生 HTTP 68/68 / 隔离 Compose E2E 73/73）、CI 同参本地日志、手册复现记录；按 AC 组织并写索引。验证：索引内每个路径真实存在，抽查可复跑。回填 object-search-meilisearch 8.4。— 2026-11-25 已收录到 `docs/stages/evidence/stage-2-integration/object-search/`（5 个源文件），索引 §2；OSM 8.4 已回填。
 - [x] 11.2 回填 object-search-meilisearch 8.2 的 GitHub Actions `search-integration` run 链接（本机无 runner，本地同参 exit 0、0 SKIP）。验证：CI job 绿并记录 run URL。— [run 45405474349 / job 138484907178](https://github.com/klb3713/OntoAxis/actions/runs/45405474349/job/138484907178) success；主干最终全绿 [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516)。

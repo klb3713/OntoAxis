@@ -20,7 +20,7 @@
 | S2-AC-10 生产 IdP | 7.5 | 已移出 Stage 2（`production-idp-staging`），本地合成 IdP 见 `stage-2-idp-security-review.md` | **out of scope（按收缩口径）** |
 | S2-AC-11 证据与报告 | 1.1、8.5、8.6、9.1–9.4、10.1–10.3 | 本索引；CI run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) | **partial**（G2/G3/归档/退出报告未完成） |
 
-## 2. object-search 交接证据（11.1–11.4）
+## 2. object-search 交接（change 已于 2026-11-25 归档：`openspec/changes/archive/2026-11-25-object-search-meilisearch`）证据（11.1–11.4）
 
 | 文件 | 覆盖 | 关键结果 |
 | --- | --- | --- |
@@ -30,7 +30,7 @@
 | `object-search/2026-11-24-object-search-runbook-repro.md` + `.log` | OSM 9.1 | 手册 §3/§4/§5/§12 命令复现 |
 
 - 11.2 CI run：`search-integration` [run 45405474349 / job 138484907178](https://github.com/klb3713/OntoAxis/actions/runs/45405474349/job/138484907178) success（2026-11-24）；主干最终全绿 [run 45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516)。
-- 11.3 OSM 9.1/9.2/9.3 评审签字（评审人 klb3713，2026-11-24）：[review-ops-runbook.md §5](../../../openspec/changes/object-search-meilisearch/review-ops-runbook.md)、[security-data-governance-review.md §4/§6](../../../openspec/changes/object-search-meilisearch/security-data-governance-review.md)、[review-wave2-admission.md §5/§6](../../../openspec/changes/object-search-meilisearch/review-wave2-admission.md)。
+- 11.3 OSM 9.1/9.2/9.3 评审签字（评审人 klb3713，2026-11-24）：[review-ops-runbook.md §5](../../../openspec/changes/archive/2026-11-25-object-search-meilisearch/review-ops-runbook.md)、[security-data-governance-review.md §4/§6](../../../openspec/changes/archive/2026-11-25-object-search-meilisearch/security-data-governance-review.md)、[review-wave2-admission.md §5/§6](../../../openspec/changes/archive/2026-11-25-object-search-meilisearch/review-wave2-admission.md)。
 - 11.4 边界声明：以上均为**隔离本地 + 合成数据**验证；不等同 CI 或生产验收。业务质量阈值 `pending-owner-signoff`。
 
 ## 3. 质量门与缺口（8.x/9.x）
