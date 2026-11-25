@@ -42,6 +42,7 @@
 ## 5. 更新（2026-11-25）
 
 - **D-07 已修复（配置级）**：Kafka Connect 默认 `18086→18089`，search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT`（避开 Temporal UI `18088`）。全 profile `docker compose ... config -q` 通过，16 服务无重复宿主端口（`docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）。
-- **仍未 pass**：上述仅为配置级校验；G2 条件 5 要求“可启动”，真正的分组 `up -d` 健康矩阵未执行（本机 docker 无法拉取 Connect/Kestra/Temporal/Redpanda 镜像：`registry-1.docker.io ... EOF`）。
+- **条件 5 的 compose 启动矩阵已通过（2026-11-25 更新）**：真实 GitHub Actions runner 上运行 `.github/workflows/wave1-stack-smoke.yml`，run [45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 3/3 job 绿——connector-runtime（Kafka Connect 18089 可达、Debezium/Iceberg/JDBC 插件存在，pass=5 fail=0）、pipeline-kestra（Kestra ACTIVE、Trino 200）、action-temporal（actions smoke 7/7）。证据 `docs/stages/evidence/stage-2-integration/wave1-stack-matrix.md`。仍未覆盖：Helm/kind 启动（6.x）、source-postgres CDC 写链路。
+- **G2 暂不登记 pass**：条件 5 的 compose 部分已具备真实 runner 证据，但 Helm/kind（6.x）与 5.4 全量同栈尚未完成；G2 是否登记仍由负责人确认（本评估不自动批准）。
 - **OSM 归档前置（已解除）**：object-search-meilisearch 已于 2026-11-25 归档（`openspec/changes/archive/2026-11-25-object-search-meilisearch`），spec 写入 `openspec/specs/object-search/spec.md`。object-search-meilisearch 本 change 任务已 52/52，8.4 证据已由 `stage-2-integration` 收录（`docs/stages/evidence/stage-2-integration.md` §2）；归档仍需负责人单独授权。
 - **G2 登记**：仍需要在负责人确认后新建 `docs/stages/evidence/stage-2-g2-gate-record.md` 并在 change map §4 记录（本轮未登记、未宣布 pass）。

@@ -4,7 +4,7 @@
 
 ## 1. 准入与基线
 
-- [ ] 1.1 核对 Wave 3 准入：`docs/stages/stage-2-change-map.md` §4 存在 G2 为 `pass` 的记录（日期、命令、结果、确认人），且 8 个前置 change 已归档。验证：`openspec list` 仅本 change 在途；将核对结果与截图/命令输出写入 `docs/stages/evidence/stage-2-integration/baseline/admission.md`。 — 进展（2026-11-25）：8 个前置 change 已全部归档（含 object-search-meilisearch，见 `openspec/changes/archive/2026-11-25-object-search-meilisearch`）；仅缺负责人登记的 G2 `pass` 记录。
+- [ ] 1.1 核对 Wave 3 准入：`docs/stages/stage-2-change-map.md` §4 存在 G2 为 `pass` 的记录（日期、命令、结果、确认人），且 8 个前置 change 已归档。验证：`openspec list` 仅本 change 在途；将核对结果与截图/命令输出写入 `docs/stages/evidence/stage-2-integration/baseline/admission.md`。 — 进展（2026-11-25）：8 个前置 change 已全部归档（含 object-search-meilisearch，见 `openspec/changes/archive/2026-11-25-object-search-meilisearch`）；仅缺负责人登记的 G2 `pass` 记录（条件 5 的 compose 启动矩阵已由真实 runner [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 3/3 通过，见 `docs/stages/evidence/stage-2-integration/wave1-stack-matrix.md`；Helm/kind 待 6.x）。
 - [x] 1.2 记录基线快照：commit SHA、`git status`、Go/Node/Docker/Compose 版本、容器镜像版本、现有 CI run id、`/healthz`/`/readyz` 原始输出、`openspec validate --all --strict` 结果。验证：基线文件存在于 `docs/stages/evidence/stage-2-integration/baseline/`，内容可逐条复核。
 - [x] 1.3 复跑已归档 `runtime-observability` 与 `edge-gateway` 的证据命令，确认 Stage 2 基线仍可复现。验证：`make observability-rules-test`、`scripts/observability-smoke.sh`、`scripts/edge-smoke.sh` 结果与归档证据一致或在证据中解释差异。
 
@@ -41,7 +41,7 @@
 - [x] 5.1 静态校验与 default profile：`docker compose -f deploy/compose/compose.yaml config` 通过；起栈后 `scripts/smoke-foundation.sh` 通过。验证：命令输出与日志入库。
 - [x] 5.2 edge profile 集成：起 `--profile edge` 后运行 `EDGE_TEST_FAIL_CLOSED=1 ./scripts/edge-smoke.sh`。验证：全部用例 PASS，日志入库。
 - [x] 5.3 observability profile 集成：设置 `ONTOAXIS_OTEL_EXPORTER_OTLP_ENDPOINT` 后起 profile，运行 `make observability-rules-test` 与 `scripts/observability-smoke.sh`。验证：Prometheus 有指标、Jaeger 有 `ontoaxis-core` trace，输出入库。
-- [ ] 5.4 Wave 1/2 运行时 profile：按各 change 文档同时/分组启动 Temporal、Kestra、Kafka Connect、Meilisearch、OpenFGA 等，运行各自的 health/集成检查。验证：每个组件健康检查通过；记录资源占用与端口占用。— 进展（2026-11-25）：D-07 端口冲突已修复（Connect `18086→18089`；search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT` 以避开 Temporal UI `18088`），全 profile 合并 `docker compose ... config -q` 通过、16 服务无重复宿主端口（见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；真实 `up -d` 健康矩阵未执行（本机 docker 无法拉取 Connect/Kestra/Temporal/Redpanda 镜像：`registry-1.docker.io ... EOF`）。
+- [ ] 5.4 Wave 1/2 运行时 profile：按各 change 文档同时/分组启动 Temporal、Kestra、Kafka Connect、Meilisearch、OpenFGA 等，运行各自的 health/集成检查。验证：每个组件健康检查通过；记录资源占用与端口占用。— 进展（2026-11-25）：D-07 端口冲突已修复（Connect `18086→18089`；search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT` 以避开 Temporal UI `18088`），全 profile 合并 `docker compose ... config -q` 通过、16 服务无重复宿主端口（见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；本机无法拉取镜像，已改在真实 CI runner 分组 `up -d` 验证：[run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) connector-runtime/pipeline-kestra/action-temporal 3/3 绿（`docs/stages/evidence/stage-2-integration/wave1-stack-matrix.md`）；全量同栈一次性启动与资源占用记录仍待补。
 - [x] 5.5 可重复性：`down -v` 清空后重新起栈一次，确认结果与 5.1–5.4 一致。验证：两次运行日志对比无不可解释差异；写清重置步骤。
 - [x] 5.6 Compose 层跨 change 缺陷修复：经 owner 同意后修复 `deploy/compose/` 中的装配缺陷。验证：修复后重跑 5.1–5.5 相关检查通过，修复记录与 owner 同意写入证据。
 

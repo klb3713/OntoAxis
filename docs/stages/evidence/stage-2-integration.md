@@ -11,9 +11,9 @@
 | S2-AC-01 Stage 1 回归（Go/前端/proto/Compose/Playwright） | 4.1、4.2、8.1、8.2、8.3、8.6、7.1、7.6 | `stage-2-integration/regression/`（go build/vet/test/race）、`stage-2-integration/compose-smoke.md`；前端与 proto 见 §3 缺口 | **partial**（Go 通过；前端/proto/Playwright 未全跑） |
 | S2-AC-02 edge-gateway | 2.2、5.2、7.3、7.7 | `stage-2-integration/compose-smoke.md`、`stage-2-edge-gateway.md`、`stage-2-edge-gateway/`；kind 入口见 §3 缺口 | **partial**（Compose edge smoke 通过；kind 未执行） |
 | S2-AC-03 authorization | 2.3、7.3 | `stage-2-integration/middleware-trust.md`、`stage-2-idp-security-review.md`；allow/deny 集成见 object-search 原生 HTTP 证据 | **partial**（本地 allow/403/401/503 有；E2E-03 全矩阵未执行） |
-| S2-AC-04 action-temporal | 2.6、7.2 | `stage-2-action-temporal.md`；组合数据链 E2E-07 见 §3 缺口 | **partial** |
-| S2-AC-05 pipeline-kestra-dbt | 2.5、7.2 | `stage-2-integration/pipeline-profile.md`、`stage-2-pipeline-kestra-dbt/` | **partial**（profile 预检；2.5 合并验证与 E2E-06 未完成） |
-| S2-AC-06 connector-runtime | 2.4、7.2 | `stage-2-integration/connector-profile.md`、`stage-2-connector-runtime/` | **partial**（CDC 运行；E2E-05 未执行） |
+| S2-AC-04 action-temporal | 2.6、7.2 | `stage-2-action-temporal.md`、`stage-2-integration/wave1-stack-matrix.md`（CI smoke 7/7）；组合数据链 E2E-07 见 §3 缺口 | **partial** |
+| S2-AC-05 pipeline-kestra-dbt | 2.5、7.2 | `stage-2-integration/pipeline-profile.md`、`stage-2-integration/wave1-stack-matrix.md`（CI Kestra ACTIVE + Trino 200）、`stage-2-pipeline-kestra-dbt/` | **partial**（profile 预检与 CI 启动已过；2.5 合并验证与 E2E-06 未完成） |
+| S2-AC-06 connector-runtime | 2.4、7.2 | `stage-2-integration/connector-profile.md`、`stage-2-integration/wave1-stack-matrix.md`（CI Connect 18089 + 插件 pass=5/fail=0）、`stage-2-connector-runtime/` | **partial**（CDC 运行；E2E-05 未执行） |
 | S2-AC-07 object-search-meilisearch | 2.7、7.2 | `stage-2-integration/object-search/`（见 §2）、`stage-2-integration/search-profile.md` | **partial**（真实集成 + 隔离 E2E 73/73；Compose 全栈 E2E-04 见 §3） |
 | S2-AC-08 production-delivery | 2.8、6.1–6.5、7.7 | `stage-2-production-delivery-kind.md`、`stage-2-production-delivery.md` §17–§21 | **partial**（归属方 kind 证据已存在；本 change 6.x 未复跑） |
 | S2-AC-09 runtime-observability | 1.3、5.3、7.4 | `stage-2-integration/compose-smoke.md`；观测 smoke 见归档证据 | **partial**（E2E-09 未执行） |
@@ -47,6 +47,7 @@
 | 8.4 脚本 | `actionlint`、`shellcheck scripts/*.sh` | **未执行**：本机无 actionlint/shellcheck | — |
 | 8.4 compose | 全 profile `docker compose config -q` | 通过，16 服务无重复宿主端口 | `stage-2-integration/d07-port-conflict.md` |
 | 8.6 CI | 真实 runner 完整 CI | **全绿 11/11**：[run 45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) | 本行 |
+| 5.4 Wave1 启动矩阵（compose） | `.github/workflows/wave1-stack-smoke.yml` | **3/3 job 绿**：[run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338)（connector-runtime/pipeline-kestra/action-temporal） | `stage-2-integration/wave1-stack-matrix.md` |
 | 9.2 敏感串/许可 | gitleaks + `make license-check` | 见 `security-check.md`（1 条已跟踪误报 `bootstrap.sh:199`，CI secret-scan 绿） | `stage-2-integration/security-check.md`、`regression/gitleaks.json` |
 
 ## 4. 9.2 证据边界与安全检查
@@ -60,9 +61,9 @@
 
 | 任务 | 阻塞原因 |
 | --- | --- |
-| 1.1 | G2 未登记 pass；OSM 未归档（8.4 本轮已转录，归档需负责人授权）；`openspec list` 仍有其他在途 change |
+| 1.1 | G2 未登记 pass（条件 5 的 compose 启动矩阵已由 [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 提供真实证据，Helm/kind 待 6.x）；`openspec list` 仍有其他在途 change（OSM 已归档） |
 | 2.5 | pipeline-kestra-dbt 合并验证未完成（E2E-06） |
-| 5.4 | 配置级已过（D-07 修复）；真实 `up -d` 健康矩阵未执行（本机缺镜像） |
+| 5.4 | 配置级已过（D-07 修复）；分组 `up -d` 启动矩阵已在 CI 真实 runner 通过（run 45570760338，见 `wave1-stack-matrix.md`）；全量同栈一次性启动未执行 |
 | 6.1–6.5 | kind 交付层复跑未执行 |
 | 7.1–7.7 | 全栈 E2E 未执行 |
 | 8.1/8.2/8.3/8.4 部分 | 工具缺失或未跑（见 §3） |
