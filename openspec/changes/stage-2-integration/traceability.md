@@ -51,11 +51,11 @@ S2-AC-02…10 的主证据与验收归属各自 change；本 change 只做跨 ch
 | S2-AC-01 | partial | Go 全门通过、前端 check/test/build 通过、edge-gen 通过；golangci-lint/buf/Playwright 未跑（工具缺失），见 `docs/stages/evidence/stage-2-integration.md` §3 |
 | S2-AC-02 | partial | Compose edge smoke 通过；kind 入口未执行 |
 | S2-AC-03 | partial | 本地 allow/403/401/503 证据（object-search 原生 HTTP）；E2E-03 全矩阵未执行 |
-| S2-AC-04 | partial | 组合运行时已有；E2E-07 未执行 |
-| S2-AC-05 | partial | profile 预检；2.5 合并验证与 E2E-06 未完成 |
-| S2-AC-06 | partial | CDC 运行证据；E2E-05 未执行 |
+| S2-AC-04 | partial | 组合运行时已有；CI smoke 7/7（run 45570760338，`wave1-stack-matrix.md`）；E2E-07 未执行 |
+| S2-AC-05 | partial | profile 预检 + CI Kestra ACTIVE/Trino 200（run 45570760338）；2.5 合并验证与 E2E-06 未完成 |
+| S2-AC-06 | partial | CDC 运行证据 + CI Connect/插件 pass=5（run 45570760338）；E2E-05 未执行 |
 | S2-AC-07 | partial | 真实集成 + 隔离 Compose E2E 73/73 + 真实 CI run 已收录；Compose 全栈 E2E-04 未执行 |
 | S2-AC-08 | partial | 归属方 kind/备份回滚证据存在；本 change 6.x 未复跑 |
 | S2-AC-09 | partial | 观测 smoke 有；E2E-09 未执行 |
 | S2-AC-10 | out of scope | 移出至 `production-idp-staging`（收缩口径） |
-| S2-AC-11 | partial | 索引已建立（9.1）、CI 全绿（8.6）；G2/归档/退出报告未完成 |
+| S2-AC-11 | partial | 索引已建立（9.1）、CI 全绿（8.6）、退出报告草稿已起草（9.3，`docs/stages/stage-2-exit-report.md`，状态 exit candidate pending owner confirmation）；G2 记录与终局评审未完成 |

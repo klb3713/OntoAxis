@@ -185,6 +185,8 @@ flowchart TB
 
 **范围收缩（2026-11-24）**：`production-delivery` 已按「交付资产 + 本地 kind 证据」归档（70/70，10 项显式移出、2 项降级接受、4 项 search 交接快速完成）；S2-AC-08 收窄、S2-AC-10 移出 Stage 2。移出项登记到 §12 的 `production-delivery-hardening` 与 `production-idp-staging`，详见 [`evidence/stage-2-production-delivery-archive-review.md`](evidence/stage-2-production-delivery-archive-review.md)。
 
+**状态（2026-11-25）**：`object-search-meilisearch` 已完成 52/52 并归档为 `2026-11-25-object-search-meilisearch`（spec 写入 `openspec/specs/object-search/spec.md`）。D-07 端口冲突已修复（Kafka Connect 18086→18089、search worker 端口参数化 `ONTOAXIS_SEARCH_WORKER_PORT`）。Wave 1 分组启动矩阵在真实 CI runner 通过（run [45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 3/3，证据 `evidence/stage-2-integration/wave1-stack-matrix.md`），作为 G2 条件 5 的 compose 启动证据；**G2 仍未登记 `pass`**（Helm/kind 启动待 6.x，需负责人确认）。`stage-2-integration` 当前 32/56，仍在途。
+
 | change | 任务 | 当前实现边界 |
 | --- | --- | --- |
 | `authorization-openfga-cedar` | 43/43（已归档 2026-11-23） | 核心 authz、策略、9 模块接缝、真实 handler + 真实 OpenFGA 集成、29 条负向矩阵、审计一致性、CI job；见 `openspec/changes/archive/2026-11-23-authorization-openfga-cedar/` |

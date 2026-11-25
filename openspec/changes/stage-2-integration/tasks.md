@@ -1,6 +1,6 @@
 # Tasks
 
-> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **31/56**。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
+> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **32/56**。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
 
 ## 1. 准入与基线
 
@@ -76,9 +76,9 @@
 
 - [x] 9.1 建立证据索引 `docs/stages/evidence/stage-2-integration.md` 与原始目录 `docs/stages/evidence/stage-2-integration/`：按 AC 组织，每行含日期/环境/commit/命令/结果/路径。验证：索引中的每个路径真实存在，抽查 3 条可复跑。— 2026-11-25 已建立索引（S2-AC-01…11 映射 + 质量门结果 + 未完成/阻塞清单），并新增 `object-search/`、`regression/`、`d07-port-conflict.md`、`security-check.md`。
 - [x] 9.2 证据边界与安全检查：确认无 token/密码/生产连接串；声明合成夹具与本地环境边界；运行仓库 secrets/license 检查并记录。验证：检查命令输出入库，证据文件无敏感串。— 2026-11-25 gitleaks v8.24.3 + `make license-check`（通过）；22 条命中中 12 文件未跟踪、唯一已跟踪为 `bootstrap.sh:199` `condition=Available` 误报，CI secret-scan 绿；见 `docs/stages/evidence/stage-2-integration/security-check.md`。
-- [ ] 9.3 起草 `docs/stages/stage-2-exit-report.md`：按 design 的 10 节结构与 S2-AC-01…11 证据表编写。验证：未执行/未通过项如实标 `not passed`；报告状态为 `exit candidate pending owner confirmation`。
-- [ ] 9.4 文档同步：更新 `ARCHITECTURE.md` 15.x、`docs/stages/stage-2-change-map.md` 状态、`README.md`、`docs/getting-started/local-development.md`、`docs/architecture/services-and-ports.md` 等（经各 owner 同意）。验证：链接可达、无过期“计划中”表述、命令可照抄执行。
-- [ ] 9.5 自检 traceability：核对 S2-AC-01/AC-11 的每条证据路径与状态，S2-AC-02…10 的组合复验记录齐全。验证：traceability 中无未解释的 `planned`；每条 `passed` 有可点开的证据。
+- [x] 9.3 起草 `docs/stages/stage-2-exit-report.md`：按 design 的 10 节结构与 S2-AC-01…11 证据表编写。验证：未执行/未通过项如实标 `not passed`；报告状态为 `exit candidate pending owner confirmation`。— 2026-11-25 已起草（10 节结构，S2-AC-05 标 not passed、E2E 多数 not covered，状态 `exit candidate pending owner confirmation`）。
+- [ ] 9.4 文档同步：更新 `ARCHITECTURE.md` 15.x、`docs/stages/stage-2-change-map.md` 状态、`README.md`、`docs/getting-started/local-development.md`、`docs/architecture/services-and-ports.md` 等（经各 owner 同意）。验证：链接可达、无过期“计划中”表述、命令可照抄执行。 — 进展（2026-11-25）：`docs/architecture/services-and-ports.md` 已补登 5 项端口；`docs/stages/stage-2-change-map.md` 已追加 2026-11-25 状态；`ARCHITECTURE.md` 15.x、README、local-development 的状态表述待各 owner 同意后同步。
+- [ ] 9.5 自检 traceability：核对 S2-AC-01/AC-11 的每条证据路径与状态，S2-AC-02…10 的组合复验记录齐全。验证：traceability 中无未解释的 `planned`；每条 `passed` 有可点开的证据。 — 进展（2026-11-25）：`traceability.md` 已追加「状态更新（2026-11-25）」表逐 AC 对齐当前状态与证据；主表 `planned` 保留为计划列，实际状态以更新表为准；S2-AC-05 仍 `partial/not passed`。
 
 ## 10. 评审与收口
 
