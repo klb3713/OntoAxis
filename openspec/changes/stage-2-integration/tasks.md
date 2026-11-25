@@ -82,7 +82,7 @@
 
 ## 10. 评审与收口
 
-- [ ] 10.1 提交评审：将 artifacts、证据索引、Stage 2 报告草稿交负责人评审。验证：存在明确评审结论记录（通过/有条件通过/退回），非自动批准。
+- [ ] 10.1 提交评审：将 artifacts、证据索引、Stage 2 报告草稿交负责人评审。验证：存在明确评审结论记录（通过/有条件通过/退回），非自动批准。 — 进展（2026-11-25）：已提交材料包 `openspec/changes/stage-2-integration/review-packet.md`，待负责人记录评审结论（未自动批准）。
 - [x] 10.2 确认未自动执行动作：`openspec list` 仍显示本 change 在途、未被归档；Stage 2 brief 状态仍为 `in_progress`（未改为 exited）；未 commit/push 未经确认的内容。验证：命令输出入库。— 2026-11-25 核对：本 change 在途、Stage 2 brief 仍 `in_progress`；本轮 commit/push 均在负责人 m02140 授权范围内（分支 + 草稿 PR），未改 brief 状态、未归档本 change、未合并主干。
 - [x] 10.3 记录残余风险与未决项：把 open questions、未覆盖场景、带 caveat 的 AC 写入报告第 8 节。验证：报告与 traceability 的风险条目一致。— 2026-11-25 报告 §7 已列 6 条偏差/风险（G2 未登记、kind/E2E 未复跑、工具缺口、证据边界、业务阈值 pending），与 traceability 一致。
 
