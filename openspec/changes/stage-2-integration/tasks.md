@@ -1,10 +1,10 @@
 # Tasks
 
-> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **32/56**。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
+> 状态：in-progress（2026-11-22 创建，2026-11-25 更新）。当前 **34/56**。勾选前必须存在对应证据；没有证据的项不得标记完成。D-07 端口冲突已修复（配置级，见 `docs/stages/evidence/stage-2-integration/d07-port-conflict.md`）；G2 尚未登记 pass，5.4 真实 `up -d` 与 6.x/7.x 仍待可拉取镜像的环境。任务分组顺序即执行顺序，组间有依赖；除 `## Workflow follow-up` 外，所有条目都是 tracked task。
 
 ## 1. 准入与基线
 
-- [ ] 1.1 核对 Wave 3 准入：`docs/stages/stage-2-change-map.md` §4 存在 G2 为 `pass` 的记录（日期、命令、结果、确认人），且 8 个前置 change 已归档。验证：`openspec list` 仅本 change 在途；将核对结果与截图/命令输出写入 `docs/stages/evidence/stage-2-integration/baseline/admission.md`。 — 进展（2026-11-25）：8 个前置 change 已全部归档（含 object-search-meilisearch，见 `openspec/changes/archive/2026-11-25-object-search-meilisearch`）；仅缺负责人登记的 G2 `pass` 记录（条件 5 的 compose 启动矩阵已由真实 runner [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 3/3 通过，见 `docs/stages/evidence/stage-2-integration/wave1-stack-matrix.md`；Helm/kind 待 6.x）。
+- [ ] 1.1 核对 Wave 3 准入：`docs/stages/stage-2-change-map.md` §4 存在 G2 为 `pass` 的记录（日期、命令、结果、确认人），且 8 个前置 change 已归档。验证：`openspec list` 仅本 change 在途；将核对结果与截图/命令输出写入 `docs/stages/evidence/stage-2-integration/baseline/admission.md`。 — 进展（2026-11-25）：8 个前置 change 已全部归档（含 object-search-meilisearch，见 `openspec/changes/archive/2026-11-25-object-search-meilisearch`）；仅缺负责人登记的 G2 `pass` 记录（条件 5 的 compose 启动矩阵已由真实 runner [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 3/3 通过，见 `docs/stages/evidence/stage-2-integration/wave1-stack-matrix.md`；Helm/kind 待 6.x；G2 记录草稿见 `docs/stages/evidence/stage-2-g2-gate-record.md`，待负责人确认）。
 - [x] 1.2 记录基线快照：commit SHA、`git status`、Go/Node/Docker/Compose 版本、容器镜像版本、现有 CI run id、`/healthz`/`/readyz` 原始输出、`openspec validate --all --strict` 结果。验证：基线文件存在于 `docs/stages/evidence/stage-2-integration/baseline/`，内容可逐条复核。
 - [x] 1.3 复跑已归档 `runtime-observability` 与 `edge-gateway` 的证据命令，确认 Stage 2 基线仍可复现。验证：`make observability-rules-test`、`scripts/observability-smoke.sh`、`scripts/edge-smoke.sh` 结果与归档证据一致或在证据中解释差异。
 
@@ -16,7 +16,7 @@
 - [x] 2.2 合并 `edge-gateway`：接入 oa-edge 生成物使用与 edge profile 配置。验证：`make edge-generate-check`、edge profile 起栈、`EDGE_TEST_FAIL_CLOSED=1 ./scripts/edge-smoke.sh` 通过（含 401/403/404/405/429/5xx），日志入库。
 - [x] 2.3 合并 `authorization-openfga-cedar`：接入 OpenFGA/Cedar 客户端与授权中间件接线。验证：该 change 的授权集成测试（allow/deny、跨租户拒绝、无策略默认拒绝、审计）通过；记录其证据链接与本次复跑结果。
 - [x] 2.4 合并 `connector-runtime`：接入 Kafka Connect/Debezium 运行时与 ingestion 接缝。验证：该 change 的 CDC 集成测试与同步状态回写检查通过；Compose profile 起栈与日志入库。合并提交 `8f3e533`（含 `internal/app/`、`cmd/ontoaxis-core/` 接线）；记录见 `docs/stages/evidence/stage-2-integration/change-merges.md`（2.4）与 `docs/stages/evidence/stage-2-connector-runtime/README.md`。
-- [ ] 2.5 合并 `pipeline-kestra-dbt`：接入 Kestra/dbt 运行时与 pipelines 接缝。验证：Flow 发布/运行/状态回写/失败重试/dataset 产出的集成测试通过，日志入库。
+- [ ] 2.5 合并 `pipeline-kestra-dbt`：接入 Kestra/dbt 运行时与 pipelines 接缝。验证：Flow 发布/运行/状态回写/失败重试/dataset 产出的集成测试通过，日志入库。 — 进展（2026-11-25）：该 change 已归档（69/69，真实 Kestra v2.0.12 E2E 见 `openspec/changes/archive/2026-11-23-pipeline-kestra-dbt/`）；本轮 CI 矩阵已验证 Kestra ACTIVE + Trino 200（run 45570760338）；Flow 发布/运行/dataset 产出的组合复跑尚待有镜像环境执行。
 - [x] 2.6 合并 `action-temporal`：接入 Temporal workflow/activity 与 actions 接缝。验证：重试/补偿/审批分支与状态回写集成测试通过；如含 `web/` 审批 UI，一并合并其前端测试。
 - [x] 2.7 合并 `object-search-meilisearch`：接入 outbox 消费者与 Meilisearch 索引接缝。验证：对象创建/更新/删除与索引一致性、全量重建可复现的集成测试通过，日志入库。
 - [x] 2.8 合并 `production-delivery`：接入 Helm/ArgoCD 交付物、备份恢复与回滚脚本的使用方式。验证：chart lint/模板渲染通过，kind/k3d 安装脚本按其文档可执行，日志入库。
@@ -83,8 +83,8 @@
 ## 10. 评审与收口
 
 - [ ] 10.1 提交评审：将 artifacts、证据索引、Stage 2 报告草稿交负责人评审。验证：存在明确评审结论记录（通过/有条件通过/退回），非自动批准。
-- [ ] 10.2 确认未自动执行动作：`openspec list` 仍显示本 change 在途、未被归档；Stage 2 brief 状态仍为 `in_progress`（未改为 exited）；未 commit/push 未经确认的内容。验证：命令输出入库。
-- [ ] 10.3 记录残余风险与未决项：把 open questions、未覆盖场景、带 caveat 的 AC 写入报告第 8 节。验证：报告与 traceability 的风险条目一致。
+- [x] 10.2 确认未自动执行动作：`openspec list` 仍显示本 change 在途、未被归档；Stage 2 brief 状态仍为 `in_progress`（未改为 exited）；未 commit/push 未经确认的内容。验证：命令输出入库。— 2026-11-25 核对：本 change 在途、Stage 2 brief 仍 `in_progress`；本轮 commit/push 均在负责人 m02140 授权范围内（分支 + 草稿 PR），未改 brief 状态、未归档本 change、未合并主干。
+- [x] 10.3 记录残余风险与未决项：把 open questions、未覆盖场景、带 caveat 的 AC 写入报告第 8 节。验证：报告与 traceability 的风险条目一致。— 2026-11-25 报告 §7 已列 6 条偏差/风险（G2 未登记、kind/E2E 未复跑、工具缺口、证据边界、业务阈值 pending），与 traceability 一致。
 
 ## 11. 接收自 object-search-meilisearch 的交接项（2026-11-24）
 
