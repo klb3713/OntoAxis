@@ -1,6 +1,6 @@
 # Stage 2 Integration · 证据索引
 
-> 状态：`in-progress`（2026-11-25 建立；逐项按“已有证据 / 待补 / 阻塞”标注，未通过项不写成通过）。
+> 状态：`in-progress`（2026-11-25 建立，2026-11-28 同步全栈 E2E；逐项按“已有证据 / 待补 / 阻塞”标注，未通过项不写成通过）。
 > 归属：`docs/stages/evidence/` 由本 change 收录（`docs/stages/stage-2-change-map.md` 行 123）。原始目录：`docs/stages/evidence/stage-2-integration/`。
 > 基线：`docs/stages/evidence/stage-2-integration/baseline/baseline.md`（commit `a04ab4c`）；本轮验证基线 commit `1de309d`（主干 HEAD）。
 
@@ -8,17 +8,17 @@
 
 | Stage AC | 对应任务 | 证据 | 状态 |
 | --- | --- | --- | --- |
-| S2-AC-01 Stage 1 回归（Go/前端/proto/Compose/Playwright） | 4.1、4.2、8.1、8.2、8.3、8.6、7.1、7.6 | `stage-2-integration/regression/`（go build/vet/test/race）、`stage-2-integration/compose-smoke.md`；前端与 proto 见 §3 缺口 | **partial**（Go 通过；前端/proto/Playwright 未全跑） |
-| S2-AC-02 edge-gateway | 2.2、5.2、7.3、7.7 | `stage-2-integration/compose-smoke.md`、`stage-2-edge-gateway.md`、`stage-2-edge-gateway/`；kind 入口见 §3 缺口 | **partial**（Compose edge smoke 通过；kind 未执行） |
-| S2-AC-03 authorization | 2.3、7.3 | `stage-2-integration/middleware-trust.md`、`stage-2-idp-security-review.md`；allow/deny 集成见 object-search 原生 HTTP 证据 | **partial**（本地 allow/403/401/503 有；E2E-03 全矩阵未执行） |
-| S2-AC-04 action-temporal | 2.6、7.2 | `stage-2-action-temporal.md`、`stage-2-integration/wave1-stack-matrix.md`（CI smoke 7/7）；组合数据链 E2E-07 见 §3 缺口 | **partial** |
-| S2-AC-05 pipeline-kestra-dbt | 2.5、7.2 | `stage-2-integration/pipeline-profile.md`、`stage-2-integration/wave1-stack-matrix.md`（CI Kestra ACTIVE + Trino 200）、`stage-2-pipeline-kestra-dbt/` | **partial**（profile 预检与 CI 启动已过；2.5 合并验证与 E2E-06 未完成） |
-| S2-AC-06 connector-runtime | 2.4、7.2 | `stage-2-integration/connector-profile.md`、`stage-2-integration/wave1-stack-matrix.md`（CI Connect 18089 + 插件 pass=5/fail=0）、`stage-2-connector-runtime/` | **partial**（CDC 运行；E2E-05 未执行） |
-| S2-AC-07 object-search-meilisearch | 2.7、7.2 | `stage-2-integration/object-search/`（见 §2）、`stage-2-integration/search-profile.md` | **partial**（真实集成 + 隔离 E2E 73/73；Compose 全栈 E2E-04 见 §3） |
+| S2-AC-01 Stage 1 回归（Go/前端/proto/Compose/Playwright） | 4.1、4.2、8.1、8.2、8.3、8.6、7.1、7.6 | `stage-2-integration/regression/`（go build/vet/test/race）、`compose-smoke.md`、`fullstack-e2e-7x.md` §2/§6（E2E-01 16/16、E2E-07 7 断言、E2E-08 16/16） | **partial（近通过）**（Go/前端/proto 已过、E2E-01/07/08 绿；缺 Playwright 7.6 与本地 buf） |
+| S2-AC-02 edge-gateway | 2.2、5.2、7.3、7.7 | `compose-smoke.md`、`stage-2-edge-gateway.md`、`fullstack-e2e-7x.md` §3（E2E-02 12/12）；kind 入口 6.3 未执行 | **partial**（Compose 矩阵通过；kind 未执行） |
+| S2-AC-03 authorization | 2.3、7.3 | `middleware-trust.md`、`stage-2-idp-security-review.md`、OSM 73/73 + `e2e-identity` 12/12 | **partial**（allow/deny/跨租户/fail-closed 已过；审计记录未单列） |
+| S2-AC-04 action-temporal | 2.6、7.2 | `stage-2-action-temporal.md`、`wave1-stack-matrix.md`（CI smoke 7/7）、`fullstack-e2e-7x.md` §4（E2E-07 `e2e-actions` 7 断言） | **partial（近通过）**（E2E-07 组合链已过） |
+| S2-AC-05 pipeline-kestra-dbt | 2.5、7.2 | `pipeline-profile.md`、`wave1-stack-matrix.md`（CI Kestra ACTIVE + Trino 200）、`stage-2-pipeline-kestra-dbt/` | **partial**（profile 预检与 CI 启动已过；2.5 合并验证与 E2E-06 dbt 产 dataset 未完成） |
+| S2-AC-06 connector-runtime | 2.4、7.2 | `connector-profile.md`、`wave1-stack-matrix.md`（CI Connect 18089 + 插件 pass=5/fail=0）、`stage-2-connector-runtime/` | **partial**（CDC 运行；E2E-05 opt-in 未跑） |
+| S2-AC-07 object-search-meilisearch | 2.7、7.2 | `object-search/`（见 §2）、`search-profile.md`、`fullstack-e2e-7x.md` §4（E2E-04 `e2e-search-outbox` 通过） | **partial（近通过）**（真实集成 + 隔离 73/73 + 全栈 E2E-04 已过） |
 | S2-AC-08 production-delivery | 2.8、6.1–6.5、7.7 | `stage-2-production-delivery-kind.md`、`stage-2-production-delivery.md` §17–§21 | **partial**（归属方 kind 证据已存在；本 change 6.x 未复跑） |
-| S2-AC-09 runtime-observability | 1.3、5.3、7.4 | `stage-2-integration/compose-smoke.md`；观测 smoke 见归档证据 | **partial**（E2E-09 未执行） |
+| S2-AC-09 runtime-observability | 1.3、5.3、7.4 | `compose-smoke.md`；`fullstack-e2e-7x.md` §4（`e2e-observability`：metric/trace/Perses；SLO/告警/基线缺） | **partial**（E2E-09 部分） |
 | S2-AC-10 生产 IdP | —（7.5 已于 2026-11-25 移交 `production-idp-staging` 4.1/4.2） | 已移出 Stage 2（`production-idp-staging`），本地合成 IdP 见 `stage-2-idp-security-review.md` | **out of scope（按收缩口径）** |
-| S2-AC-11 证据与报告 | 1.1、8.5、8.6、9.1–9.4、10.1–10.3 | 本索引；CI run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) | **partial**（G3 与终局评审未完成；G2 已登记 pass，2026-11-25） |
+| S2-AC-11 证据与报告 | 1.1、8.5、8.6、9.1–9.4、10.1–10.3 | 本索引；CI run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516)、全栈 E2E run [45626955337](https://github.com/klb3713/OntoAxis/actions/runs/45626955337) / [45644525408](https://github.com/klb3713/OntoAxis/actions/runs/45644525408) | **partial**（G3 与终局评审未完成；G2 已登记 pass，2026-11-25） |
 
 ## 2. object-search 交接（change 已于 2026-11-25 归档：`openspec/changes/archive/2026-11-25-object-search-meilisearch`）证据（11.1–11.4）
 

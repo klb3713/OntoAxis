@@ -27,24 +27,24 @@ S2-AC-02…10 的主证据与验收归属各自 change；本 change 只做跨 ch
 
 | Stage AC | 归属 change | 本 change 组合复验任务 | 计划证据 | 状态 |
 | --- | --- | --- | --- | --- |
-| S2-AC-02 | `edge-gateway`（已归档） | 2.2、5.2、7.3、7.7 | edge smoke 矩阵日志（`fullstack-e2e-7x.md` §3：200/401/403/404/405/429/fail-closed，run 45626955337）；Envoy kind 输出（7.7 未执行） | partial（Compose 矩阵通过，kind 未跑） |
-| S2-AC-03 | `authorization-openfga-cedar` | 2.3、7.3 | allow/deny、跨租户拒绝、默认拒绝、审计记录（OSM 隔离 E2E 73/73 + `authz-integration`；`fullstack-e2e-7x.md` §3） | partial（审计记录未单列） |
-| S2-AC-04 | `action-temporal` | 2.6、7.2 | 重试/补偿/审批/状态回写日志 | planned |
-| S2-AC-05 | `pipeline-kestra-dbt` | 2.5、7.2 | Flow 发布/运行/失败重试/dataset 产出日志 | planned |
-| S2-AC-06 | `connector-runtime` | 2.4、7.2 | CDC → dataset → 查询日志 | planned |
-| S2-AC-07 | `object-search-meilisearch` | 2.7、7.2 | 索引一致性、全量重建日志 | planned |
-| S2-AC-08 | `production-delivery` | 2.8、6.1–6.5、7.7 | Helm/ArgoCD 状态、probes/PDB/Secret、备份恢复与回滚演练日志 | planned |
-| S2-AC-09 | `runtime-observability`（已归档） | 1.3、5.3、7.4 | Jaeger trace JSON、Prometheus 查询、SLO 面板截图、告警触发、负载基线 | planned |
+| S2-AC-02 | `edge-gateway`（已归档） | 2.2、5.2、7.3、7.7 | edge smoke 矩阵日志（`fullstack-e2e-7x.md` §3：200/401/403/404/405/429/fail-closed，`e2e-identity` 12/12，run 45626955337）；Envoy kind 输出（7.7 未执行） | partial（Compose 矩阵通过，kind 未跑） |
+| S2-AC-03 | `authorization-openfga-cedar` | 2.3、7.3 | allow/deny、跨租户拒绝、默认拒绝、审计记录（OSM 隔离 E2E 73/73 + `e2e-identity` 12/12；`fullstack-e2e-7x.md` §3） | partial（审计记录未单列） |
+| S2-AC-04 | `action-temporal` | 2.6、7.2 | E2E-07 重试/补偿/审批（`e2e-actions` 7 断言，run 45626955337）；`fullstack-e2e-7x.md` §4 | partial（E2E-07 组合链已过） |
+| S2-AC-05 | `pipeline-kestra-dbt` | 2.5、7.2 | Flow 发布/运行/失败重试/dataset 产出日志（`e2e-pipeline` 仅 Kestra/Trino 启动；dbt 产 dataset 未覆盖） | partial（E2E-06 未覆盖） |
+| S2-AC-06 | `connector-runtime` | 2.4、7.2 | CDC → dataset → 查询日志（`e2e-connector` opt-in 未跑） | partial（E2E-05 opt-in 未跑） |
+| S2-AC-07 | `object-search-meilisearch` | 2.7、7.2 | 索引一致性、全量重建（隔离 E2E 73/73 + 全栈 E2E-04 `e2e-search-outbox`） | partial（E2E-04 全栈通过） |
+| S2-AC-08 | `production-delivery` | 2.8、6.1–6.5、7.7 | **已整条移出 Stage 2（2026-11-28），由 `delivery-runtime-acceptance` 承接**；归属方 kind 证据保留 | out of scope（整条移出） |
+| S2-AC-09 | `runtime-observability`（已归档） | 1.3、5.3、7.4 | Jaeger trace/RED/Perses 面板（`e2e-observability`）；SLO 截图/告警/负载基线缺 | partial（E2E-09 部分） |
 | S2-AC-10 | `production-idp-staging` | 4.1 | 非本地 OIDC 登录/JWKS/claims 证据（不含密钥） | out of scope（2026-11-25 任务移交 `production-idp-staging` 4.1/4.2） |
 
 ## 已知缺口与未决项
 
-- 前置 6 个 change（`authorization-openfga-cedar`、`connector-runtime`、`pipeline-kestra-dbt`、`action-temporal`、`object-search-meilisearch`、`production-delivery`）目前均未归档、未实施（起草本 change 时多数仍只有脚手架），其 artifacts 由各自 change 推进；本 change 的依赖、任务与证据可能随其 proposal/design 定稿微调，但 S2-AC-01/AC-11 的映射与门禁不变。
-- Wave 3 准入（G2 `pass`）当前未记录，本 change 处于 planning/blocked，所有状态保持 `planned`。
+- 前置 6 个 change（`authorization-openfga-cedar`、`connector-runtime`、`pipeline-kestra-dbt`、`action-temporal`、`object-search-meilisearch`、`production-delivery`）起草时尚未归档；截至 2026-11-25 均已归档（`openspec/changes/archive/`）。
+- Wave 3 准入（G2 `pass`）已于 2026-11-25 由负责人 klb3713 登记（见 change-map §4 与 `docs/stages/evidence/stage-2-g2-gate-record.md`）。
 - 未决项见 `design.md` 的 Open Questions（审批 UI、kind/k3d 主栈、Compose 资源、生产 IdP 环境、负载基线阈值）；定稿后需回填本表对应证据路径。
 - 证据边界：本地/合成环境不能证明真实数据验收或生产 SLO；未覆盖组合必须标 `not covered`，不得以“计划”充“通过”。
 
-## 状态更新（2026-11-25）
+## 状态更新（2026-11-25，历史快照）
 
 | Stage AC | 当前状态 | 说明 |
 | --- | --- | --- |
@@ -55,7 +55,26 @@ S2-AC-02…10 的主证据与验收归属各自 change；本 change 只做跨 ch
 | S2-AC-05 | partial | profile 预检 + CI Kestra ACTIVE/Trino 200（run 45570760338）；2.5 合并验证与 E2E-06 未完成 |
 | S2-AC-06 | partial | CDC 运行证据 + CI Connect/插件 pass=5（run 45570760338）；E2E-05 未执行 |
 | S2-AC-07 | partial | 真实集成 + 隔离 Compose E2E 73/73 + 真实 CI run 已收录；Compose 全栈 E2E-04 未执行 |
-| S2-AC-08 | partial | 归属方 kind/备份回滚证据存在；本 change 6.x 未复跑 |
+| S2-AC-08 | out of scope | 已于 2026-11-28 整条移出，`delivery-runtime-acceptance` 承接 |
 | S2-AC-09 | partial | 观测 smoke 有；E2E-09 未执行 |
 | S2-AC-10 | out of scope | 移出至 `production-idp-staging`（收缩口径） |
 | S2-AC-11 | partial | 索引已建立（9.1）、CI 全绿（8.6）、退出报告草稿已起草（9.3，`docs/stages/stage-2-exit-report.md`，状态 exit candidate pending owner confirmation）；G2 记录与终局评审未完成 |
+
+
+## 状态更新（2026-11-28，全栈 E2E 同步）
+
+> 依据：`docs/stages/evidence/stage-2-integration/fullstack-e2e-7x.md`；run [45626955337](https://github.com/klb3713/OntoAxis/actions/runs/45626955337)（7.1/7.3/7.4 job 绿）与 [45644525408](https://github.com/klb3713/OntoAxis/actions/runs/45644525408)（E2E-08 `e2e-chain` 16/16）。仅同步证据状态，未改 Stage 状态、未归档。
+
+| Stage AC | 当前状态 | 说明 |
+| --- | --- | --- |
+| S2-AC-01 | partial（近通过） | Go/前端/proto 门通过；E2E-01 16/16、E2E-07 7 断言、E2E-08 16/16 在真实 runner 通过；缺 Playwright（7.6）与本地 buf |
+| S2-AC-02 | partial | Compose edge 矩阵 12/12（`e2e-identity`）；kind 6.3 未跑 |
+| S2-AC-03 | partial | allow/deny/跨租户/fail-closed 已过（OSM 73/73 + `e2e-identity` 12/12）；审计记录未单列 |
+| S2-AC-04 | partial（近通过） | E2E-07 `e2e-actions` 7 断言通过 |
+| S2-AC-05 | not passed | 2.5 合并验证未勾；E2E-06 dbt 产 dataset 未覆盖 |
+| S2-AC-06 | partial | E2E-05（CDC）opt-in 未跑 |
+| S2-AC-07 | partial（近通过） | 隔离 73/73 + 全栈 E2E-04 `e2e-search-outbox` 通过 |
+| S2-AC-08 | out of scope | 已于 2026-11-28 整条移出至 `delivery-runtime-acceptance` |
+| S2-AC-09 | partial | `e2e-observability`：trace/RED/Perses 面板通过；SLO/告警/负载基线缺 |
+| S2-AC-10 | out of scope | 移出至 `production-idp-staging`（收缩口径） |
+| S2-AC-11 | partial | 索引与 CI 全绿已就绪；G3 与终局评审未完成；G2 已于 2026-11-25 登记 `pass` |
