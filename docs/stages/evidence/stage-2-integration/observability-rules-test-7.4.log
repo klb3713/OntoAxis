@@ -1,0 +1,2 @@
+docker run --rm --entrypoint promtool -v "/Users/klb3713/work/OntoAxis/deploy/observability/prometheus":/etc/prometheus prom/prometheus:v3.1.0 test rules /etc/prometheus/rules_test.yaml
+  SUCCESS

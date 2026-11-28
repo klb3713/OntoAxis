@@ -1,0 +1,88 @@
+starting observability profile
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [ontoaxis-core internal] load build definition from Dockerfile
+#1 transferring dockerfile: 652B done
+#1 DONE 0.0s
+
+#2 [ontoaxis-core] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 1.0s
+
+#3 [ontoaxis-core] docker-image://docker.io/docker/dockerfile:1@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
+#3 CACHED
+
+#1 [ontoaxis-core internal] load build definition from Dockerfile
+#1 transferring dockerfile: 652B done
+#1 DONE 0.0s
+
+#4 [ontoaxis-core internal] load build definition from Dockerfile
+#4 DONE 0.0s
+
+#5 [ontoaxis-core internal] load metadata for docker.io/library/alpine:3.20
+#5 DONE 0.9s
+
+#6 [ontoaxis-core internal] load metadata for docker.io/library/golang:1.26-alpine
+#6 DONE 0.9s
+
+#7 [ontoaxis-core internal] load .dockerignore
+#7 transferring context: 133B done
+#7 DONE 0.0s
+
+#8 [ontoaxis-core build 1/6] FROM docker.io/library/golang:1.26-alpine@sha256:ecb67f987aa1a57794c91d19ade7ae0209f2f0f5496aaef9e6ae85ddf92d02ab
+#8 DONE 0.0s
+
+#9 [ontoaxis-core stage-1 1/3] FROM docker.io/library/alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
+#9 resolve docker.io/library/alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc done
+#9 DONE 0.0s
+
+#10 [ontoaxis-core internal] load build context
+#10 transferring context: 154.76kB 0.1s done
+#10 DONE 0.1s
+
+#11 [ontoaxis-core build 2/6] WORKDIR /src
+#11 CACHED
+
+#12 [ontoaxis-core build 3/6] COPY go.mod go.sum ./
+#12 CACHED
+
+#13 [ontoaxis-core build 4/6] RUN go mod download
+#13 CACHED
+
+#14 [ontoaxis-core build 5/6] COPY . .
+#14 DONE 0.4s
+
+#15 [ontoaxis-core build 6/6] RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/ontoaxis-core ./cmd/ontoaxis-core
+#15 DONE 26.2s
+
+#16 [ontoaxis-core stage-1 2/3] RUN apk add --no-cache ca-certificates wget     && addgroup -S ontoaxis     && adduser -S -G ontoaxis ontoaxis
+#16 CACHED
+
+#17 [ontoaxis-core stage-1 3/3] COPY --from=build /out/ontoaxis-core /usr/local/bin/ontoaxis-core
+#17 CACHED
+
+#18 [ontoaxis-core] exporting to image
+#18 exporting layers done
+#18 writing image sha256:11374cce16088d935dd9a06b8961b9c3b0f179940b0e643a073bf8edb7ce5cbd done
+#18 naming to docker.io/library/oa-obs-e2e-ontoaxis-core done
+#18 DONE 0.0s
+ Container oa-obs-e2e-jaeger-1  Running
+ Container oa-obs-e2e-postgres-1  Running
+ Container oa-obs-e2e-perses-1  Running
+ Container oa-obs-e2e-alertmanager-1  Running
+ Container oa-obs-e2e-otel-collector-1  Running
+ Container oa-obs-e2e-keycloak-1  Running
+ Container oa-obs-e2e-openfga-1  Running
+ Container oa-obs-e2e-prometheus-1  Running
+ Container oa-obs-e2e-authz-init-1  Created
+ Container oa-obs-e2e-ontoaxis-core-1  Running
+ Container oa-obs-e2e-authz-init-1  Starting
+ Container oa-obs-e2e-authz-init-1  Started
+ Container oa-obs-e2e-authz-init-1  Waiting
+ Container oa-obs-e2e-postgres-1  Waiting
+ Container oa-obs-e2e-authz-init-1  Exited
+ Container oa-obs-e2e-postgres-1  Healthy
+importing Perses dashboard
+generating traffic
+waiting for Prometheus samples
+waiting for Jaeger trace
+PASS: 3 HTTP metric series, 1 trace(s), Perses dashboard imported, 12 rules loaded

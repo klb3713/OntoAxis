@@ -28,7 +28,7 @@ services:
       DBT_TRINO_HOST: trino
       DBT_TRINO_USER: ontoaxis
     ports:
-      - "18086:8080"
+      - "${ONTOAXIS_KESTRA_HOST_PORT:-18086}:8080"
     depends_on:
       trino:
         condition: service_started

@@ -110,6 +110,9 @@ observability-rules-test:
 observability-smoke:
 	./scripts/observability-smoke.sh
 
+observability-load-baseline:
+	./scripts/observability-load-baseline.sh
+
 ## Delivery (Helm / GitOps)
 delivery-lint:
 	helm lint deploy/helm/ontoaxis-platform deploy/helm/ontoaxis-data deploy/helm/ontoaxis-app deploy/helm/ontoaxis-observability deploy/helm/ontoaxis-jobs

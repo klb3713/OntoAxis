@@ -1,9 +1,9 @@
-# Stage 2 — OntoAxis 真实运行时与生产入口（草案）
+# Stage 2 — OntoAxis 真实运行时与生产入口（已退出）
 
-> 状态：in_progress（2026-11-22；负责人已批准，已开始按 change 实施）<br>
+> 状态：exited（2026-11-28；负责人 klb3713 确认 Stage 2 退出并归档 `stage-2-integration`）<br>
 > 阶段编号：S2<br>
 > 负责人：klb3713<br>
-> 最后更新：2026-11-22<br>
+> 最后更新：2026-11-28<br>
 > 目标设计：[`ARCHITECTURE.md`](../../ARCHITECTURE.md) v1.3（重点第 2、3、6、7、9、11、12、14、15 章）<br>
 > 上一阶段：Stage 1 已退出（`exited`，2026-11-22；见 [`stage-1-ontoaxis-core-brief.md`](stage-1-ontoaxis-core-brief.md) 与 [`stage-1-exit-report.md`](stage-1-exit-report.md)）
 

@@ -39,3 +39,27 @@ tests:
       - eval_time: 10m
         alertname: OntoAxisHighErrorRate
         exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      - series: 'ontoaxis_http_requests_total{method="GET",route="/api/v1/x",status="200"}'
+        values: '0+100x10'
+      - series: 'ontoaxis_http_requests_total{method="GET",route="/api/v1/x",status="500"}'
+        values: '0+10x10'
+    promql_expr_test:
+      - expr: ontoaxis:slo_http_availability:ratio_5m
+        eval_time: 10m
+        exp_samples:
+          - labels: 'ontoaxis:slo_http_availability:ratio_5m'
+            value: 0.9090909090909091
+
+  - interval: 1m
+    input_series:
+      - series: 'ontoaxis_module_ready{module="search"}'
+        values: '1+0x10'
+    promql_expr_test:
+      - expr: ontoaxis:slo_readyz:ratio_5m
+        eval_time: 10m
+        exp_samples:
+          - labels: 'ontoaxis:slo_readyz:ratio_5m'
+            value: 1

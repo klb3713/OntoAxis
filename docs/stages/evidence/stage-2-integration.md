@@ -1,6 +1,6 @@
 # Stage 2 Integration · 证据索引
 
-> 状态：`in-progress`（2026-11-25 建立，2026-11-28 同步全栈 E2E；逐项按“已有证据 / 待补 / 阻塞”标注，未通过项不写成通过）。
+> 状态：`complete`（2026-11-28 Stage 2 已退出；证据索引随 `stage-2-integration` 归档）。
 > 归属：`docs/stages/evidence/` 由本 change 收录（`docs/stages/stage-2-change-map.md` 行 123）。原始目录：`docs/stages/evidence/stage-2-integration/`。
 > 基线：`docs/stages/evidence/stage-2-integration/baseline/baseline.md`（commit `a04ab4c`）；本轮验证基线 commit `1de309d`（主干 HEAD）。
 
@@ -8,17 +8,17 @@
 
 | Stage AC | 对应任务 | 证据 | 状态 |
 | --- | --- | --- | --- |
-| S2-AC-01 Stage 1 回归（Go/前端/proto/Compose/Playwright） | 4.1、4.2、8.1、8.2、8.3、8.6、7.1、7.6 | `stage-2-integration/regression/`（go build/vet/test/race）、`compose-smoke.md`、`fullstack-e2e-7x.md` §2/§6（E2E-01 16/16、E2E-07 7 断言、E2E-08 16/16） | **partial（近通过）**（Go/前端/proto 已过、E2E-01/07/08 绿；缺 Playwright 7.6 与本地 buf） |
-| S2-AC-02 edge-gateway | 2.2、5.2、7.3、7.7 | `compose-smoke.md`、`stage-2-edge-gateway.md`、`fullstack-e2e-7x.md` §3（E2E-02 12/12）；kind 入口 6.3 未执行 | **partial**（Compose 矩阵通过；kind 未执行） |
-| S2-AC-03 authorization | 2.3、7.3 | `middleware-trust.md`、`stage-2-idp-security-review.md`、OSM 73/73 + `e2e-identity` 12/12 | **partial**（allow/deny/跨租户/fail-closed 已过；审计记录未单列） |
-| S2-AC-04 action-temporal | 2.6、7.2 | `stage-2-action-temporal.md`、`wave1-stack-matrix.md`（CI smoke 7/7）、`fullstack-e2e-7x.md` §4（E2E-07 `e2e-actions` 7 断言） | **partial（近通过）**（E2E-07 组合链已过） |
-| S2-AC-05 pipeline-kestra-dbt | 2.5、7.2 | `pipeline-profile.md`、`wave1-stack-matrix.md`（CI Kestra ACTIVE + Trino 200）、`stage-2-pipeline-kestra-dbt/` | **partial**（profile 预检与 CI 启动已过；2.5 合并验证与 E2E-06 dbt 产 dataset 未完成） |
-| S2-AC-06 connector-runtime | 2.4、7.2 | `connector-profile.md`、`wave1-stack-matrix.md`（CI Connect 18089 + 插件 pass=5/fail=0）、`stage-2-connector-runtime/` | **partial**（CDC 运行；E2E-05 opt-in 未跑） |
-| S2-AC-07 object-search-meilisearch | 2.7、7.2 | `object-search/`（见 §2）、`search-profile.md`、`fullstack-e2e-7x.md` §4（E2E-04 `e2e-search-outbox` 通过） | **partial（近通过）**（真实集成 + 隔离 73/73 + 全栈 E2E-04 已过） |
-| S2-AC-08 production-delivery | 2.8、6.1–6.5、7.7 | `stage-2-production-delivery-kind.md`、`stage-2-production-delivery.md` §17–§21 | **partial**（归属方 kind 证据已存在；本 change 6.x 未复跑） |
-| S2-AC-09 runtime-observability | 1.3、5.3、7.4 | `compose-smoke.md`；`fullstack-e2e-7x.md` §4（`e2e-observability`：metric/trace/Perses；SLO/告警/基线缺） | **partial**（E2E-09 部分） |
+| S2-AC-01 Stage 1 回归（Go/前端/proto/Compose/Playwright） | 4.1、4.2、8.1、8.2、8.3、8.6、7.1、7.6 | `stage-2-integration/regression/`（go build/vet/test/race）、`compose-smoke.md`、`fullstack-e2e-7x.md` §2/§6（E2E-01 16/16、E2E-07 7 断言、E2E-08 16/16）、`playwright-7.6.md`（17/17） | **passed-with-caveat**（仅本地 buf 缺；CI proto 绿） |
+| S2-AC-02 edge-gateway | 2.2、5.2、7.3、7.7 | `compose-smoke.md`、`stage-2-edge-gateway.md`、`fullstack-e2e-7x.md` §3（E2E-02 12/12）；kind 入口 6.3 已移交 | **passed-with-caveat**（Compose 矩阵通过；kind 6.3 已移交 `delivery-runtime-acceptance`） |
+| S2-AC-03 authorization | 2.3、7.3 | `middleware-trust.md`、`stage-2-idp-security-review.md`、OSM 73/73 + `e2e-identity` 12/12 | **passed-with-caveat**（allow/deny/跨租户/fail-closed 已过；审计记录未单列） |
+| S2-AC-04 action-temporal | 2.6、7.2 | `stage-2-action-temporal.md`、`wave1-stack-matrix.md`（CI smoke 7/7）、`fullstack-e2e-7x.md` §4（E2E-07 `e2e-actions` 7 断言） | **passed-with-caveat**（E2E-07 组合链已过） |
+| S2-AC-05 pipeline-kestra-dbt | 2.5、7.2 | `pipeline-profile.md`、`wave1-stack-matrix.md`、`stage-2-pipeline-kestra-dbt/`、`pipeline-dbt-7.2.md`（E2E-06 11/11 本地 Compose） | **passed（本地 Compose）** |
+| S2-AC-06 connector-runtime | 2.4、7.2 | `connector-profile.md`、`wave1-stack-matrix.md`（CI Connect 18089 + 插件 pass=5/fail=0）、`connector-runtime-7.2.md`（E2E-05 本地 23/23） | **passed（本地 Compose）**（CI `e2e-connector` 仍 opt-in） |
+| S2-AC-07 object-search-meilisearch | 2.7、7.2 | `object-search/`（见 §2）、`search-profile.md`、`fullstack-e2e-7x.md` §4（E2E-04 `e2e-search-outbox` 通过） | **passed-with-caveat**（真实集成 + 隔离 73/73 + 全栈 E2E-04 已过；业务质量阈值待 owner） |
+| S2-AC-08 production-delivery | 2.8、6.1–6.5、7.7 | `stage-2-production-delivery-kind.md`、`stage-2-production-delivery.md` §17–§21 | **out of scope（2026-11-28 整条移出，由 `delivery-runtime-acceptance` 承接）** |
+| S2-AC-09 runtime-observability | 1.3、5.3、7.4 | `compose-smoke.md`；`fullstack-e2e-7x.md` §4（`e2e-observability`）；`observability-7.4.md`（SLO 面板/告警规则/12 规则加载/负载基线） | **passed（本地 Compose）** |
 | S2-AC-10 生产 IdP | —（7.5 已于 2026-11-25 移交 `production-idp-staging` 4.1/4.2） | 已移出 Stage 2（`production-idp-staging`），本地合成 IdP 见 `stage-2-idp-security-review.md` | **out of scope（按收缩口径）** |
-| S2-AC-11 证据与报告 | 1.1、8.5、8.6、9.1–9.4、10.1–10.3 | 本索引；CI run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516)、全栈 E2E run [45626955337](https://github.com/klb3713/OntoAxis/actions/runs/45626955337) / [45644525408](https://github.com/klb3713/OntoAxis/actions/runs/45644525408) | **partial**（G3 与终局评审未完成；G2 已登记 pass，2026-11-25） |
+| S2-AC-11 证据与报告 | 1.1、8.5、8.6、9.1–9.4、10.1–10.3 | 本索引；CI run [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516)、全栈 E2E run [45626955337](https://github.com/klb3713/OntoAxis/actions/runs/45626955337) / [45644525408](https://github.com/klb3713/OntoAxis/actions/runs/45644525408)、G3 记录 `stage-2-g3-gate-record.md` | **passed（2026-11-28 负责人确认 G3 = pass、批准退出）**；G2 已登记 pass，2026-11-25 |
 
 ## 2. object-search 交接（change 已于 2026-11-25 归档：`openspec/changes/archive/2026-11-25-object-search-meilisearch`）证据（11.1–11.4）
 
@@ -62,10 +62,10 @@
 | 任务 | 阻塞原因 |
 | --- | --- |
 | 1.1 | G2 已于 2026-11-25 登记 `pass`（compose 矩阵 [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) + 归属方 helm/kind 证据；6.x 复跑属退出条件 4）；`openspec list` 另有 3 个范围外 change，排除理由写入退出报告 §2 |
-| 2.5 | pipeline-kestra-dbt 合并验证未完成（E2E-06） |
-| 5.4 | 配置级已过（D-07 修复）；分组 `up -d` 启动矩阵已在 CI 真实 runner 通过（run 45570760338，见 `wave1-stack-matrix.md`）；全量同栈一次性启动未执行 |
-| 6.1–6.5 | kind 交付层复跑未执行：集群节点 Ready 但 `oa-data`/`oa-observability` 多数 `ImagePullBackOff`（13）、ArgoCD 无 Application，见 `stage-2-integration/kind-cluster-state.md` |
-| 7.1–7.7 | 7.1 部分（E2E-01 全量 16/16，E2E-08 未覆盖）、7.2 部分（E2E-04/07 过；E2E-05 opt-in、E2E-06 未产 dataset）、**7.3 满足**（E2E-02/03/12 共 12/12）、7.4 部分（trace/RED/Perses 过；SLO/告警/基线缺）、7.6 未跑、7.7 kind 受镜像/ArgoCD 阻塞；汇总页 [`stage-2-integration/fullstack-e2e-7x.md`](stage-2-integration/fullstack-e2e-7x.md) |
-| 8.1/8.2/8.3/8.4 部分 | 工具缺失或未跑（见 §3） |
-| 8.5 | 仍有在途 change |
+| 2.5 | 已完成：E2E-06 本地 Compose 11/11（`pipeline-dbt-7.2.md`） |
+| 5.4 | **已完成**：D-07 修复；CI 分组启动矩阵 [run 45570760338](https://github.com/klb3713/OntoAxis/actions/runs/45570760338) 3/3；2026-11-28 本地 `oa-e2e05`（connector+search+authz，10 容器）与 `oa-e2e06`（pipeline+search）同时启动，端口/资源快照见 `wave1-stack-local.md` |
+| 6.1–6.5 | **已整条移交 `delivery-runtime-acceptance`（2026-11-28）**：kind/ArgoCD 运行态验收由发布前 change 承接，不再计入 Stage 2 判据（见 change-map §12、brief S2-AC-08） |
+| 7.1–7.7 | 7.1 满足（E2E-01 16/16、E2E-08 16/16 真实 runner）；7.2 满足（本地 Compose：E2E-04/07 真实 runner，E2E-05 23/23、E2E-06 11/11；CI e2e-connector 仍 opt-in）；7.3 满足（E2E-02/03/12 12/12）；7.4 满足（`observability-7.4.md`）；7.6 满足（17/17）；7.7 已移交 `delivery-runtime-acceptance`；汇总页 [`stage-2-integration/fullstack-e2e-7x.md`](stage-2-integration/fullstack-e2e-7x.md) |
+| 8.1/8.2/8.3/8.4 | 8.1/8.2 CI `build-test` 全绿；8.3 buf 契约门由 CI `proto` job [45543404516](https://github.com/klb3713/OntoAxis/actions/runs/45543404516) 覆盖（buf lint/generate-check/proto-breaking）；8.4 CI 安全/负向矩阵通过 |
+| 8.5 | **22 passed / 0 failed（2026-11-28）**；在途仅本 change 与 4 个范围外/新建 change |
 | 9.3/9.4/9.5、10.x | 依赖上述完成与评审 |

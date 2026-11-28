@@ -36,9 +36,9 @@
 | 任务 | 状态 | 说明 |
 |---|---|---|
 | 7.1 | **满足** | E2E-01 全量 16/16（run 45626955337）；E2E-08 组合链 16/16（run 45644525408，见 §6） |
-| 7.2 | 部分 | E2E-04/E2E-07 覆盖；E2E-05 opt-in 未跑；E2E-06 仅验证 Kestra/Trino 启动，dbt 产 dataset 未覆盖 |
+| 7.2 | **满足（本地 Compose）** | E2E-04/E2E-07 真实 runner 通过；E2E-06 本地 Compose 11/11（`pipeline-dbt-7.2.md`）；E2E-05 本地 Compose 23/23（`connector-runtime-7.2.md`）；CI `e2e-connector` 仍 opt-in |
 | 7.3 | **满足** | E2E-02 矩阵 + E2E-03 allow/deny/跨租户/暂停 503（OSM 隔离 E2E 73/73 + `authz-integration`）+ E2E-12 安全负路径均通过 |
-| 7.4 | 部分 | trace 贯通、RED 指标、Perses 面板导入已通过；SLO 面板截图、告警触发、负载基线复跑缺失（R12 partial） |
+| 7.4 | **满足（本地 Compose）** | trace 贯通、RED 指标、Perses 面板导入已通过；2026-11-28 补齐 SLO 面板截图、promtool 告警规则测试、12 条规则运行时加载、负载基线 300/20（974.74 req/s、p95 60.9ms、0 失败），见 [`observability-7.4.md`](observability-7.4.md) |
 
 ## 5. 过程中修复
 

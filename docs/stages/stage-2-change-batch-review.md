@@ -1,7 +1,7 @@
 # Stage 2 剩余 change 批量评审包
 
 日期：2026-11-22<br>
-Stage：Stage 2（`in_progress`，2026-11-22 批准）<br>
+Stage：Stage 2（`in_progress`，2026-11-22 批准；已于 2026-11-28 `exited`，本文为历史规划快照）<br>
 状态：**规划评审已通过（2026-11-22）**。7 个 change 均未实施、未归档、未 commit；所有 tasks 未勾选。实施需按 change 单独启动。
 
 ## 1. 本批 change

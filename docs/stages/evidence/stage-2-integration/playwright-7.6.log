@@ -1,0 +1,50 @@
+
+> ontoaxis-web@0.1.0 test:e2e /Users/klb3713/work/OntoAxis/web
+> playwright test --reporter=list
+
+[WebServer] (node:45567) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:45579) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 17 tests using 10 workers
+
+(node:45595) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45594) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45587) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45589) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45591) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45588) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45586) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45592) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45590) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45593) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   6 [chromium] › e2e/core-workbench.spec.ts:21:3 › 登录 › 非法邮箱被前端拒绝且停留登录页 (1.5s)
+  ✓   8 [chromium] › e2e/core-workbench.spec.ts:11:3 › 登录 › mock 登录成功后进入项目工作台 (4.7s)
+  ✓   1 [chromium] › e2e/core-workbench.spec.ts:77:3 › 核心工作台 › 选择对象后展示属性详情与原始 JSON (4.9s)
+  ✓   9 [chromium] › e2e/core-workbench.spec.ts:86:3 › 核心工作台 › 退出登录清除会话并回到登录页 (4.9s)
+  ✓   7 [chromium] › e2e/approvals.spec.ts:15:3 › 审批中心 › 列表 → 批准 → 服务端刷新 (4.9s)
+  ✓   3 [chromium] › e2e/approvals.spec.ts:27:3 › 审批中心 › 拒绝需要备注并刷新列表 (5.1s)
+  ✓   5 [chromium] › e2e/approvals.spec.ts:49:3 › 审批中心 › 处理完全部待审批后显示空态 (5.2s)
+  ✓  10 [chromium] › e2e/core-workbench.spec.ts:60:3 › 核心工作台 › 创建项目后列表出现新记录 (5.1s)
+  ✓   2 [chromium] › e2e/approvals.spec.ts:36:3 › 审批中心 › 无审批权限时保持任务状态并提示 (5.4s)
+  ✓   4 [chromium] › e2e/core-workbench.spec.ts:38:3 › 核心工作台 › 六条核心路径均可导航并渲染资源 (6.1s)
+  ✓  12 [chromium] › e2e/core-workbench.spec.ts:131:3 › 核心工作台 › 数据集预览展示 schema 与行 (1.5s)
+  ✓  13 [chromium] › e2e/core-workbench.spec.ts:144:3 › 核心工作台 › 保存查询、载入 SQL 并查看执行计划 (1.5s)
+  ✓  14 [chromium] › e2e/core-workbench.spec.ts:106:3 › 核心工作台 › 创建对象类型并添加属性 (1.6s)
+  ✓  15 [chromium] › e2e/core-workbench.spec.ts:165:3 › 核心工作台 › 执行 SELECT 查询并展示结果 (1.7s)
+  ✓  16 [chromium] › e2e/core-workbench.spec.ts:175:3 › 核心工作台 › 空 SQL 被拒绝并提示错误 (1.8s)
+  ✓  17 [chromium] › e2e/core-workbench.spec.ts:183:3 › 核心工作台 › 非 SELECT 语句被拒绝并提示错误 (1.8s)
+  ✓  11 [chromium] › e2e/core-workbench.spec.ts:95:3 › 核心工作台 › 切换英文并在刷新后保持 (5.5s)
+
+  17 passed (9.5s)

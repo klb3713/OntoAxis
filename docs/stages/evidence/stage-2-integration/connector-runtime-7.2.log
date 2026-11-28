@@ -1,0 +1,33 @@
+== preflight ==
+PASS core /readyz                                     200
+PASS kafka connect REST                               200
+== negative matrix ==
+PASS unknown connector -> 404                         404
+PASS unknown sync config key -> 400                   400
+PASS pause connector -> 200                           200
+PASS sync paused connector -> 403                     403
+PASS resume connector -> 200                          200
+PASS mark connector error -> 200                      200
+PASS sync error-state connector -> 403                403
+PASS recover error connector -> 200                   200
+PASS start sync with bad host -> 201                  201
+PASS submit failure ends failed                       failed
+PASS failure text is redacted                         redacted
+PASS duplicate sync -> 201                            201
+PASS duplicate sync is idempotent                     same job
+PASS cancel running job -> 200                        200
+PASS cancelled job is terminal                        cancelled
+PASS forged tenant header -> 403                      403
+== cleanup (best effort) ==
+== success path (long) ==
+PASS start sync -> 201                                201
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+KeyError: 'status'
+PASS sync job succeeded                               succeeded
+PASS verified_rows reported                           5 rows
+PASS trino query returns sink rows                    5
+PASS source rows equal sink rows                      5
+INFO job=01a2228f-dfa2-71ca-99d1-505df1804b42 dataset=01a2228f-df40-71c8-b5e1-096b8294109c dataset_rid=ri.ontoaxis.main.dataset.01a2228f-df40-71c8-b5e1-096b8294109c runtime_ref=oa-bd7662a5-32655ac7-sink
+
+RESULT pass=23 fail=0

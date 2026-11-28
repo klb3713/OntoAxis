@@ -119,5 +119,9 @@ metrics = get(f"{prom}/api/v1/query?query={urllib.parse.quote('ontoaxis_http_req
 assert metrics["status"] == "success" and metrics["data"]["result"], "HTTP metric missing"
 traces = get(f"{jaeger}/api/traces?service=ontoaxis-core&limit=1")
 assert traces.get("data"), "trace missing"
-print(f"PASS: {len(metrics['data']['result'])} HTTP metric series, {len(traces['data'])} trace(s), Perses dashboard imported")
+rules = get(f"{prom}/api/v1/rules")
+rule_names = {rule["name"] for group in rules["data"]["groups"] for rule in group["rules"]}
+assert "ontoaxis:slo_http_availability:ratio_5m" in rule_names, "SLO recording rule not loaded"
+assert "OntoAxisCoreDown" in rule_names, "alert rule not loaded"
+print(f"PASS: {len(metrics['data']['result'])} HTTP metric series, {len(traces['data'])} trace(s), Perses dashboard imported, {len(rule_names)} rules loaded")
 PY

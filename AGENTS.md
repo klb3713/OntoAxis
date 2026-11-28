@@ -3,9 +3,9 @@
 > 本文件由 `stage-openspec-init` 生成，状态：draft。项目负责人评审后才能视为已批准规则。
 >
 > 项目领域：企业级 Ontology 数据平台，围绕对象类型、对象实例、数据集、Pipeline 与查询提供统一的数据建模和探索能力。
-> 当前阶段：Stage 1 已退出（exited，2026-11-22）；Stage 2 进行中（in_progress，2026-11-22）
+> 当前阶段：Stage 1 已退出（exited，2026-11-22）；Stage 2 已退出（exited，2026-11-28）；下一阶段待规划
 > 负责人：klb3713
-> 最后更新：2026-11-23
+> 最后更新：2026-11-28
 
 ## 1. 真源与读取顺序
 
@@ -14,13 +14,13 @@
 1. 本文件：硬约束、安全边界、禁止项。
 2. `docs/workflow/RUNBOOK.md`：Stage/change 操作流程、门禁、命令和常见错误。
 3. `ARCHITECTURE.md`（仓库根目录）：目标设计；目标设计不等于已实现。
-4. 当前 Stage brief 与 change map：从 `docs/stages/` 进入（Stage 1 已退出；Stage 2 in_progress 见 `docs/stages/stage-2-ontoaxis-runtime-brief.md`）。
+4. 当前 Stage brief 与 change map：从 `docs/stages/` 进入（Stage 1 已退出；Stage 2 已退出，见 `docs/stages/stage-2-ontoaxis-runtime-brief.md` 与 `docs/stages/stage-2-exit-report.md`）。
 5. OpenSpec：`openspec/config.yaml`、`openspec/specs/`、`openspec/changes/`。
 
 | 主题 | 真源 |
 | --- | --- |
 | 目标架构与职责边界 | `ARCHITECTURE.md`（仓库根目录） |
-| 当前阶段范围/AC/退出条件 | `docs/stages/stage-<N>-*-brief.md`（Stage 1 已退出；Stage 2 in_progress） |
+| 当前阶段范围/AC/退出条件 | `docs/stages/stage-<N>-*-brief.md`（Stage 1 已退出；Stage 2 已退出，下一阶段待规划） |
 | 并行拆解、依赖、wave、共享资源归属 | `docs/stages/stage-<N>-*-change-map.md`（两个以上 change 时） |
 | 当前行为契约 | `openspec/specs/`（归档后） |
 | 在途行为变更 | `openspec/changes/` |

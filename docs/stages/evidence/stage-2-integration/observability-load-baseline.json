@@ -1,0 +1,25 @@
+{
+  "kind": "local_synthetic_load_baseline",
+  "date": "2026-11-28T21:50:47+0800",
+  "target": "http://127.0.0.1:18080/api/v1/tenancy/projects",
+  "requests": 300,
+  "concurrency": 20,
+  "elapsed_seconds": 0.308,
+  "requests_per_second": 974.74,
+  "success": 300,
+  "failure": 0,
+  "error_rate": 0.0,
+  "status_counts": {
+    "200": 300
+  },
+  "latency_ms": {
+    "min": 4.425,
+    "p50": 12.195,
+    "p95": 60.899,
+    "p99": 92.748,
+    "max": 95.038,
+    "mean": 19.847
+  },
+  "sample_errors": [],
+  "caveat": "Local synthetic baseline; not production capacity or production SLO."
+}

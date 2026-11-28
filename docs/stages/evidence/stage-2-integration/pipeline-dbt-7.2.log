@@ -1,0 +1,20 @@
+== starting pipeline+search stack (base+authz+search+pipeline) ==
+PASS core /healthz (200)
+PASS core /readyz (200)
+PASS keycloak realm discovery (200)
+== authenticating ==
+== 1. dataset ==
+PASS dataset created (ok)
+== 2. pipeline with a dbt task (materialized table, puts dataset) ==
+PASS pipeline created (ok)
+== 3. publish + trigger run ==
+PUBLISH_RESP(code=200): {"id":"01a22277-70c7-7bdb-911a-d0f2ab7161bf","name":"e2e06_pipeline_1795874582","display_name":"E2E06 dbt Pipeline","description":"E2E-06 Kestra+dbt -\u003e dataset","type":"batch","definition":{"tasks":[{"id":"pipeline_dbt_model","sql":"select 42 as answer","type":"dbt","model":"pipeline_dbt_model","materialized":"table"}],"outputs":[{"model":"pipeline_dbt_model","dataset_id":"01a22277-7047-737b-
+PASS pipeline published (200)
+PASS pipeline run triggered (ok)
+PASS pipeline run succeeded (dbt all passed) (succeeded)
+== 4. assert dbt actually produced data in Trino memory catalog ==
+PASS trino memory catalog present (yes)
+PASS dbt-derived schema exists (memory.oa_*_p01a22277) (ok)
+TRINO_ROWS: [[42]]
+PASS dbt model produced expected row (answer=42) (42)
+{"pass":11,"fail":0,"results":[{"name":"core /healthz","status":"pass"},{"name":"core /readyz","status":"pass"},{"name":"keycloak realm discovery","status":"pass"},{"name":"dataset created","status":"pass"},{"name":"pipeline created","status":"pass"},{"name":"pipeline published","status":"pass"},{"name":"pipeline run triggered","status":"pass"},{"name":"pipeline run succeeded (dbt all passed)","status":"pass"},{"name":"trino memory catalog present","status":"pass"},{"name":"dbt-derived schema exists (memory.oa_*_p01a22277)","status":"pass"},{"name":"dbt model produced expected row (answer=42)","status":"pass"}]}
