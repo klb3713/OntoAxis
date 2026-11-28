@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { createAppRuntime } from "./app/runtime";
+import "./styles/tokens.css";
 import "./styles.css";
 
 const container = document.getElementById("root");

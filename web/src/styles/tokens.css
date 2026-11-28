@@ -1,0 +1,162 @@
+/*
+ * OntoAxis design tokens — draft v0.1
+ * 真源：docs/design/tokens.md
+ *
+ * 过渡说明：
+ * - 本文件只定义 token，不改变布局或交互。
+ * - `inverse` 与 `code` 两组是为“壳层仍为深色轴轨”的过渡期保留；
+ *   壳层改为浅色轴轨后删除 inverse 组。
+ * - 功能样式不得写裸 hex；本文件是唯一例外。
+ */
+
+:root {
+  /* ---------- primitive: neutral ---------- */
+  --oa-neutral-0: #ffffff;
+  --oa-neutral-50: #f4f5f3;
+  --oa-neutral-100: #eceeeb;
+  --oa-neutral-200: #e2e4e1;
+  --oa-neutral-300: #cdd1cc;
+  --oa-neutral-400: #9aa09c;
+  --oa-neutral-500: #5f6669;
+  --oa-neutral-600: #4a5153;
+  --oa-neutral-900: #15181a;
+
+  /* ---------- primitive: signal ---------- */
+  --oa-teal-50: #e3f0ec;
+  --oa-teal-100: #d6e9e3;
+  --oa-teal-300: #6fc3b3;
+  --oa-teal-600: #0e6b5c;
+  --oa-teal-700: #0a564a;
+
+  /* ---------- primitive: data type ---------- */
+  --oa-data-string: #4a5153;
+  --oa-data-number: #a15c00;
+  --oa-data-boolean: #6b4c8a;
+  --oa-data-time: #2f5fa8;
+
+  /* ---------- primitive: status ---------- */
+  --oa-status-success: #1f7a4d;
+  --oa-status-warning: #8a5a00;
+  --oa-status-danger: #b3261e;
+  --oa-status-info: #245c8a;
+
+  --oa-success-50: #e7f2ec;
+  --oa-warning-50: #f7efdf;
+  --oa-danger-50: #fbeceb;
+  --oa-info-50: #e9f0f6;
+  --oa-boolean-50: #efe9f4;
+
+  /* ---------- primitive: space（4px 基数） ---------- */
+  --oa-space-1: 4px;
+  --oa-space-2: 8px;
+  --oa-space-3: 12px;
+  --oa-space-4: 16px;
+  --oa-space-6: 24px;
+  --oa-space-8: 32px;
+  --oa-space-12: 48px;
+  --oa-space-16: 64px;
+
+  /* ---------- primitive: radius / type / motion ---------- */
+  --oa-radius-sm: 4px;
+  --oa-radius-md: 8px;
+  --oa-radius-full: 999px;
+
+  --oa-font-sans: "IBM Plex Sans", "IBM Plex Sans SC", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --oa-font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --oa-text-xs: 12px;
+  --oa-text-sm: 13px;
+  --oa-text-base: 14px;
+  --oa-text-md: 16px;
+  --oa-text-lg: 20px;
+  --oa-text-xl: 26px;
+  --oa-text-2xl: 32px;
+
+  --oa-leading-xs: 1.35;
+  --oa-leading-sm: 1.35;
+  --oa-leading-base: 1.5;
+  --oa-leading-md: 1.3;
+  --oa-leading-lg: 1.25;
+  --oa-leading-xl: 1.2;
+  --oa-leading-2xl: 1.1;
+
+  --oa-weight-regular: 400;
+  --oa-weight-medium: 500;
+  --oa-weight-semibold: 600;
+
+  --oa-duration-fast: 120ms;
+  --oa-duration-base: 180ms;
+  --oa-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ---------- semantic: surface & text ---------- */
+  --oa-color-canvas: var(--oa-neutral-50);
+  --oa-color-surface: var(--oa-neutral-0);
+  --oa-color-surface-sunken: var(--oa-neutral-100);
+  --oa-color-text: var(--oa-neutral-900);
+  --oa-color-text-secondary: var(--oa-neutral-600);
+  --oa-color-text-muted: var(--oa-neutral-500);
+  --oa-color-text-disabled: var(--oa-neutral-400);
+  --oa-color-border: var(--oa-neutral-200);
+  --oa-color-border-strong: var(--oa-neutral-300);
+
+  /* ---------- semantic: action & selection ---------- */
+  --oa-color-action: var(--oa-teal-600);
+  --oa-color-action-hover: var(--oa-teal-700);
+  --oa-color-action-soft: var(--oa-teal-50);
+  --oa-color-action-soft-hover: var(--oa-teal-100);
+  --oa-color-action-border: #c9ddd7;
+  --oa-color-on-action: var(--oa-neutral-0);
+  --oa-color-focus: var(--oa-teal-600);
+  --oa-color-selection: var(--oa-teal-50);
+  --oa-color-row-hover: #f7f8f5;
+  --oa-color-danger-border: #e8b4af;
+
+  /* ---------- semantic: feedback ---------- */
+  --oa-color-success: var(--oa-status-success);
+  --oa-color-success-soft: var(--oa-success-50);
+  --oa-color-success-border: #bfe0d0;
+  --oa-color-warning: var(--oa-status-warning);
+  --oa-color-warning-soft: var(--oa-warning-50);
+  --oa-color-danger: var(--oa-status-danger);
+  --oa-color-danger-soft: var(--oa-danger-50);
+  --oa-color-info: var(--oa-status-info);
+  --oa-color-info-soft: var(--oa-info-50);
+
+  /* ---------- semantic: data type ---------- */
+  --oa-color-type-string: var(--oa-data-string);
+  --oa-color-type-number: var(--oa-data-number);
+  --oa-color-type-boolean: var(--oa-data-boolean);
+  --oa-color-type-boolean-soft: var(--oa-boolean-50);
+  --oa-color-type-time: var(--oa-data-time);
+
+  /* ---------- transitional: inverse shell ---------- */
+  --oa-surface-inverse: #1a1d1c;
+  --oa-surface-inverse-raised: #232726;
+  --oa-text-inverse: var(--oa-neutral-50);
+  --oa-text-inverse-muted: var(--oa-neutral-400);
+  --oa-border-inverse: rgba(244, 245, 243, 0.12);
+  --oa-color-action-on-inverse: var(--oa-teal-300);
+
+  /* ---------- transitional: code surfaces ---------- */
+  --oa-color-code-bg: #161a19;
+  --oa-color-code-text: #e3e9e5;
+
+  /* ---------- component ---------- */
+  --oa-button-height: 36px;
+  --oa-button-height-sm: 32px;
+  --oa-control-radius: var(--oa-radius-sm);
+  --oa-table-row-height: 40px;
+  --oa-table-row-height-comfortable: 48px;
+  --oa-table-header-height: 36px;
+  --oa-rail-width: 224px;
+  --oa-rail-width-collapsed: 64px;
+  --oa-inspector-width: 360px;
+  --oa-content-max: 1440px;
+  --oa-page-padding: var(--oa-space-8);
+
+  --oa-focus-ring: 2px solid var(--oa-color-focus);
+  --oa-focus-offset: 2px;
+  --oa-elevation-overlay: 0 12px 32px rgba(21, 24, 26, 0.12),
+    0 1px 2px rgba(21, 24, 26, 0.06);
+}
