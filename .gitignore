@@ -96,6 +96,7 @@ temp/
 .cache/
 *.log
 !docs/stages/evidence/**/*.log
+!openspec/changes/archive/**/evidence/*.log
 *.pid
 *.seed
 *.tmp

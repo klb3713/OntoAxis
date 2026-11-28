@@ -1,0 +1,13 @@
+# ./scripts/connector-runtime-e2e.sh --success-only  (2026-11-23, 复跑两次均通过)
+== preflight ==
+PASS core /readyz                                     200
+PASS kafka connect REST                               200
+== success path (long) ==
+PASS start sync -> 201                                201
+PASS sync job succeeded                               succeeded
+PASS verified_rows reported                           5 rows
+PASS trino query returns sink rows                    5
+PASS source rows equal sink rows                      5
+INFO job=01a20854-1756-7732-889a-2198c226a600 dataset=01a20854-16ee-779b-b43f-9636c96089f9 dataset_rid=ri.ontoaxis.main.dataset.01a20854-16ee-779b-b43f-9636c96089f9 runtime_ref=oa-bd7662a5-f46b064b-sink
+
+RESULT pass=7 fail=0
